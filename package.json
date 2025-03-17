@@ -13,7 +13,11 @@
   "dependencies": {
     "next": "15.2.2",
     "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "react-dom": "^18.3.1",
+    "swagger-jsdoc": "^6.2.8",
+    "swagger-ui-dist": "^5.20.1",
+    "swagger-ui-react": "^5.20.1",
+    "next-swagger-doc": "^0.4.1"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
@@ -24,11 +28,7 @@
     "autoprefixer": "^10.4.16",
     "eslint": "^9",
     "eslint-config-next": "15.2.2",
-    "next-swagger-doc": "^0.4.1",
     "postcss": "^8.4.31",
-    "swagger-jsdoc": "^6.2.8",
-    "swagger-ui-dist": "^5.20.1",
-    "swagger-ui-react": "^5.20.1",
     "tailwindcss": "^3.3.0",
     "typescript": "^5"
   }
