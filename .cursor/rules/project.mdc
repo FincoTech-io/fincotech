@@ -1,0 +1,11 @@
+---
+description: Rules describing how the projec twill be built
+globs: 
+alwaysApply: false
+---
+
+- Only do the Task i set out to do. don't change files that are not associated with the task
+- When implementing code, dont implement mockdata or demo data. We need Live real data and production level code
+- Remeber to always implement dark and light mode when adding colors
+- When doing a task we need to procceed step by step, you should auto apply your code so i can do the review, but let me cofirm before you proceed with a new task
+- When Styling Only use Tailwind Css. dont make a global.css file
