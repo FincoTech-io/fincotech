@@ -4,21 +4,16 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "npm run swagger && next build",
+    "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "swagger": "node scripts/generate-swagger.js",
-    "vercel-build": "npm install --legacy-peer-deps && npm run clean && npm run build",
-    "clean": "rimraf .next"
+    "clean": "rimraf .next",
+    "vercel-build": "npm install --legacy-peer-deps && npm run clean && npm run build"
   },
   "dependencies": {
     "next": "15.2.2",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "swagger-jsdoc": "^6.2.8",
-    "swagger-ui-dist": "^5.20.1",
-    "swagger-ui-react": "^5.20.1",
-    "next-swagger-doc": "^0.4.1",
     "rimraf": "^5.0.1"
   },
   "devDependencies": {
@@ -26,7 +21,6 @@
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",
-    "@types/swagger-ui-react": "^5.18.0",
     "autoprefixer": "^10.4.16",
     "eslint": "^9",
     "eslint-config-next": "15.2.2",
