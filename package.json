@@ -7,18 +7,19 @@
     "build": "npm run swagger && next build",
     "start": "next start",
     "lint": "next lint",
-    "swagger": "node scripts/generate-swagger.js"
+    "swagger": "node scripts/generate-swagger.js",
+    "vercel-build": "npm install --legacy-peer-deps && npm run swagger && next build"
   },
   "dependencies": {
     "next": "15.2.2",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
     "@types/node": "^20",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
+    "@types/react": "^18",
+    "@types/react-dom": "^18",
     "@types/swagger-ui-react": "^5.18.0",
     "autoprefixer": "^10.4.16",
     "eslint": "^9",
