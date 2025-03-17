@@ -1,8 +1,9 @@
 import { createSwaggerSpec } from 'next-swagger-doc';
+import path from 'path';
 
 export const getSwaggerSpec = () => {
   const spec = createSwaggerSpec({
-    apiFolder: 'src/app/api', // Path to API routes
+    apiFolder: path.join(process.cwd(), 'src/app/api'), // Use absolute path
     definition: {
       openapi: '3.0.0',
       info: {

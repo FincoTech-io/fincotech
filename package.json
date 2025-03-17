@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "next lint",
     "swagger": "node scripts/generate-swagger.js",
-    "vercel-build": "npm install --legacy-peer-deps && npm run swagger && next build"
+    "vercel-build": "npm install --legacy-peer-deps && npm run clean && npm run build",
+    "clean": "rimraf .next"
   },
   "dependencies": {
     "next": "15.2.2",
@@ -17,7 +18,8 @@
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-dist": "^5.20.1",
     "swagger-ui-react": "^5.20.1",
-    "next-swagger-doc": "^0.4.1"
+    "next-swagger-doc": "^0.4.1",
+    "rimraf": "^5.0.1"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
