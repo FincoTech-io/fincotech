@@ -28,7 +28,7 @@ if (!global._mongoClientPromise) {
 
 export async function getDatabase() {
   const client = await clientPromise;
-  return client.db('fincotech');
+  return client.db('test');
 }
 
 // Helper function to check if a user with a specific phone number exists
