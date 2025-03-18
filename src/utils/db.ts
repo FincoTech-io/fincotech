@@ -35,7 +35,7 @@ export async function getDatabase() {
 export async function userExistsByPhone(phoneNumber: string): Promise<boolean> {
   try {
     const db = await getDatabase();
-    const collection = db.collection('user');
+    const collection = db.collection('users');
 
     // Query to find a user with the given phone number
     const user = await collection.findOne({ phoneNumber });
