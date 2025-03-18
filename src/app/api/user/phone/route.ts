@@ -3,7 +3,7 @@ import { userExistsByPhone } from '@/utils/db';
 
 /**
  * @swagger
- * /api/user/phone:
+ * /api/user/phone?phone={phone}:
  *   get:
  *     summary: Check if a user with a specific phone number exists
  *     description: Returns true if a user with the given phone number exists, false otherwise
