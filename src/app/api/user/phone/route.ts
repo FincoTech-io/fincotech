@@ -3,7 +3,7 @@ import { userExistsByPhone } from '@/utils/db';
 
 /**
  * @swagger
- * /api/user/phone?phone={phone}:
+ * /api/user/phone?number={number}:
  *   get:
  *     summary: Check if a user with a specific phone number exists
  *     description: Returns true if a user with the given phone number exists, false otherwise
@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
   try {
     // Get the phone parameter from the URL
     const { searchParams } = new URL(request.url);
-    const phone = searchParams.get('phone');
+    const phone = searchParams.get('number');
 
     // Check if phone parameter is provided
     if (!phone) {
