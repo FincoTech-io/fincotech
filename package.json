@@ -11,16 +11,17 @@
     "vercel-build": "npm install --include=dev --legacy-peer-deps && npm run clean && npm run build"
   },
   "dependencies": {
+    "@types/node": "^20",
+    "@types/react": "^18",
+    "@types/react-dom": "^18",
+    "eslint": "^9",
+    "eslint-config-next": "15.2.2",
+    "mongodb": "^6.14.2",
     "next": "15.2.2",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "rimraf": "^5.0.1",
-    "typescript": "^5",
-    "eslint": "^9",
-    "eslint-config-next": "15.2.2",
-    "@types/node": "^20",
-    "@types/react": "^18",
-    "@types/react-dom": "^18"
+    "typescript": "^5"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
