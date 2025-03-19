@@ -4,6 +4,14 @@ import User from '@/models/User';
 import { IUser } from '@/models/User';
 import bcrypt from 'bcrypt';
 import { createWallet } from '@/utils/walletUtils';
+import jwt from 'jsonwebtoken';
+import redisService from '@/utils/redis';
+import { v4 as uuidv4 } from 'uuid';
+
+// Constants for token configuration
+const ACCESS_TOKEN_EXPIRY = '15m'; // Short-lived access token
+const REFRESH_TOKEN_EXPIRY = '1h'; // Long-lived refresh token
+const REFRESH_TOKEN_PREFIX = 'refresh_token:';
 
 export async function POST(request: NextRequest) {
   try {
@@ -192,14 +200,56 @@ export async function POST(request: NextRequest) {
     delete savedUser.idNumber;
     delete savedUser.nationality;
 
-    return NextResponse.json(
+    // Generate a unique refresh token ID
+    const refreshTokenId = uuidv4();
+      
+    // Create access token (short-lived)
+    const accessToken = jwt.sign(
       { 
-        message: 'User registered successfully',
-        user: savedUser,
-        success: true 
-      },
-      { status: 201 }
+        userId: newUser._id.toString(), 
+        role: newUser.role,
+        type: 'access',
+      }, 
+      process.env.JWT_SECRET as string,
+      { expiresIn: ACCESS_TOKEN_EXPIRY }
     );
+
+    // Create refresh token (long-lived)
+    const refreshToken = jwt.sign(
+      { 
+        userId: newUser._id.toString(),
+        type: 'refresh',
+        tokenId: refreshTokenId
+      },
+      process.env.JWT_SECRET as string,
+      { expiresIn: REFRESH_TOKEN_EXPIRY }
+    );
+
+    // Store refresh token information in Redis
+    try {
+      // Convert days to seconds for Redis expiry (1 HOUR)
+      const expiryInSeconds = 60 * 60;
+      await redisService.setWithExpiry(
+        `${REFRESH_TOKEN_PREFIX}${refreshTokenId}`,
+        newUser._id.toString(),
+        expiryInSeconds
+      );
+    } catch (error) {
+      console.error('Error storing refresh token:', error);
+      // Continue even if Redis fails
+    }
+
+    // Mobile app version: return tokens in response body
+    return NextResponse.json({ 
+      success: true,
+      accessToken: accessToken,
+      refreshToken: refreshToken,
+      user: {
+        id: newUser._id.toString(),
+        phoneNumber: newUser.phoneNumber,
+        role: newUser.role
+      }
+    });
   } catch (error) {
     console.error('Error registering user:', error);
     
@@ -217,3 +267,4 @@ export async function POST(request: NextRequest) {
     );
   }
 } 
+
