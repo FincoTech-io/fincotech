@@ -11,7 +11,7 @@ export async function POST(request: NextRequest) {
 
     // Parse the request body
     const userData = await request.json();
-    const { phoneNumber, fullName, email, pin } = userData;
+    const { phoneNumber, fullName, email, pin, security, nationality, idType, idNumber } = userData;
 
     // Validate required fields
     if (!phoneNumber) {
@@ -21,8 +21,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Normalize phone number
+    const normalizedPhone = phoneNumber.replace(/\s+/g, '');
+  
     // Check if user already exists
-    const existingUser = await User.findOne({ phoneNumber }).exec();
+    const existingUser = await User.findOne({ 
+      phoneNumber: {$regex: new RegExp('^' + normalizedPhone.replace(/[+]/g, '\\$&') + '$', 'i') } }).exec();
     if (existingUser) {
       return NextResponse.json(
         { error: 'User with this phone number already exists' },
@@ -30,7 +34,108 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Validate required fields
+    if (!phoneNumber) {
+      return NextResponse.json(
+        { error: 'Pin is required' },
+        { status: 400 }
+      );
+    }
+
+    // Validate PIN format (4-6 digits)
+    const pinRegex = /^\d{4,6}$/;
+    if (!pinRegex.test(pin)) {
+      return NextResponse.json(
+        { error: 'PIN must be 4-6 digits' },
+        { status: 400 }
+      );
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return NextResponse.json(
+        { error: 'Invalid email format' },
+        { status: 400 }
+      );
+    }
+
     // Check email uniqueness if provided
+    if (email) {
+      const emailExists = await User.findOne({ email }).exec();
+      if (emailExists) {
+        return NextResponse.json(
+          { error: 'User with this email already exists' },
+          { status: 409 }
+        );
+      }
+    }
+
+    // Validate security question
+    if (!security) {
+      return NextResponse.json(
+        { error: 'Security question is required' },
+        { status: 400 }
+      );
+    }
+
+    // Validate security answer
+    if (!security.answer) {
+      return NextResponse.json(
+        { error: 'Security answer is required' },
+        { status: 400 }
+      );
+    } 
+
+    // Validate ID type
+    if (!idType) {
+      return NextResponse.json(
+        { error: 'ID type is required' },
+        { status: 400 }
+      );
+    } 
+
+    // Validate ID number
+    if (!idNumber) {
+      return NextResponse.json(
+        { error: 'ID number is required' },
+        { status: 400 }
+      );
+    } 
+
+    // Validate nationality
+    if (!nationality) {
+      return NextResponse.json(
+        { error: 'Nationality is required' },
+        { status: 400 }
+      );
+    } 
+
+    // Validate full name
+    if (!fullName) {
+      return NextResponse.json(
+        { error: 'Full name is required' },
+        { status: 400 }
+      );
+    } 
+
+    // Validate full name format
+    if (!/^[a-zA-Z\s]+$/.test(fullName)) {
+      return NextResponse.json(
+        { error: 'Full name must contain only letters and spaces' },
+        { status: 400 }
+      );
+    }
+
+    // Validate full name length
+    if (fullName.length < 3 || fullName.length > 50) {
+      return NextResponse.json(
+        { error: 'Full name must be between 3 and 50 characters' },
+        { status: 400 }
+      );
+    } 
+
+    // Validate email uniqueness if provided
     if (email) {
       const emailExists = await User.findOne({ email }).exec();
       if (emailExists) {
@@ -50,7 +155,17 @@ export async function POST(request: NextRequest) {
       fullName,
       email,
       pin: hashedPin, // Store the hashed PIN
-      role: 'user',
+      role: 'customer',
+      security: {
+        question: security.question,
+        answer: security.answer
+      },
+      idType,
+      idNumber,
+      nationality,
+      status: 'active',
+      createdAt: new Date(),
+      updatedAt: new Date(),
     });
 
     // Save the user
@@ -58,7 +173,7 @@ export async function POST(request: NextRequest) {
 
     // Return the user data (excluding sensitive information)
     const savedUser = newUser.toObject() as Partial<IUser>;
-    delete savedUser.pin;
+    delete savedUser.pin, savedUser.security?.answer, savedUser.security?.question, savedUser.idType, savedUser.idNumber, savedUser.nationality;
 
     return NextResponse.json(
       { 
