@@ -23,7 +23,7 @@ export interface IUser extends Document {
     backImg?: string;
     facialData?: string;
   };
-  role: 'USER' | 'ADMIN' | 'CUSTOMER_SUPPORT';
+  role: 'CUSTOMER' | 'ADMIN' | 'CUSTOMER_SUPPORT' | 'MERCHANT' | 'DRIVER';
   lastLogin?: Date;
   isActive: boolean;
   pushToken?: string;
