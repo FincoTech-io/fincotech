@@ -174,8 +174,7 @@ export async function POST(request: NextRequest) {
     // Return the user data (excluding sensitive information)
     const savedUser = newUser.toObject() as Partial<IUser>;
     delete savedUser.pin 
-    delete savedUser.security?.answer;
-    delete savedUser.security?.question;
+    delete savedUser.security
     delete savedUser.idType;
     delete savedUser.idNumber;
     delete savedUser.nationality;
