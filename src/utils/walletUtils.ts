@@ -1,7 +1,7 @@
 import bcrypt from 'bcrypt';
 import { Wallet, IWallet } from '@/models/Wallet';
-import { User } from '@/models/User';
-
+import { IUser, User } from '@/models/User';
+import mongoose from 'mongoose';
 /**
  * Creates a wallet for a user
  * 
@@ -65,3 +65,21 @@ export async function createWallet(userId: string): Promise<{ wallet: IWallet; c
     throw error;
   }
 } 
+
+export async function getContacts(userId: string): Promise<Array<{
+  userId: mongoose.Types.ObjectId | IUser;
+  nickname: string;
+  lastTransactionDate: Date;
+}> | null> {
+  try {
+    const wallet = await Wallet.findOne({ userId }).populate('contacts.userId', 'fullName phoneNumber email');
+    if (!wallet) {
+      console.error('Wallet not found:', userId);
+      return null;
+    }
+    return wallet.contacts;
+  } catch (error) {
+    console.error('Error getting contacts:', error);
+    throw error;
+  }
+}
