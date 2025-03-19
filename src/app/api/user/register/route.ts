@@ -196,7 +196,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       { 
         message: 'User registered successfully',
-        user: savedUser 
+        user: savedUser,
+        success: true 
       },
       { status: 201 }
     );
@@ -206,13 +207,13 @@ export async function POST(request: NextRequest) {
     // Handle validation errors
     if (error instanceof Error && 'name' in error && error.name === 'ValidationError') {
       return NextResponse.json(
-        { error: error.message },
+        { error: error.message, success: false },
         { status: 400 }
       );
     }
     
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'Internal server error', success: false },
       { status: 500 }
     );
   }
