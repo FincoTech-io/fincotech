@@ -51,10 +51,10 @@ export async function createWallet(userId: string): Promise<{ wallet: IWallet; c
     // Use a type-safe way to get the wallet ID
     const walletId = wallet._id ? wallet._id.toString() : wallet.id;
     const address = await bcrypt.hash(walletId, salt);
-    const walletAddress = address.replace(/[/$.]/g, '').substring(0, 24);
+ 
     
     // Update the wallet with the generated address
-    wallet.address = walletAddress;
+    wallet.address = address;
     await wallet.save();
     
     console.log(`Wallet created successfully for user: ${userId} with address derived from wallet ID`);
