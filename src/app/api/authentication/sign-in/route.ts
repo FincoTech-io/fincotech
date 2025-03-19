@@ -7,7 +7,7 @@ import redisService from '@/utils/redis';
 
 // Constants for token configuration
 const ACCESS_TOKEN_EXPIRY = '15m'; // Short-lived access token
-const REFRESH_TOKEN_EXPIRY = '1h'; // Long-lived refresh token
+const REFRESH_TOKEN_EXPIRY = '7d'; // Long-lived refresh token
 const REFRESH_TOKEN_PREFIX = 'refresh_token:';
 
 export async function POST(request: Request) {
@@ -59,8 +59,8 @@ export async function POST(request: Request) {
   
   // Store refresh token information in Redis
   try {
-    // Convert days to seconds for Redis expiry (1 HOUR)
-    const expiryInSeconds = 60 * 60;
+    // Convert days to seconds for Redis expiry (7 Days)
+    const expiryInSeconds = 60 * 60 * 24 * 7;
     await redisService.setWithExpiry(
       `${REFRESH_TOKEN_PREFIX}${refreshTokenId}`,
       user._id.toString(),
