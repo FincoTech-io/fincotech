@@ -62,9 +62,9 @@ export async function POST(request: Request) {
     }
 
     console.log('OTP process completed successfully');
-    return NextResponse.json({ message: 'OTP sent successfully' }, { status: 200 });
+    return NextResponse.json({ message: 'OTP sent successfully', success: true }, { status: 200 });
   } catch (error) {
     console.error('Error in OTP endpoint:', error);
-    return NextResponse.json({ error: 'Failed to process OTP request' }, { status: 500 });
+    return NextResponse.json({ error: 'Failed to process OTP request', success: false }, { status: 500 });
   }
 }
