@@ -4,22 +4,15 @@ import { jwtVerify } from 'jose'; // Using jose for Edge Runtime compatibility
 
 // List of routes that require authentication
 const protectedRoutes = [
-  '/home',
-  '/profile',
-  '/wallet',
-  '/transactions',
-  '/settings',
-  '/support',
-  '/transfer',
-  '/notifications',
+  '/api/user/profile',
 ];
 
 // Routes that are public (no auth needed)
 const publicRoutes = [
-  '/sign-in',
-  '/join',
-  '/forgot-password',
-  '/reset-password',
+  '/api/authentication/sign-in',
+  '/api/user/exists',
+  '/api/user/register',
+  
 ];
 
 export async function middleware(request: NextRequest) {
