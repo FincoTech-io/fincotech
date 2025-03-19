@@ -26,17 +26,9 @@ export async function createWallet(userId: string): Promise<{ wallet: IWallet; c
       throw new Error('User not found');
     }
 
-    // Generate a unique wallet address using the userId and timestamp
-    const timestamp = new Date().getTime();
-    const addressData = `${userId}-${timestamp}`;
-    const salt = await bcrypt.genSalt(10);
-    const address = await bcrypt.hash(addressData, salt);
-    const walletAddress = address.replace(/[/$.]/g, '').substring(0, 24);
-    
-    // Create the wallet
+    // Create the wallet first without the address
     const wallet = new Wallet({
       userId,
-      address: walletAddress,
       fullName: user.fullName,
       phoneNumber: user.phoneNumber,
       balance: 0,
@@ -51,9 +43,21 @@ export async function createWallet(userId: string): Promise<{ wallet: IWallet; c
       contacts: []
     });
 
-    // Save the wallet
+    // Save the wallet to get its ID
     await wallet.save();
-    console.log(`Wallet created successfully for user: ${userId}`);
+    
+    // Now generate the address using the wallet ID
+    const salt = await bcrypt.genSalt(10);
+    // Use a type-safe way to get the wallet ID
+    const walletId = wallet._id ? wallet._id.toString() : wallet.id;
+    const address = await bcrypt.hash(walletId, salt);
+    const walletAddress = address.replace(/[/$.]/g, '').substring(0, 24);
+    
+    // Update the wallet with the generated address
+    wallet.address = walletAddress;
+    await wallet.save();
+    
+    console.log(`Wallet created successfully for user: ${userId} with address derived from wallet ID`);
 
     return { wallet, created: true };
   } catch (error) {

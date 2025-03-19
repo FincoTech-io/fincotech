@@ -255,7 +255,8 @@ export async function PATCH(request: NextRequest) {
           wallet: {
             balance: wallet.balance,
             currency: wallet.currency,
-            tier: wallet.tier
+            tier: wallet.tier,
+            address: wallet.address
           },
           createdAt: updatedUser.createdAt,
           updatedAt: updatedUser.updatedAt
