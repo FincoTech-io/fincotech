@@ -3,11 +3,21 @@ import { jwtVerify } from 'jose';
 import { User } from '@/models/User';
 
 export async function GET(request: NextRequest) {
-  const token = request.cookies.get('auth_token')?.value;
+  // Get token from Authorization header (for mobile apps)
+  const authHeader = request.headers.get('Authorization');
+  let token = authHeader && authHeader.startsWith('Bearer ') 
+    ? authHeader.substring(7) 
+    : null;
+  
+  // Fallback to cookies (for web apps)
+  if (!token) {
+    token = request.cookies.get('auth_token')?.value || null;
+  }
 
   if (!token) {
     return NextResponse.json({ 
-      authenticated: false 
+      authenticated: false,
+      message: 'No authentication token provided'
     }, { status: 401 });
   }
 
@@ -46,8 +56,10 @@ export async function GET(request: NextRequest) {
       error: error
     }, { status: 401 });
     
-    // Clear the invalid cookie
-    response.cookies.delete('auth_token');
+    // Only clear cookie if it exists (for web apps)
+    if (request.cookies.get('auth_token')) {
+      response.cookies.delete('auth_token');
+    }
     
     return response;
   }

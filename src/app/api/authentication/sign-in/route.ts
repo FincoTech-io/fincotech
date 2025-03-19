@@ -28,31 +28,19 @@ export async function POST(request: Request) {
   const token = jwt.sign(
     { userId: user._id, role: user.role }, 
     process.env.JWT_SECRET as string,
-    { expiresIn: '30m' } // Token expires in 30 minutes
+    { expiresIn: '30m' } // Extending token duration for mobile app
   );
 
-  // Create response object
-  const response = NextResponse.json({ 
+  // Mobile app version: return token in response body
+  return NextResponse.json({ 
     success: true,
+    token: token, // Return token directly in response
     user: {
       id: user._id,
       phoneNumber: user.phoneNumber,
       role: user.role
     }
   });
-  
-  // Set HTTP-only cookie with the token
-  response.cookies.set({
-    name: 'auth_token',
-    value: token,
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
-    maxAge: 60 * 30, // 30 minutes in seconds
-    path: '/'
-  });
-
-  return response;
 }
 
 

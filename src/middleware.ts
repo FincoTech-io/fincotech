@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { jwtVerify } from 'jose'; // Using jose for Edge Runtime compatibility
+import { isTokenBlacklisted } from './utils/authServerHelper';
 
 // List of routes that require authentication
 const protectedRoutes = [
@@ -23,7 +24,17 @@ const publicRoutes = [
 ];
 
 export async function middleware(request: NextRequest) {
-  const token = request.cookies.get('auth_token')?.value;
+  // Check for token in Authorization header (for mobile apps)
+  const authHeader = request.headers.get('Authorization');
+  let token = authHeader && authHeader.startsWith('Bearer ') 
+    ? authHeader.substring(7) 
+    : null;
+  
+  // Fallback to cookies (for web apps)
+  if (!token) {
+    token = request.cookies.get('auth_token')?.value || null;
+  }
+
   const path = request.nextUrl.pathname;
   
   // Check if it's an API route that should be protected
@@ -41,7 +52,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
   
-  // If it needs protection and there's no token, redirect to login
+  // If it needs protection and there's no token, return unauthorized
   if ((isProtectedApiRoute || isProtectedPageRoute) && !token) {
     if (isProtectedApiRoute) {
       return NextResponse.json(
@@ -49,7 +60,7 @@ export async function middleware(request: NextRequest) {
         { status: 401 }
       );
     }
-    // Redirect to login for page routes
+    // Redirect to login for page routes (web only)
     const loginUrl = new URL('/sign-in', request.url);
     loginUrl.searchParams.set('callbackUrl', path);
     return NextResponse.redirect(loginUrl);
@@ -58,6 +69,11 @@ export async function middleware(request: NextRequest) {
   // If there is a token, validate it
   if (token) {
     try {
+      // Check if token is blacklisted
+      if (await isTokenBlacklisted(token)) {
+        throw new Error('Token has been revoked');
+      }
+      
       // JWT verification - replace with your actual secret
       const secretKey = new TextEncoder().encode(
         process.env.JWT_SECRET as string
@@ -77,12 +93,16 @@ export async function middleware(request: NextRequest) {
       });
     } catch (error) {
       console.error('Token verification error:', error);
-      // Token is invalid - clear it and redirect to login
+      // Token is invalid
       const response = isProtectedApiRoute
         ? NextResponse.json({ error: 'Invalid token' }, { status: 401 })
         : NextResponse.redirect(new URL('/sign-in', request.url));
       
-      response.cookies.delete('auth_token');
+      // Only clear cookie if it exists (for web apps)
+      if (request.cookies.get('auth_token')) {
+        response.cookies.delete('auth_token');
+      }
+      
       return response;
     }
   }
