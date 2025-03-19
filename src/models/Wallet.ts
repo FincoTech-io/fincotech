@@ -63,6 +63,8 @@ const WalletSchema = new Schema<IWallet>(
     balance: {
       type: Number,
       default: 0,
+      get: (v: number) => parseFloat(v.toFixed(2)), // Format as double with 2 decimal places
+      set: (v: number) => parseFloat(v.toFixed(2)), // Ensure values are stored with 2 decimal places
     },
     currency: {
       type: String,
