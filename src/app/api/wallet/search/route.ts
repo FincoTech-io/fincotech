@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { connectToDatabase } from '@/utils/db';
 import User from '@/models/User';
 import { jwtVerify } from 'jose';
+import Wallet from '@/models/Wallet';
 
 /**
  * GET /api/wallet/search?query=searchterm
@@ -87,14 +88,39 @@ export async function GET(request: NextRequest) {
         .lean()
         .exec();
 
-      // Process users for the response
-      const formattedUsers = users.map(user => ({
-        userId: user._id,
-        fullName: user.fullName,
-        phoneNumber: user.phoneNumber,
-        email: user.email,
-        profileImage: user.profileImage?.url || null
-      }));
+      // Get current user's wallet to check existing contacts
+      const currentUserWallet = await Wallet.findOne({ userId: currentUserId }).lean();
+      
+      // Create a set of contact user IDs for fast lookup
+      const contactUserIds = new Set();
+      
+      if (currentUserWallet && currentUserWallet.contacts) {
+        currentUserWallet.contacts.forEach(contact => {
+          // Handle both object IDs and string IDs
+          const contactId = contact.userId ? 
+            (typeof contact.userId === 'object' ? 
+              contact.userId.toString() : 
+              contact.userId) 
+            : null;
+          
+          if (contactId) {
+            contactUserIds.add(contactId);
+          }
+        });
+      }
+
+      // Process users for the response and add isContact flag
+      const formattedUsers = users.map(user => {
+        const userId = user._id.toString();
+        return {
+          userId: userId,
+          fullName: user.fullName,
+          phoneNumber: user.phoneNumber,
+          email: user.email,
+          profileImage: user.profileImage?.url || null,
+          isContact: contactUserIds.has(userId)
+        };
+      });
 
       // Return search results
       return NextResponse.json({

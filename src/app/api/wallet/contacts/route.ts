@@ -77,7 +77,8 @@ export async function GET(request: NextRequest) {
           phoneNumber: (contactUser as IUser).phoneNumber || 'Unknown',
           email: (contactUser as IUser).email || 'Unknown',
           nickname: contact.nickname || '',
-          lastTransactionDate: contact.lastTransactionDate || null
+          lastTransactionDate: contact.lastTransactionDate || null,
+          profileImage: (contactUser as IUser).profileImage || null
         };
       });
 
