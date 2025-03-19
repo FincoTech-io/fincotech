@@ -1,19 +1,5 @@
 import { NextResponse } from 'next/server';
-import Redis from 'ioredis';
-
-// Initialize Redis client with timeout options
-const redis = new Redis(process.env.REDIS_URL, {
-  connectTimeout: 10000,
-  retryStrategy: (times) => {
-    console.log(`Redis connection retry attempt: ${times}`);
-    return Math.min(times * 100, 3000); // Maximum 3s delay between retries
-  },
-});
-
-// Add Redis error event handler
-redis.on('error', (err) => {
-  console.error('Redis connection error:', err);
-});
+import redisClient from '@/utils/redis';
 
 export const maxDuration = 30; // Increase timeout to 30 seconds
 
@@ -34,7 +20,7 @@ export async function POST(request: Request) {
     try {
       // Get the stored OTP from Redis
       console.log('Retrieving OTP from Redis...');
-      const storedOTP = await redis.get(`otp:${phoneNumber}`);
+      const storedOTP = await redisClient.get(`otp:${phoneNumber}`);
       console.log('Redis response received, OTP exists:', !!storedOTP);
       
       if (!storedOTP) {
@@ -51,7 +37,7 @@ export async function POST(request: Request) {
       if (isValid) {
         // Delete the OTP from Redis after successful verification
         console.log('Deleting OTP from Redis...');
-        await redis.del(`otp:${phoneNumber}`);
+        await redisClient.del(`otp:${phoneNumber}`);
         console.log('OTP deleted successfully');
         
         return NextResponse.json(

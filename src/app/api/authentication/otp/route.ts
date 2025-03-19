@@ -1,25 +1,11 @@
 import { NextResponse } from 'next/server';
 import twilio from 'twilio';
-import Redis from 'ioredis';
+import redisClient from '@/utils/redis';
 
 // Initialize Twilio client
 const accountSid = process.env.TWILIO_ACCOUNT_SID;
 const authToken = process.env.TWILIO_AUTH_TOKEN;
 const client = twilio(accountSid, authToken);
-
-// Initialize Redis client with timeout options
-const redis = new Redis(process.env.REDIS_URL, {
-  connectTimeout: 10000,
-  retryStrategy: (times) => {
-    console.log(`Redis connection retry attempt: ${times}`);
-    return Math.min(times * 100, 3000); // Maximum 3s delay between retries
-  },
-});
-
-// Add Redis error event handler
-redis.on('error', (err) => {
-  console.error('Redis connection error:', err);
-});
 
 // Generate a random OTP
 const generateOTP = () => Math.floor(100000 + Math.random() * 900000).toString();
@@ -58,7 +44,14 @@ export async function POST(request: Request) {
     try {
       // Store OTP in Redis with a 5-minute expiration
       console.log('Storing OTP in Redis...');
-      await redis.setex(`otp:${phoneNumber}`, 300, otp);
+      const stored = await redisClient.setWithExpiry(`otp:${phoneNumber}`, otp, 300);
+      if (!stored) {
+        console.error('Failed to store OTP in Redis');
+        return NextResponse.json({ 
+          error: 'Failed to store OTP, but SMS was sent', 
+          smsSent: true 
+        }, { status: 500 });
+      }
       console.log('OTP stored in Redis successfully');
     } catch (redisError) {
       console.error('Redis error:', redisError);
