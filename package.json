@@ -14,6 +14,7 @@
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",
+    "@types/uuid": "^10.0.0",
     "bcrypt": "^5.1.1",
     "eslint": "^9",
     "eslint-config-next": "15.2.2",
@@ -26,7 +27,8 @@
     "react-dom": "^18.3.1",
     "rimraf": "^5.0.1",
     "twilio": "^3.75.0",
-    "typescript": "^5"
+    "typescript": "^5",
+    "uuid": "^11.1.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",

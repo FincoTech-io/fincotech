@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { jwtVerify } from 'jose'; // Using jose for Edge Runtime compatibility
-import { isTokenBlacklisted } from './utils/authServerHelper';
 
 // List of routes that require authentication
 const protectedRoutes = [
@@ -69,12 +68,8 @@ export async function middleware(request: NextRequest) {
   // If there is a token, validate it
   if (token) {
     try {
-      // Check if token is blacklisted
-      if (await isTokenBlacklisted(token)) {
-        throw new Error('Token has been revoked');
-      }
       
-      // JWT verification - replace with your actual secret
+      // JWT verification
       const secretKey = new TextEncoder().encode(
         process.env.JWT_SECRET as string
       );

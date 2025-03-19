@@ -1,7 +1,7 @@
 import redisService from './redis';
 
 const BLACKLIST_PREFIX = 'blacklisted_token:';
-const TOKEN_EXPIRY = 60 * 30; // 30 minutes in seconds (matches the token expiry)
+const TOKEN_EXPIRY = 60 * 15; // 15 minutes in seconds (matches the access token expiry)
 
 /**
  * Blacklist a token by adding it to Redis

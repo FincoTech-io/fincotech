@@ -3,7 +3,6 @@ import { connectToDatabase } from '@/utils/db';
 import User from '@/models/User';
 import { IUser } from '@/models/User';
 import bcrypt from 'bcrypt';
-import mongoose from 'mongoose';
 import { createWallet } from '@/utils/walletUtils';
 
 export async function POST(request: NextRequest) {
@@ -175,7 +174,7 @@ export async function POST(request: NextRequest) {
     
     // Create a wallet for the user
     try {
-      const userId = (newUser as IUser & { _id: mongoose.Types.ObjectId })._id.toString();
+      const userId = newUser._id.toString();
       console.log('Creating wallet for new user:', userId);
       const walletResult = await createWallet(userId);
       console.log('Wallet created successfully:', walletResult.wallet.address);
