@@ -25,9 +25,34 @@ export async function POST(request: Request) {
   user.lastLogin = new Date();  
   await user.save();
 
-  const token = jwt.sign({ userId: user._id, role: user.role, email: user.email }, process.env.JWT_SECRET as string, { expiresIn: '1h' });
+  const token = jwt.sign(
+    { userId: user._id, role: user.role }, 
+    process.env.JWT_SECRET as string,
+    { expiresIn: '30m' } // Token expires in 30 minutes
+  );
 
-  return NextResponse.json({ token, success: true }, { status: 200 });
+  // Create response object
+  const response = NextResponse.json({ 
+    success: true,
+    user: {
+      id: user._id,
+      phoneNumber: user.phoneNumber,
+      role: user.role
+    }
+  });
+  
+  // Set HTTP-only cookie with the token
+  response.cookies.set({
+    name: 'auth_token',
+    value: token,
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict',
+    maxAge: 60 * 30, // 30 minutes in seconds
+    path: '/'
+  });
+
+  return response;
 }
 
 
