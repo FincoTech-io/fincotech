@@ -3,6 +3,8 @@ import { connectToDatabase } from '@/utils/db';
 import User from '@/models/User';
 import { IUser } from '@/models/User';
 import bcrypt from 'bcrypt';
+import mongoose from 'mongoose';
+import { createWallet } from '@/utils/walletUtils';
 
 export async function POST(request: NextRequest) {
   try {
@@ -170,6 +172,18 @@ export async function POST(request: NextRequest) {
 
     // Save the user
     await newUser.save();
+    
+    // Create a wallet for the user
+    try {
+      const userId = (newUser as IUser & { _id: mongoose.Types.ObjectId })._id.toString();
+      console.log('Creating wallet for new user:', userId);
+      const walletResult = await createWallet(userId);
+      console.log('Wallet created successfully:', walletResult.wallet.address);
+    } catch (walletError) {
+      console.error('Error creating wallet for user:', walletError);
+      // We won't fail the registration if wallet creation fails
+      // The wallet can be created later if needed
+    }
 
     // Return the user data (excluding sensitive information)
     const savedUser = newUser.toObject() as Partial<IUser>;

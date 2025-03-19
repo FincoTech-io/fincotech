@@ -210,11 +210,14 @@ if (typeof process !== 'undefined' && process.on) {
   });
 }
 
-export default {
+// Create the Redis service object to export
+const redisService = {
   client: redis,
   setWithExpiry,
   get,
   del,
   isConnected,
   getConnectionDetails
-}; 
+};
+
+export default redisService; 
