@@ -4,17 +4,22 @@ import { jwtVerify } from 'jose'; // Using jose for Edge Runtime compatibility
 
 // List of routes that require authentication
 const protectedRoutes = [
-  '/dashboard',
+  '/home',
   '/profile',
   '/wallet',
   '/transactions',
+  '/settings',
+  '/support',
+  '/transfer',
+  '/notifications',
 ];
 
 // Routes that are public (no auth needed)
 const publicRoutes = [
-  '/login',
-  '/register',
+  '/sign-in',
+  '/join',
   '/forgot-password',
+  '/reset-password',
 ];
 
 export async function middleware(request: NextRequest) {
@@ -45,7 +50,7 @@ export async function middleware(request: NextRequest) {
       );
     }
     // Redirect to login for page routes
-    const loginUrl = new URL('/login', request.url);
+    const loginUrl = new URL('/sign-in', request.url);
     loginUrl.searchParams.set('callbackUrl', path);
     return NextResponse.redirect(loginUrl);
   }
@@ -75,7 +80,7 @@ export async function middleware(request: NextRequest) {
       // Token is invalid - clear it and redirect to login
       const response = isProtectedApiRoute
         ? NextResponse.json({ error: 'Invalid token' }, { status: 401 })
-        : NextResponse.redirect(new URL('/login', request.url));
+        : NextResponse.redirect(new URL('/sign-in', request.url));
       
       response.cookies.delete('auth_token');
       return response;
