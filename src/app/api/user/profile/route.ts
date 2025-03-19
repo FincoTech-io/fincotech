@@ -185,6 +185,7 @@ export async function PATCH(request: NextRequest) {
         'fullName',
         'email',
         'profileImage',
+        'currentRegion',
         'pushToken',
         'notificationPreferences'
       ];
@@ -251,6 +252,7 @@ export async function PATCH(request: NextRequest) {
           fullName: updatedUser.fullName,
           phoneNumber: updatedUser.phoneNumber,
           email: updatedUser.email,
+          currentRegion: updatedUser.currentRegion,
           isVerified: updatedUser.isVerified,
           wallet: {
             balance: wallet.balance,

@@ -28,6 +28,7 @@ export interface IUser extends Document {
   lastLogin?: Date;
   isActive: boolean;
   pushToken?: string;
+  currentRegion?: string;
   notificationPreferences: {
     paymentReceived: {
       sms: boolean;

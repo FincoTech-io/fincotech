@@ -170,6 +170,7 @@ export async function POST(request: NextRequest) {
         answer: security.answer
       },
       idType,
+      currentRegion: 'global',
       idNumber,
       nationality,
       status: 'active',
