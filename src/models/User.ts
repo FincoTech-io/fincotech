@@ -172,7 +172,7 @@ const UserSchema = new Schema<IUser>(
         },
         push: {
           type: Boolean,
-          default: true,
+          default: false,
         },
         email: {
           type: Boolean,
