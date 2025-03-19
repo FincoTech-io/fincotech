@@ -134,8 +134,8 @@ const UserSchema = new Schema<IUser>(
     },
     role: {
       type: String,
-      enum: ['USER', 'ADMIN', 'CUSTOMER_SUPPORT'],
-      default: 'USER',
+      enum: ['CUSTOMER', 'ADMIN', 'CUSTOMER_SUPPORT', 'MERCHANT', 'DRIVER'],
+      default: 'CUSTOMER',
       uppercase: true,
     },
     lastLogin: {
