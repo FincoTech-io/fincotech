@@ -94,7 +94,8 @@ export async function GET(request: NextRequest) {
           wallet: {
             balance: wallet.balance,
             currency: wallet.currency,
-            tier: wallet.tier
+            tier: wallet.tier,
+            address: wallet.address,
           },
           createdAt: user.createdAt,
           updatedAt: user.updatedAt
