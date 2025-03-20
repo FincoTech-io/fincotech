@@ -105,10 +105,13 @@ export async function POST(request: NextRequest) {
             try {
 
                 const walletIsEligible = await walletConditions(walletIdentifier, amount);
-
-                if (!walletIsEligible.isValid) {
+                
+                // Extract the response data from the NextResponse object
+                const walletResponse = await walletIsEligible.json();
+                
+                if (!walletResponse.isValid) {
                     return NextResponse.json(
-                        { success: false, error: walletIsEligible.error },
+                        { success: false, error: walletResponse.error },
                         { status: 400 }
                     );
                 }
