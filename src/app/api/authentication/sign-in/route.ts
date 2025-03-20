@@ -4,7 +4,7 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { v4 as uuidv4 } from 'uuid';
 import redisService from '@/utils/redis';
-
+import Wallet from '@/models/Wallet';
 // Constants for token configuration
 const ACCESS_TOKEN_EXPIRY = '15m'; // Short-lived access token
 const REFRESH_TOKEN_EXPIRY = '7d'; // Long-lived refresh token
@@ -71,6 +71,8 @@ export async function POST(request: Request) {
     // Continue even if Redis fails
   }
 
+  const wallet = await Wallet.findOne({ userId: user._id }); 
+
   // Mobile app version: return tokens in response body
   return NextResponse.json({ 
     success: true,
@@ -79,7 +81,15 @@ export async function POST(request: Request) {
     user: {
       id: user._id.toString(),
       phoneNumber: user.phoneNumber,
-      role: user.role
+      role: user.role,
+      profileImage: user.profileImage,
+      fullName: user.fullName,
+      email: user.email,
+      isActive: user.isActive,
+      wallet: {
+        balance: wallet?.balance,
+        address: wallet?.address,
+      }
     }
   });
 }
