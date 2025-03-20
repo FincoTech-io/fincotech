@@ -4,11 +4,11 @@ import { jwtVerify } from 'jose';
 import User, { IUser } from '@/models/User';
 import Wallet, { IWallet } from '@/models/Wallet';
 import Transaction from '@/models/Transaction';
-import { walletConditions } from '@/app/api/wallet/condition/route';
+import { walletConditions } from '@/app/api/wallet/condition/utils';
 import mongoose from 'mongoose';
-import { calculateFeeAmount, getApplicableFees } from '../../business/fees/route';
-import { generateTransactionRef, createTransactionRecord } from '../../business/records/route';
-import { createRevenueRecord } from '../../business/revenue/route';
+import { calculateFeeAmount, getApplicableFees } from '../../business/fees/utils';
+import { generateTransactionRef, createTransactionRecord } from '../../business/records/utils';
+import { createRevenueRecord } from '../../business/revenue/utils';
 
 export async function POST(request: NextRequest) {
 
