@@ -89,7 +89,9 @@ export async function POST(request: Request) {
       wallet: {
         balance: wallet?.balance,
         address: wallet?.address,
-      }
+      },
+      createdAt: user?.createdAt,
+      updatedAt: user?.updatedAt,
     }
   });
 }
