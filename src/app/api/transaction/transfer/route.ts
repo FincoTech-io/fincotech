@@ -92,7 +92,10 @@ export async function POST(request: NextRequest) {
                 );
             }
 
-            if (isNaN(amount) || amount <= 0) {
+            // Ensure amount is a number
+            const numericAmount = parseFloat(amount);
+            
+            if (isNaN(numericAmount) || numericAmount <= 0) {
                 return NextResponse.json(
                     {
                         success: false,
@@ -104,7 +107,7 @@ export async function POST(request: NextRequest) {
 
             try {
 
-                const walletIsEligible = await walletConditions(walletIdentifier, amount);
+                const walletIsEligible = await walletConditions(walletIdentifier, numericAmount);
                 
                 // Extract the response data from the NextResponse object
                 const walletResponse = await walletIsEligible.json();
@@ -116,7 +119,7 @@ export async function POST(request: NextRequest) {
                     );
                 }
 
-                const result = await processTransaction(userId, walletIdentifier, amount, description);
+                const result = await processTransaction(userId, walletIdentifier, numericAmount, description);
                 
                 // Make sure we properly return the result to the client
                 if (result instanceof NextResponse) {
@@ -156,6 +159,15 @@ export async function POST(request: NextRequest) {
 const processTransaction = async (userId: string, identifier: string, amount: number, description: string) => {
 
     try {
+        // Ensure amount is a number
+        amount = Number(amount);
+        if (isNaN(amount)) {
+            return NextResponse.json({
+                success: false,
+                error: 'Invalid amount: must be a number'
+            }, { status: 400 });
+        }
+        
         let receiverId;
 
         if (identifier.length > 24) {
@@ -187,6 +199,17 @@ const transfer = async (userId: string, receiverId: string, amount: number, desc
     connection.startTransaction();
 
     try {
+        // Ensure amount is a number
+        amount = Number(amount);
+        if (isNaN(amount)) {
+            await connection.abortTransaction();
+            connection.endSession();
+            return NextResponse.json({
+                success: false,
+                error: 'Invalid amount: must be a number'
+            }, { status: 400 });
+        }
+        
         console.log(`Transfer initiated: From user ${userId} to user ${receiverId}, amount: ${amount}`);
         
         if (amount <= 0) {
@@ -222,11 +245,44 @@ const transfer = async (userId: string, receiverId: string, amount: number, desc
                 error: 'Wallet not found'
             }, { status: 400 });
         }
+        
+        // Ensure wallet balances are valid numbers
+        if (isNaN(senderWallet.balance)) {
+            console.error(`Sender wallet ${userId} has invalid balance: ${senderWallet.balance}`);
+            await connection.abortTransaction();
+            connection.endSession();
+            return NextResponse.json({
+                success: false,
+                error: 'Invalid sender wallet balance'
+            }, { status: 500 });
+        }
+        
+        if (isNaN(receiverWallet.balance)) {
+            console.error(`Receiver wallet ${receiverId} has invalid balance: ${receiverWallet.balance}`);
+            await connection.abortTransaction();
+            connection.endSession();
+            return NextResponse.json({
+                success: false,
+                error: 'Invalid receiver wallet balance'
+            }, { status: 500 });
+        }
 
         console.log(`Calculating fees for amount: ${amount}, tier: ${senderWallet.tier}`);
         const feeConfig = await getApplicableFees('transfer', amount, senderWallet.tier, "GLOBAL");
 
         const feeAmount = calculateFeeAmount(feeConfig, amount);
+        
+        // Ensure fee is a proper number
+        if (isNaN(feeAmount)) {
+            console.error(`Fee calculation resulted in NaN. Amount: ${amount}, Fee config:`, feeConfig);
+            await connection.abortTransaction();
+            connection.endSession();
+            return NextResponse.json({
+                success: false,
+                error: 'Error calculating transaction fee'
+            }, { status: 500 });
+        }
+        
         console.log(`Fee calculated: ${feeAmount}, fee type: ${feeConfig.feeType}`);
         console.log(`Total amount (including fee): ${amount + feeAmount}`);
         console.log(`Sender balance: ${senderWallet.balance}`);
@@ -254,8 +310,13 @@ const transfer = async (userId: string, receiverId: string, amount: number, desc
             date: timestamp,
         };
 
+        // Ensure all values are numeric before calculations
+        const numericSenderBalance = Number(senderWallet.balance);
+        const numericReceiverBalance = Number(receiverWallet.balance);
+        const totalDeduction = Number(amount) + Number(feeAmount);
+        
         // Update sender wallet - deduct transfer amount AND fee
-        senderWallet.balance -= (amount + feeAmount);
+        senderWallet.balance = numericSenderBalance - totalDeduction;
         senderWallet.monthlyTransactionCount += 1;
         senderWallet.transfersSent.push({
             ...transferRecord,
@@ -263,7 +324,7 @@ const transfer = async (userId: string, receiverId: string, amount: number, desc
         });
 
         // Update recipient wallet
-        receiverWallet.balance += amount; // Recipient gets the full amount, fee is kept by platform
+        receiverWallet.balance = numericReceiverBalance + Number(amount); // Recipient gets the full amount, fee is kept by platform
         receiverWallet.transfersReceived.push({
             ...transferRecord,
             from: senderWallet.userId,
