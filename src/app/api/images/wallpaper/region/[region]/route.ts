@@ -9,10 +9,10 @@ import { getImagesInFolder } from '@/utils/cloudinaryUtils';
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { region: string } }
+  context: { params: { region: string } }
 ) {
   try {
-    const { region } = params;
+    const { region } = context.params;
     
     if (!region) {
       return NextResponse.json(
