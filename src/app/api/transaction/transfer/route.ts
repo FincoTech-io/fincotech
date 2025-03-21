@@ -187,6 +187,8 @@ const transfer = async (userId: string, receiverId: string, amount: number, desc
     connection.startTransaction();
 
     try {
+        console.log(`Transfer initiated: From user ${userId} to user ${receiverId}, amount: ${amount}`);
+        
         if (amount <= 0) {
             await connection.abortTransaction();
             connection.endSession();
@@ -196,10 +198,13 @@ const transfer = async (userId: string, receiverId: string, amount: number, desc
             }, { status: 400 });
         }
 
+        console.log(`Looking up sender wallet for user: ${userId}`);
         const senderWallet = await Wallet.findOne({ userId: userId }).session(connection);
+        console.log(`Looking up receiver wallet for user: ${receiverId}`);
         const receiverWallet = await Wallet.findOne({ userId: receiverId }).session(connection);
 
         if (!senderWallet) {
+            console.log(`Sender wallet not found for user: ${userId}`);
             await connection.abortTransaction();
             connection.endSession();
             return NextResponse.json({
@@ -209,6 +214,7 @@ const transfer = async (userId: string, receiverId: string, amount: number, desc
         }
 
         if (!receiverWallet) {
+            console.log(`Receiver wallet not found for user: ${receiverId}`);
             await connection.abortTransaction();
             connection.endSession();
             return NextResponse.json({
@@ -217,11 +223,24 @@ const transfer = async (userId: string, receiverId: string, amount: number, desc
             }, { status: 400 });
         }
 
+        console.log(`Calculating fees for amount: ${amount}, tier: ${senderWallet.tier}`);
         const feeConfig = await getApplicableFees('transfer', amount, senderWallet.tier, "GLOBAL");
 
         const feeAmount = calculateFeeAmount(feeConfig, amount);
+        console.log(`Fee calculated: ${feeAmount}, fee type: ${feeConfig.feeType}`);
+        console.log(`Total amount (including fee): ${amount + feeAmount}`);
+        console.log(`Sender balance: ${senderWallet.balance}`);
 
-        await walletConditions(userId, amount + feeAmount);
+        // Check if sender has sufficient balance (already validated in wallet conditions earlier)
+        if (senderWallet.balance < (amount + feeAmount)) {
+            console.log(`Insufficient balance: required ${amount + feeAmount}, available ${senderWallet.balance}`);
+            await connection.abortTransaction();
+            connection.endSession();
+            return NextResponse.json({
+                success: false,
+                error: 'Insufficient balance to cover the transaction'
+            }, { status: 400 });
+        }
 
         // Prepare transaction record
         const timestamp = new Date();
@@ -250,10 +269,19 @@ const transfer = async (userId: string, receiverId: string, amount: number, desc
             from: senderWallet.userId,
         });
 
-        await senderWallet.save({ session: connection });
-        await receiverWallet.save({ session: connection });
+        console.log(`Saving updated wallets. New sender balance: ${senderWallet.balance}, new receiver balance: ${receiverWallet.balance}`);
+        
+        try {
+            await senderWallet.save({ session: connection });
+            await receiverWallet.save({ session: connection });
+            console.log('Wallets saved successfully');
+        } catch (saveError) {
+            console.error('Error saving wallets:', saveError);
+            throw saveError;
+        }
 
         // Get user details for creating transaction record
+        console.log('Fetching user details for transaction record');
         const sender = await User.findById(userId).select('fullName email').session(connection);
         const recipient = await User.findById(receiverId).select('fullName email').session(connection);
 
@@ -292,27 +320,38 @@ const transfer = async (userId: string, receiverId: string, amount: number, desc
             },
         };
 
-        // Create transaction record
-        await createTransactionRecord(transactionData);
+        try {
+            // Create transaction record
+            console.log(`Creating transaction record with ref: ${transactionRef}`);
+            await createTransactionRecord(transactionData);
+            console.log('Transaction record created successfully');
 
-        // create revenue record for the fee
-        const revenueData = {
-            associatedTransactionRef: transactionRef,
-            transactionDate: timestamp,
-            revenueAmount: {
-                amount: feeAmount,
-                currency: senderWallet.currency,
-            },
-            status: 'pending',
-            revenueType: feeConfig.feeType,
-            metadata: {
-                description: `Fee from transaction ${transactionRef}`,
-            },
-        };
+            // create revenue record for the fee
+            const revenueData = {
+                associatedTransactionRef: transactionRef,
+                transactionDate: timestamp,
+                revenueAmount: {
+                    amount: feeAmount,
+                    currency: senderWallet.currency,
+                },
+                status: 'pending',
+                revenueType: feeConfig.feeType,
+                metadata: {
+                    description: `Fee from transaction ${transactionRef}`,
+                },
+            };
 
-        await createRevenueRecord(revenueData);
+            console.log(`Creating revenue record for fee: ${feeAmount}`);
+            await createRevenueRecord(revenueData);
+            console.log('Revenue record created successfully');
+        } catch (recordError: unknown) {
+            console.error('Error creating transaction or revenue records:', recordError);
+            throw new Error(`Failed to create transaction records: ${recordError instanceof Error ? recordError.message : 'Unknown error'}`);
+        }
 
+        console.log('Committing transaction...');
         await connection.commitTransaction();
+        console.log('Transaction committed successfully');
 
         // TODO: Send Notification to the sender and recipient
 
@@ -328,10 +367,23 @@ const transfer = async (userId: string, receiverId: string, amount: number, desc
 
     } catch (error) {
         console.error('Error processing transaction:', error);
+        // Make sure we properly abort the transaction in case of any error
+        await connection.abortTransaction();
+        connection.endSession();
+        
+        // Provide more detailed error message if available
+        const errorMessage = error instanceof Error ? error.message : 'Failed to process transaction';
+        
         return NextResponse.json({
             success: false,
-            error: 'Failed to process transaction'
+            error: errorMessage
         }, { status: 500 });
+    } finally {
+        // Ensure the session ends even if something else goes wrong
+        if (connection.inTransaction()) {
+            await connection.abortTransaction();
+        }
+        connection.endSession();
     }
 }
 
