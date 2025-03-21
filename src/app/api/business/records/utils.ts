@@ -23,10 +23,19 @@ export const createTransactionRecord = async (transactionData: any) => {
     try {
         // Generate a transaction reference if not provided
         const transactionRef = transactionData.transactionRef || generateTransactionRef();
+
+        // Normalize data to handle recipient vs. receiver inconsistency
+        const normalizedData = { ...transactionData };
+        
+        // Make sure we have the receiver field (some code uses recipient)
+        if (normalizedData.recipient && !normalizedData.receiver) {
+            normalizedData.receiver = normalizedData.recipient;
+            delete normalizedData.recipient;
+        }
         
         // Create the transaction
         const transaction = await Transaction.create([{
-          ...transactionData,
+          ...normalizedData,
           transactionRef,
           reference: transactionRef  // Add reference field to satisfy existing index
         }], { session });
@@ -38,6 +47,10 @@ export const createTransactionRecord = async (transactionData: any) => {
             (sum: number, fee: any) => sum + fee.feeAmount, 
             0
           );
+          
+          // Get sender and receiver information safely
+          const senderName = transaction[0].sender?.name || 'User';
+          const receiverName = transaction[0].receiver?.name || 'Recipient';
     
           // Create a ledger entry for the transaction
           await Ledger.create([{
@@ -52,7 +65,7 @@ export const createTransactionRecord = async (transactionData: any) => {
             description: `Transaction: ${transaction[0].transactionType}`,
             metadata: {
               entryType: 'transfer',
-              notes: `Transfer from ${transaction[0].sender.name} to ${transaction[0].recipient.name}`
+              notes: `Transfer from ${senderName} to ${receiverName}`
             }
           }], { session });
     
@@ -69,7 +82,7 @@ export const createTransactionRecord = async (transactionData: any) => {
             description: `Fee collected for transaction: ${transaction[0].transactionType}`,
             metadata: {
               entryType: 'fee',
-              notes: `Fee for transfer from ${transaction[0].sender.name} to ${transaction[0].recipient.name}`
+              notes: `Fee for transfer from ${senderName} to ${receiverName}`
             }
           }], { session });
         }

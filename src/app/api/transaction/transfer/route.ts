@@ -171,6 +171,7 @@ const processTransaction = async (userId: string, identifier: string, amount: nu
         let receiverId;
 
         if (identifier.length > 24) {
+            // Looking up by wallet address
             const receiverWallet = await Wallet.findOne({ address: identifier });
             if (!receiverWallet) {
                 return NextResponse.json({
@@ -180,7 +181,34 @@ const processTransaction = async (userId: string, identifier: string, amount: nu
             }
             receiverId = receiverWallet.userId.toString();
         } else {
+            // When identifier is a user ID, verify that the user exists
             receiverId = identifier;
+            
+            // Verify the recipient user exists
+            const recipientUser = await User.findById(receiverId);
+            if (!recipientUser) {
+                return NextResponse.json({
+                    success: false,
+                    error: 'Recipient user not found'
+                }, { status: 404 });
+            }
+            
+            // Check if recipient has a wallet
+            const recipientWallet = await Wallet.findOne({ userId: receiverId });
+            if (!recipientWallet) {
+                return NextResponse.json({
+                    success: false,
+                    error: 'Recipient does not have a wallet'
+                }, { status: 404 });
+            }
+        }
+
+        // Ensure sender != receiver
+        if (userId === receiverId) {
+            return NextResponse.json({
+                success: false,
+                error: 'You cannot transfer funds to yourself'
+            }, { status: 400 });
         }
 
         return await transfer(userId, receiverId, amount, description);
@@ -343,8 +371,13 @@ const transfer = async (userId: string, receiverId: string, amount: number, desc
 
         // Get user details for creating transaction record
         console.log('Fetching user details for transaction record');
-        const sender = await User.findById(userId).select('fullName email').session(connection);
-        const recipient = await User.findById(receiverId).select('fullName email').session(connection);
+        const sender = await User.findById(userId).select('fullName email phoneNumber role').session(connection);
+        const recipient = await User.findById(receiverId).select('fullName email phoneNumber role').session(connection);
+
+        if (!sender || !recipient) {
+            console.error('Sender or recipient user details not found');
+            throw new Error('Failed to fetch user details for transaction record');
+        }
 
         // Create transaction record
         const transactionData = {
@@ -354,13 +387,19 @@ const transfer = async (userId: string, receiverId: string, amount: number, desc
             status: 'completed',
             sender: {
                 id: userId,
-                name: sender?.fullName,
+                name: sender.fullName,
                 accountType: 'customer',
+                phoneNumber: sender.phoneNumber,
+                accountRole: sender.role || 'CUSTOMER',
+                walletTier: senderWallet.tier
             },
-            recipient: {
+            receiver: {
                 id: receiverId,
-                name: recipient?.fullName,
+                name: recipient.fullName,
                 accountType: 'customer',
+                phoneNumber: recipient.phoneNumber,
+                accountRole: recipient.role || 'CUSTOMER',
+                walletTier: receiverWallet.tier
             },
             transferAmount: {
                 amount,
@@ -390,6 +429,7 @@ const transfer = async (userId: string, receiverId: string, amount: number, desc
             // create revenue record for the fee
             const revenueData = {
                 associatedTransactionRef: transactionRef,
+                transactionRef: `REV-${transactionRef}`, // Ensure unique transactionRef for revenue
                 transactionDate: timestamp,
                 revenueAmount: {
                     amount: feeAmount,
@@ -399,6 +439,8 @@ const transfer = async (userId: string, receiverId: string, amount: number, desc
                 revenueType: feeConfig.feeType,
                 metadata: {
                     description: `Fee from transaction ${transactionRef}`,
+                    notes: `Fee collected from ${sender.fullName} for transfer to ${recipient.fullName}`,
+                    region: "GLOBAL" // Default region if not available
                 },
             };
 
