@@ -121,13 +121,8 @@ export async function POST(request: NextRequest) {
 
                 const result = await processTransaction(userId, walletIdentifier, numericAmount, description);
                 
-                // Make sure we properly return the result to the client
-                if (result instanceof NextResponse) {
-                    return result;
-                }
-
                 return NextResponse.json(
-                    { success: true, message: 'Transfer completed successfully' },
+                    { success: true, message: 'Transfer completed successfully', result },
                     { status: 200 }
                 );
 
