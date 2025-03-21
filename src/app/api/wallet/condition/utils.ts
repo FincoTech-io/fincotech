@@ -23,7 +23,7 @@ export const walletConditions = async (walletIdentifier: string, amount: number,
     try {
         await connectToDatabase();
 
-        const wallet = await Wallet.findOne({ $or: [{ _id: walletIdentifier }, { walletAddress: walletIdentifier }] });
+        const wallet = await Wallet.findOne({ $or: [{ userId: walletIdentifier }, { address: walletIdentifier }] });
 
         if (!wallet) {
             return NextResponse.json(

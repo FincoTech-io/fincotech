@@ -117,7 +117,16 @@ export async function POST(request: NextRequest) {
                 }
 
                 const result = await processTransaction(userId, walletIdentifier, amount, description);
+                
+                // Make sure we properly return the result to the client
+                if (result instanceof NextResponse) {
+                    return result;
+                }
 
+                return NextResponse.json(
+                    { success: true, message: 'Transfer completed successfully' },
+                    { status: 200 }
+                );
 
             } catch (error) {
                 console.error('Error transferring funds:', error);
@@ -179,18 +188,33 @@ const transfer = async (userId: string, receiverId: string, amount: number, desc
 
     try {
         if (amount <= 0) {
-            throw new Error('Amount must be greater than 0');
+            await connection.abortTransaction();
+            connection.endSession();
+            return NextResponse.json({
+                success: false,
+                error: 'Amount must be greater than 0'
+            }, { status: 400 });
         }
 
         const senderWallet = await Wallet.findOne({ userId: userId }).session(connection);
         const receiverWallet = await Wallet.findOne({ userId: receiverId }).session(connection);
 
         if (!senderWallet) {
-            throw new Error('Sender wallet not found');
+            await connection.abortTransaction();
+            connection.endSession();
+            return NextResponse.json({
+                success: false,
+                error: 'Sender wallet not found'
+            }, { status: 400 });
         }
 
         if (!receiverWallet) {
-            throw new Error('Recipient wallet not found');
+            await connection.abortTransaction();
+            connection.endSession();
+            return NextResponse.json({
+                success: false,
+                error: 'Wallet not found'
+            }, { status: 400 });
         }
 
         const feeConfig = await getApplicableFees('transfer', amount, senderWallet.tier, "GLOBAL");
