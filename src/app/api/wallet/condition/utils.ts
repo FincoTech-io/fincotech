@@ -44,9 +44,14 @@ export const walletConditions = async (walletIdentifier: string, amount: number,
         const feeConfig = await getApplicableFees(transactionType, amount, wallet.tier, "GLOBAL");
 
         const feeAmount = calculateFeeAmount(feeConfig, amount);
-        const totalAmount = amount + feeAmount;
+        
+        // Ensure all values are properly converted to numbers for comparison
+        const numericBalance = Number(wallet.balance);
+        const numericAmount = Number(amount);
+        const numericFeeAmount = Number(feeAmount);
+        const totalAmount = numericAmount + numericFeeAmount;
 
-        if (wallet.balance < totalAmount) {
+        if (numericBalance < totalAmount) {
             return NextResponse.json(
                 { success: false, error: 'Insufficient balance to cover the transaction' },
                 { status: 400 }

@@ -121,6 +121,12 @@ export async function POST(request: NextRequest) {
 
                 const result = await processTransaction(userId, walletIdentifier, numericAmount, description);
                 
+                // Check if the result is already a NextResponse (an error)
+                if (result instanceof NextResponse) {
+                    return result;
+                }
+                
+                // If it's a success object, wrap it in a NextResponse
                 return NextResponse.json(
                     { success: true, message: 'Transfer completed successfully', result },
                     { status: 200 }
@@ -206,7 +212,15 @@ const processTransaction = async (userId: string, identifier: string, amount: nu
             }, { status: 400 });
         }
 
-        return await transfer(userId, receiverId, amount, description);
+        const result = await transfer(userId, receiverId, amount, description);
+        
+        // Check if the result is a NextResponse object (error case)
+        if (result instanceof NextResponse) {
+            return result;
+        }
+        
+        // Otherwise return the success result
+        return result;
     } catch (error) {
         console.error('Error transferring funds:', error);
         return NextResponse.json({
@@ -310,9 +324,15 @@ const transfer = async (userId: string, receiverId: string, amount: number, desc
         console.log(`Total amount (including fee): ${amount + feeAmount}`);
         console.log(`Sender balance: ${senderWallet.balance}`);
 
+        // Convert all values to numbers to ensure proper comparison
+        const numericSenderBalance = Number(senderWallet.balance);
+        const numericTransferAmount = Number(amount);
+        const numericFeeAmount = Number(feeAmount);
+        const totalRequired = numericTransferAmount + numericFeeAmount;
+
         // Check if sender has sufficient balance (already validated in wallet conditions earlier)
-        if (senderWallet.balance < (amount + feeAmount)) {
-            console.log(`Insufficient balance: required ${amount + feeAmount}, available ${senderWallet.balance}`);
+        if (numericSenderBalance < totalRequired) {
+            console.log(`Insufficient balance: required ${totalRequired}, available ${numericSenderBalance}`);
             await connection.abortTransaction();
             connection.endSession();
             return NextResponse.json({
@@ -333,21 +353,19 @@ const transfer = async (userId: string, receiverId: string, amount: number, desc
             date: timestamp,
         };
 
-        // Ensure all values are numeric before calculations
-        const numericSenderBalance = Number(senderWallet.balance);
-        const numericReceiverBalance = Number(receiverWallet.balance);
-        const totalDeduction = Number(amount) + Number(feeAmount);
-        
         // Update sender wallet - deduct transfer amount AND fee
-        senderWallet.balance = numericSenderBalance - totalDeduction;
+        senderWallet.balance = numericSenderBalance - totalRequired;
         senderWallet.monthlyTransactionCount += 1;
         senderWallet.transfersSent.push({
             ...transferRecord,
             to: receiverWallet.userId,
         });
 
+        // Get the receiver's current balance as a number
+        const numericReceiverBalance = Number(receiverWallet.balance);
+        
         // Update recipient wallet
-        receiverWallet.balance = numericReceiverBalance + Number(amount); // Recipient gets the full amount, fee is kept by platform
+        receiverWallet.balance = numericReceiverBalance + numericTransferAmount; // Recipient gets the full amount, fee is kept by platform
         receiverWallet.transfersReceived.push({
             ...transferRecord,
             from: senderWallet.userId,
