@@ -79,9 +79,9 @@ export async function POST(request: NextRequest) {
                 );
             }
 
-            const walletIdentifier = toUserId || toAddress;
+            const receiverWalletIdentifier = toUserId || toAddress;
 
-            if (!walletIdentifier || !amount || !description) {
+            if (!receiverWalletIdentifier || !amount || !description) {
                 return NextResponse.json(
                     {
                         success: false,
@@ -106,8 +106,9 @@ export async function POST(request: NextRequest) {
             }
 
             try {
-
-                const walletIsEligible = await walletConditions(walletIdentifier, numericAmount);
+                // We need to check the SENDER's wallet (userId) for sufficient funds
+                // NOT the receiver's wallet
+                const walletIsEligible = await walletConditions(userId, numericAmount);
                 
                 // Extract the response data from the NextResponse object
                 const walletResponse = await walletIsEligible.json();
@@ -119,7 +120,7 @@ export async function POST(request: NextRequest) {
                     );
                 }
 
-                const result = await processTransaction(userId, walletIdentifier, numericAmount, description);
+                const result = await processTransaction(userId, receiverWalletIdentifier, numericAmount, description);
                 
                 // Check if the result is already a NextResponse (an error)
                 if (result instanceof NextResponse) {
