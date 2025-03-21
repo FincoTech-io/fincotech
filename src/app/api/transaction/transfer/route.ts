@@ -330,9 +330,20 @@ const transfer = async (userId: string, receiverId: string, amount: number, desc
         const numericFeeAmount = Number(feeAmount);
         const totalRequired = numericTransferAmount + numericFeeAmount;
 
+        console.log(`🔍 DEBUG - Raw sender balance: ${senderWallet.balance} (${typeof senderWallet.balance})`);
+        console.log(`🔍 DEBUG - Converted sender balance: ${numericSenderBalance} (${typeof numericSenderBalance})`);
+        console.log(`🔍 DEBUG - Transfer amount: ${numericTransferAmount} (${typeof numericTransferAmount})`);
+        console.log(`🔍 DEBUG - Fee amount: ${numericFeeAmount} (${typeof numericFeeAmount})`);
+        console.log(`🔍 DEBUG - Total required: ${totalRequired} (${typeof totalRequired})`);
+        console.log(`🔍 DEBUG - Is balance sufficient: ${numericSenderBalance >= totalRequired}`);
+        console.log(`🔍 DEBUG - Balance difference: ${numericSenderBalance - totalRequired}`);
+
+        // Add a small buffer (0.01) to handle potential rounding issues
+        const ROUNDING_BUFFER = 0.01;
+        
         // Check if sender has sufficient balance (already validated in wallet conditions earlier)
-        if (numericSenderBalance < totalRequired) {
-            console.log(`Insufficient balance: required ${totalRequired}, available ${numericSenderBalance}`);
+        if (numericSenderBalance + ROUNDING_BUFFER < totalRequired) {
+            console.log(`🚫 ERROR - Insufficient balance: required ${totalRequired}, available ${numericSenderBalance}, difference ${totalRequired - numericSenderBalance}`);
             await connection.abortTransaction();
             connection.endSession();
             return NextResponse.json({

@@ -32,6 +32,10 @@ export const walletConditions = async (walletIdentifier: string, amount: number,
             );
         }
 
+        console.log(`🔍 DEBUG - Wallet found for user/address: ${walletIdentifier}`);
+        console.log(`🔍 DEBUG - Raw wallet balance: ${wallet.balance} (${typeof wallet.balance})`);
+        console.log(`🔍 DEBUG - User tier: ${wallet.tier}`);
+        console.log(`🔍 DEBUG - Monthly transaction count: ${wallet.monthlyTransactionCount}`);
         
         if (!wallet.isActive) {
             return NextResponse.json(
@@ -44,14 +48,26 @@ export const walletConditions = async (walletIdentifier: string, amount: number,
         const feeConfig = await getApplicableFees(transactionType, amount, wallet.tier, "GLOBAL");
 
         const feeAmount = calculateFeeAmount(feeConfig, amount);
+        console.log(`🔍 DEBUG - Requested transfer amount: ${amount} (${typeof amount})`);
+        console.log(`🔍 DEBUG - Calculated fee: ${feeAmount} (${typeof feeAmount})`);
         
         // Ensure all values are properly converted to numbers for comparison
         const numericBalance = Number(wallet.balance);
         const numericAmount = Number(amount);
         const numericFeeAmount = Number(feeAmount);
         const totalAmount = numericAmount + numericFeeAmount;
+        
+        console.log(`🔍 DEBUG - Converted balance: ${numericBalance} (${typeof numericBalance})`);
+        console.log(`🔍 DEBUG - Converted amount: ${numericAmount} (${typeof numericAmount})`);
+        console.log(`🔍 DEBUG - Converted fee: ${numericFeeAmount} (${typeof numericFeeAmount})`);
+        console.log(`🔍 DEBUG - Total amount needed: ${totalAmount} (${typeof totalAmount})`);
+        console.log(`🔍 DEBUG - Is balance sufficient: ${numericBalance >= totalAmount}`);
 
-        if (numericBalance < totalAmount) {
+        // Add a small buffer (0.01) to handle potential rounding issues
+        const ROUNDING_BUFFER = 0.01;
+        
+        if (numericBalance + ROUNDING_BUFFER < totalAmount) {
+            console.log(`🚫 ERROR - Insufficient balance: required ${totalAmount}, available ${numericBalance}, difference ${totalAmount - numericBalance}`);
             return NextResponse.json(
                 { success: false, error: 'Insufficient balance to cover the transaction' },
                 { status: 400 }
