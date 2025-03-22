@@ -65,7 +65,7 @@ export async function GET(request: NextRequest) {
       }
 
       // Process contacts to include populated user data
-      const formattedContacts = contacts.map(contact => {
+      const formattedContacts = contacts.map((contact, index) => {
         // Check if userId is populated and has the expected properties
         const contactUser = typeof contact.userId === 'object' && contact.userId !== null 
           ? contact.userId 
@@ -73,6 +73,7 @@ export async function GET(request: NextRequest) {
         
         return {
           contactId: contactUser._id,
+          index, // Include index position to help identify contacts with null IDs
           fullName: (contactUser as IUser).fullName || 'Unknown',
           phoneNumber: (contactUser as IUser).phoneNumber || 'Unknown',
           email: (contactUser as IUser).email || 'Unknown',
@@ -225,7 +226,7 @@ export async function POST(request: NextRequest) {
       }
 
       // Process contacts to include populated user data
-      const formattedContacts = updatedContacts.map(contact => {
+      const formattedContacts = updatedContacts.map((contact, index) => {
         // Check if userId is populated and has the expected properties
         const contactUser = typeof contact.userId === 'object' && contact.userId !== null 
           ? contact.userId 
@@ -233,11 +234,13 @@ export async function POST(request: NextRequest) {
         
         return {
           contactId: contactUser._id,
+          index, // Include index position to help identify contacts with null IDs
           fullName: (contactUser as IUser).fullName || 'Unknown',
           phoneNumber: (contactUser as IUser).phoneNumber || 'Unknown',
           email: (contactUser as IUser).email || 'Unknown',
           nickname: contact.nickname || '',
-          lastTransactionDate: contact.lastTransactionDate || null
+          lastTransactionDate: contact.lastTransactionDate || null,
+          profileImage: (contactUser as IUser).profileImage || null
         };
       });
 
@@ -321,19 +324,10 @@ export async function DELETE(request: NextRequest) {
       // Connect to database
       await connectToDatabase();
 
-      // Get contact ID from URL
+      // Get contact ID or index from URL
       const { searchParams } = new URL(request.url);
       const contactUserId = searchParams.get('contactId');
-
-      if (!contactUserId) {
-        return NextResponse.json(
-          { 
-            success: false,
-            error: 'Contact ID is required' 
-          },
-          { status: 400 }
-        );
-      }
+      const contactIndex = searchParams.get('index') ? parseInt(searchParams.get('index')!) : null;
 
       // Import Wallet model here to avoid circular dependencies
       const Wallet = (await import('@/models/Wallet')).default;
@@ -350,10 +344,24 @@ export async function DELETE(request: NextRequest) {
         );
       }
 
-      // Filter out the contact to be removed
-      wallet.contacts = wallet.contacts.filter(
-        contact => contact.userId.toString() !== contactUserId
-      );
+      // If we have a contactId, remove by ID; otherwise, if we have an index, remove by position
+      if (contactUserId) {
+        // Filter out the contact to be removed by ID
+        wallet.contacts = wallet.contacts.filter(
+          contact => contact.userId.toString() !== contactUserId
+        );
+      } else if (contactIndex !== null && !isNaN(contactIndex) && contactIndex >= 0 && contactIndex < wallet.contacts.length) {
+        // Remove contact by index position
+        wallet.contacts.splice(contactIndex, 1);
+      } else {
+        return NextResponse.json(
+          { 
+            success: false,
+            error: 'Either contact ID or valid index is required' 
+          },
+          { status: 400 }
+        );
+      }
 
       // Save changes
       await wallet.save();
