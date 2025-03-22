@@ -483,6 +483,24 @@ const transfer = async (userId: string, receiverId: string, amount: number, desc
 
         // TODO: Send Notification to the sender and recipient
         
+        // Send notifications using NotificationTriggers
+        const { NotificationTriggers } = await import('../../../../utils/notificationTriggers');
+        
+        // Send notification to sender
+        await NotificationTriggers.paymentSent(
+          sender,
+          amount,
+          receiverWallet.currency,
+          recipient.fullName
+        );
+        
+        // Send notification to recipient
+        await NotificationTriggers.paymentReceived(
+          recipient,
+          amount,
+          senderWallet.currency,
+          sender.fullName
+        );
 
         return {
             success: true,
@@ -492,7 +510,6 @@ const transfer = async (userId: string, receiverId: string, amount: number, desc
             feeAmount,
             feeType: feeConfig.feeType,
           };
-
 
     } catch (error) {
         console.error('Error processing transaction:', error);
