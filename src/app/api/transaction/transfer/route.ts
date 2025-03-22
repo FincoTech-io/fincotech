@@ -11,7 +11,6 @@ import { generateTransactionRef, createTransactionRecord } from '../../business/
 import { createRevenueRecord } from '../../business/revenue/utils';
 
 export async function POST(request: NextRequest) {
-
     try {
         // Get token from Authorization header (for mobile apps)
         const authHeader = request.headers.get('Authorization');
@@ -64,24 +63,10 @@ export async function POST(request: NextRequest) {
 
             const { toUserId, toAddress, amount, description } = await request.json();
 
-            const toUser = await User.findById(toUserId)
-                .select('-pin -security')  // Exclude sensitive fields
-                .lean()
-                .exec();
+            // Determine which identifier to use (either userId or wallet address)
+            const receiverIdentifier = toUserId || toAddress;
 
-            if (!toUser) {
-                return NextResponse.json(
-                    {
-                        success: false,
-                        error: 'Receiver not found'
-                    },
-                    { status: 404 }
-                );
-            }
-
-            const receiverWalletIdentifier = toUserId || toAddress;
-
-            if (!receiverWalletIdentifier || !amount || !description) {
+            if (!receiverIdentifier || !amount || !description) {
                 return NextResponse.json(
                     {
                         success: false,
@@ -99,67 +84,39 @@ export async function POST(request: NextRequest) {
                 return NextResponse.json(
                     {
                         success: false,
-                        message: 'Amount must be a positive number'
+                        message: 'Amount must be a positive number',
+                        error: 'Invalid amount'
                     },
                     { status: 400 }
                 );
             }
 
-            try {
-                // We need to check the SENDER's wallet (userId) for sufficient funds
-                // NOT the receiver's wallet
-                const walletIsEligible = await walletConditions(userId, numericAmount);
-                
-                // Extract the response data from the NextResponse object
-                const walletResponse = await walletIsEligible.json();
-                
-                if (!walletResponse.isValid) {
-                    return NextResponse.json(
-                        { success: false, error: walletResponse.error },
-                        { status: 400 }
-                    );
-                }
+            // Process the transaction using either address or ID
+            return await processTransaction(userId, receiverIdentifier, numericAmount, description);
 
-                const result = await processTransaction(userId, receiverWalletIdentifier, numericAmount, description);
-                
-                // Check if the result is already a NextResponse (an error)
-                if (result instanceof NextResponse) {
-                    return result;
-                }
-                
-                // If it's a success object, wrap it in a NextResponse
-                return NextResponse.json(
-                    { success: true, message: 'Transfer completed successfully', result },
-                    { status: 200 }
-                );
-
-            } catch (error) {
-                console.error('Error transferring funds:', error);
-                return NextResponse.json({
-                    success: false,
-                    error: 'Failed to transfer funds'
-                }, { status: 500 });
-            }
-
-
-        } catch (error) {
+        } catch (error: any) {
             console.error('Error transferring funds:', error);
-            return NextResponse.json({
-                success: false,
-                error: 'Failed to transfer funds'
-            }, { status: 500 });
+            return NextResponse.json(
+                {
+                    success: false,
+                    error: error.message || 'Failed to process transaction'
+                },
+                { status: 500 }
+            );
         }
-    } catch (error) {
+    } catch (error: any) {
         console.error('Error transferring funds:', error);
-        return NextResponse.json({
-            success: false,
-            error: 'Failed to transfer funds'
-        }, { status: 500 });
+        return NextResponse.json(
+            {
+                success: false,
+                error: error.message || 'Failed to process transaction'
+            },
+            { status: 500 }
+        );
     }
 }
 
 const processTransaction = async (userId: string, identifier: string, amount: number, description: string) => {
-
     try {
         // Ensure amount is a number
         amount = Number(amount);
@@ -170,9 +127,23 @@ const processTransaction = async (userId: string, identifier: string, amount: nu
             }, { status: 400 });
         }
         
+        // We need to check the SENDER's wallet (userId) for sufficient funds
+        const walletIsEligible = await walletConditions(userId, amount);
+        
+        // Extract the response data from the NextResponse object
+        const walletResponse = await walletIsEligible.json();
+        
+        if (!walletResponse.isValid) {
+            return NextResponse.json(
+                { success: false, error: walletResponse.error },
+                { status: 400 }
+            );
+        }
+        
         let receiverId;
-
-        if (identifier.length > 24) {
+        
+        // Check if this is a wallet address (bcrypt hash starts with $2b$)
+        if (identifier.startsWith('$2b$') || identifier.length > 24) {
             // Looking up by wallet address
             const receiverWallet = await Wallet.findOne({ address: identifier });
             if (!receiverWallet) {
@@ -183,25 +154,37 @@ const processTransaction = async (userId: string, identifier: string, amount: nu
             }
             receiverId = receiverWallet.userId.toString();
         } else {
-            // When identifier is a user ID, verify that the user exists
-            receiverId = identifier;
-            
-            // Verify the recipient user exists
-            const recipientUser = await User.findById(receiverId);
-            if (!recipientUser) {
-                return NextResponse.json({
-                    success: false,
-                    error: 'Recipient user not found'
-                }, { status: 404 });
-            }
-            
-            // Check if recipient has a wallet
-            const recipientWallet = await Wallet.findOne({ userId: receiverId });
-            if (!recipientWallet) {
-                return NextResponse.json({
-                    success: false,
-                    error: 'Recipient does not have a wallet'
-                }, { status: 404 });
+            try {
+                // Try to use as a MongoDB ObjectId
+                receiverId = identifier;
+                
+                // Verify the recipient user exists
+                const recipientUser = await User.findById(receiverId);
+                if (!recipientUser) {
+                    return NextResponse.json({
+                        success: false,
+                        error: 'Recipient user not found'
+                    }, { status: 404 });
+                }
+                
+                // Check if recipient has a wallet
+                const recipientWallet = await Wallet.findOne({ userId: receiverId });
+                if (!recipientWallet) {
+                    return NextResponse.json({
+                        success: false,
+                        error: 'Recipient does not have a wallet'
+                    }, { status: 404 });
+                }
+            } catch (error) {
+                // If there's an error with ObjectId casting, try as wallet address again
+                const receiverWallet = await Wallet.findOne({ address: identifier });
+                if (!receiverWallet) {
+                    return NextResponse.json({
+                        success: false,
+                        error: 'Invalid identifier: not a valid user ID or wallet address'
+                    }, { status: 400 });
+                }
+                receiverId = receiverWallet.userId.toString();
             }
         }
 
@@ -221,7 +204,10 @@ const processTransaction = async (userId: string, identifier: string, amount: nu
         }
         
         // Otherwise return the success result
-        return result;
+        return NextResponse.json(
+            { success: true, message: 'Transfer completed successfully', result },
+            { status: 200 }
+        );
     } catch (error) {
         console.error('Error transferring funds:', error);
         return NextResponse.json({
