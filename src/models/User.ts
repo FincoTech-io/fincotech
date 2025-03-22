@@ -29,6 +29,7 @@ export interface IUser extends Document {
   isActive: boolean;
   pushToken?: string;
   currentRegion?: string;
+  hasUnreadNotifications: boolean;
   notificationPreferences: {
     paymentReceived: {
       sms: boolean;
@@ -36,6 +37,21 @@ export interface IUser extends Document {
       email: boolean;
     };
     paymentSent: {
+      sms: boolean;
+      push: boolean;
+      email: boolean;
+    };
+    systemUpdates: {
+      sms: boolean;
+      push: boolean;
+      email: boolean;
+    };
+    security: {
+      sms: boolean;
+      push: boolean;
+      email: boolean;
+    };
+    promotions: {
       sms: boolean;
       push: boolean;
       email: boolean;
@@ -152,6 +168,10 @@ const UserSchema = new Schema<IUser>(
       trim: true,
       default: null,
     },
+    hasUnreadNotifications: {
+      type: Boolean,
+      default: false,
+    },
     notificationPreferences: {
       paymentReceived: {
         sms: {
@@ -171,6 +191,48 @@ const UserSchema = new Schema<IUser>(
         sms: {
           type: Boolean,
           default: true,
+        },
+        push: {
+          type: Boolean,
+          default: false,
+        },
+        email: {
+          type: Boolean,
+          default: false,
+        },
+      },
+      systemUpdates: {
+        sms: {
+          type: Boolean,
+          default: false,
+        },
+        push: {
+          type: Boolean,
+          default: true,
+        },
+        email: {
+          type: Boolean,
+          default: true,
+        },
+      },
+      security: {
+        sms: {
+          type: Boolean,
+          default: true,
+        },
+        push: {
+          type: Boolean,
+          default: true,
+        },
+        email: {
+          type: Boolean,
+          default: true,
+        },
+      },
+      promotions: {
+        sms: {
+          type: Boolean,
+          default: false,
         },
         push: {
           type: Boolean,
