@@ -187,7 +187,11 @@ export async function PATCH(request: NextRequest) {
         'profileImage',
         'currentRegion',
         'pushToken',
-        'notificationPreferences'
+        'notificationPreferences',
+        'nationality',
+        'idType',
+        'idNumber',
+        'currentRegion',
       ];
 
       // Filter out fields that are not allowed to be updated
