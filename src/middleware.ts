@@ -12,6 +12,10 @@ const publicRoutes = [
   '/api/authentication/sign-in',
   '/api/user/exists',
   '/api/user/register',
+  '/api/images/wallpaper/region/:region',
+  '/api/notification',
+
+  
   
 ];
 
