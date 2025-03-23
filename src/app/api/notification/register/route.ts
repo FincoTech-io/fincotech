@@ -16,9 +16,10 @@ export async function POST(req: NextRequest) {
     await connectToDatabase();
 
     
-    // Extract userId from request body
+    // Extract userId and pushToken from request body
     const requestBody = await req.json();
-    const { userId } = requestBody;
+    const { userId } = requestBody.userId;
+    const { pushToken } = requestBody.pushToken;
 
     // Connect to database
     await connectToDatabase();
@@ -40,21 +41,11 @@ export async function POST(req: NextRequest) {
     );
     }
 
-
-    if (!user) {
-      return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
-    }
-
-    // Parse request body
-
-    const body = await req.json();
-    const { pushToken } = body;
-
     // Validate input
     if (!pushToken) {
       return NextResponse.json({ success: false, message: 'Push token is required' }, { status: 400 });
     }
-
+    
     // Register device for push notifications
     const success = await NotificationService.registerUserDevice(pushToken, user.id);
 
