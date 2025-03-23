@@ -33,6 +33,34 @@ export interface NotificationPayload {
 }
 
 export class NotificationService {
+
+  /** 
+   * Register a device for push notifications
+   */
+  static async registerUserDevice(pushToken: string, userId: string): Promise<boolean> {
+    try {
+
+      const user = await User.findById(userId);
+      if (!user) {
+        console.error('User not found');
+        return false;
+      }
+
+      // Check if pushToken is the same as the one already registered
+      if (user.pushToken === pushToken) {
+        console.log('🔍 Device already registered');
+        return true;
+      }
+
+      // Register the device
+      await User.findByIdAndUpdate(userId, { pushToken });
+      return true;
+    } catch (error) {
+      console.error('Error registering device:', error);
+      return false;
+    }
+  }
+
   /**
    * Create a new notification for a user
    */
