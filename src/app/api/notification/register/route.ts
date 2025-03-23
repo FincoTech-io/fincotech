@@ -20,7 +20,6 @@ export async function POST(req: NextRequest) {
     const requestBody = await req.json();
     const { userId } = requestBody;
 
-    console.log('🔍 requestBody:', requestBody);
     // Connect to database
     await connectToDatabase();
 
