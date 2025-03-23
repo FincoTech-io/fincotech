@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { NotificationService } from '../../../../utils/notificationService';
-import { getUserFromSession } from '../../../../utils/serverAuth';
+import { getAccessToken, verifyAccessToken } from '../../../../utils/serverAuth';
 import { connectToDatabase } from '@/utils/db';
 
 /**
@@ -14,7 +14,11 @@ export async function POST(req: NextRequest) {
     await connectToDatabase();
 
     // Get user from request headers
-    const user = await getUserFromSession(req);
+    const token = getAccessToken(req);
+    console.log('🔍 Token:', token);
+
+    // Verify token
+    const user = await verifyAccessToken(token as string);
     console.log('🔍 User:', user);
 
 
