@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { NotificationService } from '../../../../utils/notificationService';
 import { getUserFromSession } from '../../../../utils/serverAuth';
-import { connectDB } from '../../../../utils/database';
+import { connectToDatabase } from '@/utils/db';
 
 /**
  * POST /api/notification/register
@@ -10,10 +10,14 @@ import { connectDB } from '../../../../utils/database';
 
 export async function POST(req: NextRequest) {
   try {
-    await connectDB();
+    // Connect to database
+    await connectToDatabase();
 
-    // Verify the request is from an authenticated user with appropriate permissions
+    // Get user from request headers
     const user = await getUserFromSession(req);
+    console.log('🔍 User:', user);
+
+
     if (!user) {
       return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
     }
