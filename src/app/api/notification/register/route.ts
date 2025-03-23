@@ -15,38 +15,12 @@ export async function POST(req: NextRequest) {
     // Connect to database
     await connectToDatabase();
 
-    // Get token from Authorization header (for mobile apps)
-    const authHeader =  req.headers.get('Authorization');
-    let token = authHeader && authHeader.startsWith('Bearer ') 
-      ? authHeader.substring(7) 
-      : null;
     
-    // Fallback to cookies (for web apps)
-    if (!token) {
-      token = req.cookies.get('auth_token')?.value || null;
-    }
+    // Extract userId from request body
+    const requestBody = await req.json();
+    const { userId } = requestBody;
 
-    // If no token, return unauthorized
-    if (!token) {
-      return NextResponse.json(
-        { 
-          success: false,
-          error: 'No authentication token provided' 
-        },
-        { status: 401 }
-      );
-    }
-
-    // Verify the token
-    const secretKey = new TextEncoder().encode(
-        process.env.JWT_SECRET as string
-    );
-    
-    const { payload } = await jwtVerify(token, secretKey);
-    
-    // Extract userId from token payload
-    const userId = payload.userId as string;
-
+    console.log('🔍 requestBody:', requestBody);
     // Connect to database
     await connectToDatabase();
 
