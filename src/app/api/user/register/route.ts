@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
 
     // Parse the request body
     const userData = await request.json();
-    const { phoneNumber, fullName, email, pin, security, nationality, idType, idNumber } = userData;
+    const { phoneNumber, fullName, email, pin, security, nationality, idType, idNumber, pushToken } = userData;
 
     // Validate required fields
     if (!phoneNumber) {
@@ -164,6 +164,7 @@ export async function POST(request: NextRequest) {
       fullName,
       email,
       pin: hashedPin, // Store the hashed PIN
+      pushToken: pushToken || undefined,
       role: 'customer',
       security: {
         question: security.question,
