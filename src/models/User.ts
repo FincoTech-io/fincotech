@@ -1,5 +1,5 @@
 import mongoose, { Document, Schema } from 'mongoose';
-
+import { INotification } from './Notification';
 // Interface for User document
 export interface IUser extends Document {
   _id: string;
@@ -30,6 +30,7 @@ export interface IUser extends Document {
   pushToken?: string;
   currentRegion?: string;
   hasUnreadNotifications: boolean;
+  notifications?: INotification[];
   notificationPreferences: {
     paymentReceived: {
       sms: boolean;
@@ -171,6 +172,10 @@ const UserSchema = new Schema<IUser>(
     hasUnreadNotifications: {
       type: Boolean,
       default: false,
+    },
+    notifications: {
+      type: [Schema.Types.ObjectId],
+      ref: 'Notification',
     },
     notificationPreferences: {
       paymentReceived: {
