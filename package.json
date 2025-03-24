@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "next lint",
     "clean": "rimraf .next",
-    "vercel-build": "npm install --include=dev --legacy-peer-deps && npm run clean && npm run build"
+    "vercel-build": "npm install --include=dev --legacy-peer-deps && npm run clean && npm run build",
+    "setup:fees": "npx ts-node --project scripts/tsconfig.script.json scripts/setup-fees.ts"
   },
   "dependencies": {
     "@types/express": "^5.0.1",
@@ -48,6 +49,7 @@
     "@types/jsonwebtoken": "^9.0.9",
     "autoprefixer": "^10.4.16",
     "postcss": "^8.4.31",
-    "tailwindcss": "^3.3.0"
+    "tailwindcss": "^3.3.0",
+    "ts-node": "^10.9.2"
   }
 }
