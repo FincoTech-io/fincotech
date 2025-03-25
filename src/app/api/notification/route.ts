@@ -17,16 +17,9 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
     }
 
-    // Get query parameters for pagination
-    const searchParams = req.nextUrl.searchParams;
-    const limit = parseInt(searchParams.get('limit') || '20');
-    const offset = parseInt(searchParams.get('offset') || '0');
-    const includeRead = searchParams.get('includeRead') === 'true';
-
     // Get notifications
     const { notifications, totalCount, unreadCount } = await NotificationService.getUserNotifications(
-      user._id.toString(),
-      { limit, offset, includeRead }
+      user._id.toString()
     );
 
     return NextResponse.json({
@@ -134,7 +127,7 @@ export async function DELETE(req: NextRequest) {
     await NotificationService.deleteNotifications(user._id.toString(), notificationIds);
     
     // Get updated unread count
-    const { unreadCount } = await NotificationService.getUserNotifications(user._id.toString(), { limit: 1 });
+    const { unreadCount } = await NotificationService.getUserNotifications(user._id.toString());
     
     return NextResponse.json({
       success: true,
