@@ -27,7 +27,7 @@ const expo = new Expo();
 export interface NotificationPayload {
   title: string;
   message: string;
-  type: 'PAYMENT' | 'SYSTEM' | 'PROMOTIONAL' | 'SECURITY';
+  type: 'UPDATE' | 'SYSTEM' | 'PROMOTIONAL' | 'SECURITY';
   recipientId: string;
   metadata?: Record<string, any>;
 }
@@ -336,7 +336,7 @@ export class NotificationService {
       let preferenceCategory: keyof typeof user.notificationPreferences;
       
       switch(notification.type) {
-        case 'PAYMENT':
+        case 'UPDATE':
           // Determine if it's a payment received or sent based on metadata
           if (notification.metadata?.direction === 'received') {
             preferenceCategory = 'paymentReceived';

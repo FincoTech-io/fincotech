@@ -11,6 +11,7 @@ import { connectToDatabase } from '@/utils/db';
  */
 export async function GET(request: NextRequest) {
   try {
+    // TODO: THIS AUTH is the one that works
     // Get token from Authorization header (for mobile apps)
     const authHeader = request.headers.get('Authorization');
     let token = authHeader && authHeader.startsWith('Bearer ')
@@ -97,7 +98,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Validate notification type
-    const validTypes = ['PAYMENT', 'SYSTEM', 'PROMOTIONAL', 'SECURITY'];
+    const validTypes = ['UPDATE', 'SYSTEM', 'PROMOTIONAL', 'SECURITY'];
     if (!validTypes.includes(type)) {
       return NextResponse.json(
         { success: false, message: `Type must be one of: ${validTypes.join(', ')}` },

@@ -18,7 +18,7 @@ export const NotificationTriggers = {
     const notification: NotificationPayload = {
       title: 'Payment Sent',
       message: `Your payment of ${amount} ${currency} to ${recipientName} was successful.`,
-      type: 'PAYMENT',
+      type: 'UPDATE',
       recipientId: user._id.toString(),
       metadata: {
         direction: 'sent',
@@ -43,7 +43,7 @@ export const NotificationTriggers = {
     const notification: NotificationPayload = {
       title: 'Payment Received',
       message: `You received ${amount} ${currency} from ${senderName}.`,
-      type: 'PAYMENT',
+      type: 'UPDATE',
       recipientId: user._id.toString(),
       metadata: {
         direction: 'received',
@@ -176,7 +176,7 @@ export const NotificationTriggers = {
     user: IUser,
     title: string,
     message: string,
-    type: 'PAYMENT' | 'SYSTEM' | 'PROMOTIONAL' | 'SECURITY',
+    type: 'UPDATE' | 'SYSTEM' | 'PROMOTIONAL' | 'SECURITY',
     metadata?: Record<string, any>
   ) => {
     const notification: NotificationPayload = {

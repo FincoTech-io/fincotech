@@ -27,7 +27,7 @@ import { NotificationService } from './notificationService';
  *   'New Payment',
  *   'You received $50.00 from John Doe',
  *   {
- *     type: 'PAYMENT',
+ *     type: 'UPDATE',
  *     transactionId: '123456789',
  *     amount: 50.00,
  *     sender: 'John Doe'
