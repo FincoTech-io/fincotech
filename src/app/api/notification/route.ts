@@ -75,9 +75,9 @@ export async function POST(req: NextRequest) {
     const { notificationId, deleteAll } = body;
 
     if (deleteAll) {
-      await NotificationService.deleteAllNotifications(user._id.toString());
+      await NotificationService.deleteAllNotifications(user);
     } else if (notificationId) {
-      await NotificationService.deleteNotification(user._id.toString(), notificationId);
+      await NotificationService.deleteNotification(user, notificationId);
     }
 
     return NextResponse.json({
@@ -102,7 +102,7 @@ export async function DELETE(req: NextRequest) {
 
     // Get user from session
     const user = await getUserFromSession(req);
-    console.log(user);
+
     if (!user) {
       return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
     }
@@ -113,10 +113,10 @@ export async function DELETE(req: NextRequest) {
     
     // If deleteAll is true, delete all notifications
     if (deleteAll) {
-      await NotificationService.deleteAllNotifications(user._id.toString());
+      await NotificationService.deleteAllNotifications(user);
     } else if (notificationId) {
       // Delete a specific notification
-      await NotificationService.deleteNotification(user._id.toString(), notificationId);
+      await NotificationService.deleteNotification(user, notificationId);
     } else {
       return NextResponse.json(
         { success: false, message: 'Either notificationId or deleteAll is required' },

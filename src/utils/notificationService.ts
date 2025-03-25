@@ -191,13 +191,8 @@ export class NotificationService {
   /**
    * Delete a notification
    */
-  static async deleteNotification(userId: string, notificationId: string): Promise<boolean> {
+  static async deleteNotification(user: IUser, notificationId: string): Promise<boolean> {
     try {
-      const user = await User.findById(userId);
-      if (!user) {
-        throw new Error('User not found');
-      }
-
       // Find notification index
       const notificationIndex = user.notifications.findIndex(
         n => n._id?.toString() === notificationId
@@ -224,13 +219,8 @@ export class NotificationService {
   /**
    * Delete all notifications for a user
    */
-  static async deleteAllNotifications(userId: string) {
+  static async deleteAllNotifications(user: IUser) {
     try {
-      const user = await User.findById(userId);
-      if (!user) {
-        throw new Error('User not found');
-      }
-      
       // Clear the notifications array
       user.notifications = [];
       
