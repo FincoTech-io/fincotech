@@ -69,16 +69,18 @@ export class NotificationService {
       // Create notification in database
       const notification = await Notification.create({
         ...notificationData,
-        recipientId: new mongoose.Types.ObjectId(notificationData.recipientId),
         creationTime: new Date(),
         isRead: false,
+        pinned: false,
       });
 
       // Update user to indicate they have unread notifications
-      await User.findByIdAndUpdate(
-        notificationData.recipientId,
-        { hasUnreadNotifications: true }
-      );
+      const user = await User.findById(notificationData.recipientId);
+      if (user) {
+        user.hasUnreadNotifications = true;
+        user.notifications?.push(notification);
+        await user.save();
+      }
 
       return notification;
     } catch (error) {
@@ -90,29 +92,23 @@ export class NotificationService {
   /**
    * Get all notifications for a user
    */
-  static async getUserNotifications(userId: string, { limit = 20, offset = 0, includeRead = false } = {}): Promise<{
+  static async getUserNotifications(userId: string): Promise<{
     notifications: INotification[];
     totalCount: number;
     unreadCount: number;
   }> {
     try {
-      const query: any = { recipientId: new mongoose.Types.ObjectId(userId) };
-      
-      if (!includeRead) {
-        query.isRead = false;
+      const user = await User.findById(userId);
+      if (!user) {
+        throw new Error('User not found');
       }
+      
+      const notifications = user.notifications || [];
+      const totalCount = notifications.length;
+      const unreadCount = notifications.filter(n => !n.isRead).length;
 
-      // Get total notification count and unread count
-      const [totalCount, unreadCount] = await Promise.all([
-        Notification.countDocuments({ recipientId: new mongoose.Types.ObjectId(userId) }),
-        Notification.countDocuments({ recipientId: new mongoose.Types.ObjectId(userId), isRead: false }),
-      ]);
-
-      // Get notifications with pagination
-      const notifications = await Notification.find(query)
-        .sort({ creationTime: -1 })
-        .skip(offset)
-        .limit(limit);
+      // sort notifications by creationTime
+      notifications.sort((a, b) => b.creationTime.getTime() - a.creationTime.getTime());
 
       return { notifications, totalCount, unreadCount };
     } catch (error) {
