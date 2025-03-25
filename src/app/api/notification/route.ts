@@ -102,7 +102,6 @@ export async function DELETE(req: NextRequest) {
 
     // Get user from session
     const user = await getUserFromSession(req);
-
     if (!user) {
       return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
     }
@@ -110,6 +109,8 @@ export async function DELETE(req: NextRequest) {
     // Get request body
     const body = await req.json();
     const { notificationId, deleteAll } = body;
+
+    let result: boolean | number;
     
     // If deleteAll is true, delete all notifications
     if (deleteAll) {
@@ -119,7 +120,7 @@ export async function DELETE(req: NextRequest) {
       await NotificationService.deleteNotification(user, notificationId);
     } else {
       return NextResponse.json(
-        { success: false, message: 'Either notificationId or deleteAll is required' },
+        { success: false, message: 'Either notificatio._id.toString()nId or deleteAll is required' },
         { status: 400 }
       );
     }
