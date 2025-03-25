@@ -299,15 +299,6 @@ const UserSchema = new Schema<IUser>(
   }
 );
 
-// Add any custom methods or middleware here
-// For example, password hashing before save:
-// UserSchema.pre('save', async function(next) {
-//   if (this.isModified('password')) {
-//     this.password = await bcrypt.hash(this.password, 10);
-//   }
-//   next();
-// });
-
 // Create or retrieve the User model
 export const User = mongoose.models.User as mongoose.Model<IUser> || 
   mongoose.model<IUser>('User', UserSchema);

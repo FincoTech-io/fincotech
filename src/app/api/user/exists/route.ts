@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { connectToDatabase, userExistsByPhone } from '@/utils/db';
+import { connectToDatabase } from '@/utils/db';
+import User from '@/models/User';
 
 export async function POST(request: NextRequest) {
   try {
@@ -17,11 +18,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check if the user exists
-    const exists = await userExistsByPhone(phoneNumber);
+    // Use the imported User model 
+    const user = await User.findOne({ phoneNumber }).exec();
 
     // Return the result
-    return NextResponse.json({ exists });
+    return NextResponse.json({ exists: !!user });
   } catch (error) {
     console.error('Error checking user existence:', error);
     return NextResponse.json(

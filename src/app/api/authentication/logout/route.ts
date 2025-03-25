@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { blacklistToken } from '@/utils/authServerHelper';
 import jwt from 'jsonwebtoken';
 import redisService from '@/utils/redis';
-
+import { getAccessToken } from '@/utils/serverAuth';
 const REFRESH_TOKEN_PREFIX = 'refresh_token:';
 
 export async function POST(request: NextRequest) {
@@ -11,11 +11,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const refreshToken = body.refreshToken;
     
-    // Get access token from Authorization header
-    const authHeader = request.headers.get('Authorization');
-    const accessToken = authHeader && authHeader.startsWith('Bearer ') 
-      ? authHeader.substring(7) 
-      : null;
+    const accessToken = getAccessToken(request);
     
     // If we have a refresh token, delete it from Redis
     if (refreshToken) {

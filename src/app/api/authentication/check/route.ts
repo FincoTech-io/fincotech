@@ -1,19 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { jwtVerify } from 'jose';
 import { User } from '@/models/User';
+import { getAccessToken } from '@/utils/serverAuth';
 
 export async function GET(request: NextRequest) {
-  // Get token from Authorization header (for mobile apps)
-  const authHeader = request.headers.get('Authorization');
-  let token = authHeader && authHeader.startsWith('Bearer ') 
-    ? authHeader.substring(7) 
-    : null;
+  const token = getAccessToken(request);
   
-  // Fallback to cookies (for web apps)
-  if (!token) {
-    token = request.cookies.get('auth_token')?.value || null;
-  }
-
   if (!token) {
     return NextResponse.json({ 
       authenticated: false,

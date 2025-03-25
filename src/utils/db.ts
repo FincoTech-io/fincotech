@@ -58,19 +58,3 @@ export async function connectToDatabase() {
     throw error;
   }
 }
-
-// Helper function to check if a user with a specific phone number exists
-export async function userExistsByPhone(phoneNumber: string): Promise<boolean> {
-  try {
-    await connectToDatabase();
-    
-    // Use the imported User model 
-    const user = await User.findOne({ phoneNumber }).exec();
-    
-    // Return true if user exists, false otherwise
-    return !!user;
-  } catch (error) {
-    console.error('Error checking user by phone:', error);
-    throw error;
-  }
-}

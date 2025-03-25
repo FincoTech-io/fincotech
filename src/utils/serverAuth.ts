@@ -26,14 +26,14 @@ export enum AuthError {
  */
 export const getAccessToken = (req: NextRequest): string | null => {
   // Check authorization header first
-  const authHeader = req.headers.get('authorization');
+  const authHeader = req.headers.get('Authorization');
   if (authHeader && authHeader.startsWith('Bearer ')) {
     return authHeader.substring(7); // Remove 'Bearer ' prefix
   }
 
   // If no auth header, try cookies
   const cookies = req.cookies;
-  return cookies.get('accessToken')?.value || null;
+  return cookies.get('auth_token')?.value || null;
 };
 
 /**
