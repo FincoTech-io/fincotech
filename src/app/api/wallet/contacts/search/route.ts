@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectToDatabase } from '@/utils/db';
 import User from '@/models/User';
-import { jwtVerify } from 'jose';
 import Wallet from '@/models/Wallet';
-import { getAccessToken } from '@/utils/serverAuth';
+import { getAccessToken, verifyAccessToken } from '@/utils/serverAuth';
 
 /**
  * GET /api/wallet/search?query=searchterm
@@ -28,14 +27,10 @@ export async function GET(request: NextRequest) {
 
     try {
       // Verify the token
-      const secretKey = new TextEncoder().encode(
-        process.env.JWT_SECRET as string
-      );
-      
-      const { payload } = await jwtVerify(token, secretKey);
+      const payload = await verifyAccessToken(token) ;
       
       // Extract userId from token payload
-      const currentUserId = payload.userId as string;
+      const currentUserId = payload?.userId as string;
 
       // Get search query from URL
       const { searchParams } = new URL(request.url);

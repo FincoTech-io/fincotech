@@ -4,7 +4,7 @@ import User from '@/models/User';
 import Wallet from '@/models/Wallet';
 import { jwtVerify } from 'jose';
 import { IUser } from '@/models/User';
-import { getAccessToken } from '@/utils/serverAuth';
+import { getAccessToken, verifyAccessToken } from '@/utils/serverAuth';
 
 /**
  * GET /api/user/profile
@@ -29,14 +29,10 @@ export async function GET(request: NextRequest) {
 
     try {
       // Verify the token
-      const secretKey = new TextEncoder().encode(
-        process.env.JWT_SECRET as string
-      );
-      
-      const { payload } = await jwtVerify(token, secretKey);
+      const payload = await verifyAccessToken(token) ;
       
       // Extract userId from token payload
-      const userId = payload.userId as string;
+      const userId = payload?.userId as string;
 
       // Connect to database
       await connectToDatabase();
@@ -144,14 +140,10 @@ export async function PATCH(request: NextRequest) {
 
     try {
       // Verify the token
-      const secretKey = new TextEncoder().encode(
-        process.env.JWT_SECRET as string
-      );
-      
-      const { payload } = await jwtVerify(token, secretKey);
+      const payload = await verifyAccessToken(token) ;
       
       // Extract userId from token payload
-      const userId = payload.userId as string;
+      const userId = payload?.userId as string;
 
       // Connect to database
       await connectToDatabase();

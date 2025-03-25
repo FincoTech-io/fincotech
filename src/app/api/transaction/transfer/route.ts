@@ -9,7 +9,7 @@ import mongoose from 'mongoose';
 import { calculateFeeAmount, getApplicableFees } from '../../business/fees/utils';
 import { generateTransactionRef, createTransactionRecord } from '../../business/records/utils';
 import { createRevenueRecord } from '../../business/revenue/utils';
-import { getAccessToken } from '@/utils/serverAuth';
+import { getAccessToken, verifyAccessToken  } from '@/utils/serverAuth';
 
 export async function POST(request: NextRequest) {
     try {
@@ -25,14 +25,10 @@ export async function POST(request: NextRequest) {
         }
         try {
             // Verify the token
-            const secretKey = new TextEncoder().encode(
-                process.env.JWT_SECRET as string
-            );
-
-            const { payload } = await jwtVerify(token, secretKey);
+            const payload = await verifyAccessToken(token);
 
             // Extract userId from token payload
-            const userId = payload.userId as string;
+            const userId = payload?.userId as string;
 
             // Connect to database
             await connectToDatabase();

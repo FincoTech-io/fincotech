@@ -1,28 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { jwtVerify } from 'jose';
 import { User } from '@/models/User';
-import { getAccessToken } from '@/utils/serverAuth';
+import { getAccessToken, verifyAccessToken } from '@/utils/serverAuth';
 
 export async function GET(request: NextRequest) {
+  // Get token
   const token = getAccessToken(request);
-  
+
+  // If no token, return unauthorized
   if (!token) {
     return NextResponse.json({ 
       authenticated: false,
       message: 'No authentication token provided'
     }, { status: 401 });
-  }
+  } 
 
   try {
     // Verify the token
-    const secretKey = new TextEncoder().encode(
-      process.env.JWT_SECRET as string
-    );
-    
-    const { payload } = await jwtVerify(token, secretKey);
+    const payload = await verifyAccessToken(token) ;
     
     // Get user data from database (optional - only if you need fresh data)
-    const user = await User.findById(payload.userId);
+    const user = await User.findById(payload?.userId as string);
     
     if (!user) {
       return NextResponse.json({ 

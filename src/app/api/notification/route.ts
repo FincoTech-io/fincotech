@@ -3,7 +3,7 @@ import { connectToDatabase } from '@/utils/db';
 import { NotificationService } from '../../../utils/notificationService';
 import { getUserFromSession } from '../../../utils/serverAuth';
 import { jwtVerify } from 'jose';
-import { getAccessToken } from '@/utils/serverAuth';
+import { getAccessToken, verifyAccessToken } from '@/utils/serverAuth';
 
 /**
  * GET /api/notification
@@ -23,14 +23,10 @@ export async function GET(request: NextRequest) {
     }
 
     // Verify the token
-    const secretKey = new TextEncoder().encode(
-      process.env.JWT_SECRET as string
-    );
-
-    const { payload } = await jwtVerify(token, secretKey);
+    const payload = await verifyAccessToken(token);
 
     // Extract userId from token payload
-    const userId = payload.userId as string;
+    const userId = payload?.userId as string;
 
     // Connect to database
     await connectToDatabase();

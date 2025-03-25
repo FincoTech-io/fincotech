@@ -3,7 +3,7 @@ import { connectToDatabase } from '@/utils/db';
 import { getContacts } from '@/utils/walletUtils';
 import { jwtVerify } from 'jose';
 import { IUser } from '@/models/User';
-import { getAccessToken } from '@/utils/serverAuth';
+import { getAccessToken, verifyAccessToken } from '@/utils/serverAuth';
 
 /**
  * GET /api/wallet/contacts
@@ -28,14 +28,9 @@ export async function GET(request: NextRequest) {
 
     try {
       // Verify the token
-      const secretKey = new TextEncoder().encode(
-        process.env.JWT_SECRET as string
-      );
-      
-      const { payload } = await jwtVerify(token, secretKey);
-      
+      const payload = await verifyAccessToken(token);
       // Extract userId from token payload
-      const userId = payload.userId as string;
+      const userId = payload?.userId as string;
 
       // Connect to database
       await connectToDatabase();
@@ -130,14 +125,11 @@ export async function POST(request: NextRequest) {
 
     try {
       // Verify the token
-      const secretKey = new TextEncoder().encode(
-        process.env.JWT_SECRET as string
-      );
-      
-      const { payload } = await jwtVerify(token, secretKey);
+
+      const payload = await verifyAccessToken(token) ;
       
       // Extract userId from token payload
-      const userId = payload.userId as string;
+      const userId = payload?.userId as string;
 
       // Connect to database
       await connectToDatabase();
@@ -280,14 +272,10 @@ export async function DELETE(request: NextRequest) {
 
     try {
       // Verify the token
-      const secretKey = new TextEncoder().encode(
-        process.env.JWT_SECRET as string
-      );
-      
-      const { payload } = await jwtVerify(token, secretKey);
+      const payload = await verifyAccessToken(token) ;
       
       // Extract userId from token payload
-      const userId = payload.userId as string;
+      const userId = payload?.userId as string;
 
       // Connect to database
       await connectToDatabase();
