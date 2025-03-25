@@ -224,15 +224,12 @@ export class NotificationService {
   /**
    * Delete all notifications for a user
    */
-  static async deleteAllNotifications(userId: string): Promise<number> {
+  static async deleteAllNotifications(userId: string) {
     try {
       const user = await User.findById(userId);
       if (!user) {
         throw new Error('User not found');
       }
-
-      // Count notifications before deletion
-      const count = user.notifications.length;
       
       // Clear the notifications array
       user.notifications = [];
@@ -241,11 +238,9 @@ export class NotificationService {
       user.hasUnreadNotifications = false;
       
       await user.save();
-      
-      return count;
+
     } catch (error) {
       console.error('Error deleting all notifications:', error);
-      return 0;
     }
   }
 

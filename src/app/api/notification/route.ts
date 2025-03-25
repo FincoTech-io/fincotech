@@ -109,15 +109,13 @@ export async function DELETE(req: NextRequest) {
     // Get request body
     const body = await req.json();
     const { notificationId, deleteAll } = body;
-
-    let result: boolean | number;
     
     // If deleteAll is true, delete all notifications
     if (deleteAll) {
-      result = await NotificationService.deleteAllNotifications(user._id.toString());
+      await NotificationService.deleteAllNotifications(user._id.toString());
     } else if (notificationId) {
       // Delete a specific notification
-      result = await NotificationService.deleteNotification(user._id.toString(), notificationId);
+      await NotificationService.deleteNotification(user._id.toString(), notificationId);
     } else {
       return NextResponse.json(
         { success: false, message: 'Either notificationId or deleteAll is required' },
@@ -131,7 +129,6 @@ export async function DELETE(req: NextRequest) {
     return NextResponse.json({
       success: true,
       data: {
-        result,
         unreadCount,
         hasUnread: unreadCount > 0,
       },
