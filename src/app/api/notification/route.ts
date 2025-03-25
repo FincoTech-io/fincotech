@@ -102,6 +102,7 @@ export async function DELETE(req: NextRequest) {
 
     // Get user from session
     const user = await getUserFromSession(req);
+    console.log(user);
     if (!user) {
       return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
     }
