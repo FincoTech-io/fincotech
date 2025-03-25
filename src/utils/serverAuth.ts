@@ -99,16 +99,12 @@ export const getUserFromSession = async (req: NextRequest): Promise<IUser | null
 
     // Verify token
     const payload = await verifyAccessToken(token);
-    if (!payload || !payload.sub) {
-      console.error(AuthError.INVALID_TOKEN);
-      return null;
-    }
 
     // Connect to database if not already connected
     await ensureDbConnection();
 
     // Get user from database with caching
-    const user = await getUserById(payload.sub as string);
+    const user = await getUserById(payload?.sub as string);
     
     if (!user) {
       console.error(AuthError.USER_NOT_FOUND);
