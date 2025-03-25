@@ -88,39 +88,16 @@ export async function POST(req: NextRequest) {
 
     // Get request body
     const body = await req.json();
-    const { title, message, type, metadata } = body;
+    const { notificationId, deleteAll } = body;
 
-    if (!title || !message || !type) {
-      return NextResponse.json(
-        { success: false, message: 'Title, message, and type are required' },
-        { status: 400 }
-      );
+    if (deleteAll) {
+      await NotificationService.deleteAllNotifications(user._id.toString());
+    } else if (notificationId) {
+      await NotificationService.deleteNotification(user._id.toString(), notificationId);
     }
-
-    // Validate notification type
-    const validTypes = ['UPDATE', 'SYSTEM', 'PROMOTIONAL', 'SECURITY'];
-    if (!validTypes.includes(type)) {
-      return NextResponse.json(
-        { success: false, message: `Type must be one of: ${validTypes.join(', ')}` },
-        { status: 400 }
-      );
-    }
-
-    // Process notification through service
-    const result = await NotificationService.processNotification({
-      title,
-      message,
-      type,
-      recipientId: user._id.toString(),
-      metadata,
-    });
 
     return NextResponse.json({
       success: true,
-      data: {
-        notification: result.notification,
-        channels: result.channels,
-      },
     });
   } catch (error: any) {
     console.error('Error in POST /api/notification:', error);
