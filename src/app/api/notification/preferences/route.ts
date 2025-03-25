@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { connectDB } from '../../../../utils/database';
+import { connectToDatabase } from '@/utils/db';
 import { getUserFromSession } from '../../../../utils/serverAuth';
 import User from '../../../../models/User';
 
@@ -9,7 +9,7 @@ import User from '../../../../models/User';
  */
 export async function GET(req: NextRequest) {
   try {
-    await connectDB();
+    await connectToDatabase();
     
     // Get user from session
     const user = await getUserFromSession(req);
@@ -38,7 +38,7 @@ export async function GET(req: NextRequest) {
  */
 export async function PATCH(req: NextRequest) {
   try {
-    await connectDB();
+    await connectToDatabase();
     
     // Get user from session
     const user = await getUserFromSession(req);

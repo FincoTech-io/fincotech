@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { NotificationService } from '../../../../utils/notificationService';
 import { getUserFromSession } from '../../../../utils/serverAuth';
-import { connectDB } from '../../../../utils/database';
+import { connectToDatabase } from '@/utils/db';
 
 /**
  * POST /api/notification/push
@@ -17,7 +17,7 @@ import { connectDB } from '../../../../utils/database';
  */
 export async function POST(req: NextRequest) {
   try {
-    await connectDB();
+    await connectToDatabase();
     
     // Verify the request is from an authenticated user with appropriate permissions
     const user = await getUserFromSession(req);

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { connectDB } from '../../../../utils/database';
+import { connectToDatabase } from '@/utils/db';
 import { NotificationService } from '../../../../utils/notificationService';
 import { getUserFromSession } from '../../../../utils/serverAuth';
 
@@ -9,7 +9,7 @@ import { getUserFromSession } from '../../../../utils/serverAuth';
  */
 export async function PATCH(req: NextRequest) {
   try {
-    await connectDB();
+    await connectToDatabase();
     
     // Get user from session
     const user = await getUserFromSession(req);

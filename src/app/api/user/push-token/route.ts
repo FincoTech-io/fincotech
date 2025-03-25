@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { connectDB } from '../../../../utils/database';
+import { connectToDatabase } from '@/utils/db';
 import { getUserFromSession } from '../../../../utils/serverAuth';
 import User from '../../../../models/User';
 import { Expo } from 'expo-server-sdk';
@@ -10,7 +10,7 @@ import { Expo } from 'expo-server-sdk';
  */
 export async function POST(req: NextRequest) {
   try {
-    await connectDB();
+    await connectToDatabase();
     
     // Get user from session
     const user = await getUserFromSession(req);
@@ -59,7 +59,7 @@ export async function POST(req: NextRequest) {
  */
 export async function DELETE(req: NextRequest) {
   try {
-    await connectDB();
+    await connectToDatabase();
     
     // Get user from session
     const user = await getUserFromSession(req);

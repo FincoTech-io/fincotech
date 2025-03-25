@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server';
 import { jwtVerify } from 'jose';
-import { connectDB } from './database';
+import { connectToDatabase } from '@/utils/db';
 import { User, IUser } from '../models/User';
 import { isTokenBlacklisted } from './authServerHelper';
 import { cache } from 'react';
@@ -79,7 +79,7 @@ const getUserById = cache(async (userId: string): Promise<IUser | null> => {
 let isDbConnected = false;
 const ensureDbConnection = async () => {
   if (!isDbConnected) {
-    await connectDB();
+    await connectToDatabase();
     isDbConnected = true;
   }
 };

@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { connectDB } from '../../../utils/database';
+import { connectToDatabase } from '@/utils/db';
 import { NotificationService } from '../../../utils/notificationService';
 import { getUserFromSession } from '../../../utils/serverAuth';
 import { jwtVerify } from 'jose';
-import { connectToDatabase } from '@/utils/db';
 
 /**
  * GET /api/notification
@@ -78,7 +77,7 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(req: NextRequest) {
   try {
-    await connectDB();
+    await connectToDatabase();
 
     // Get user from session
     const user = await getUserFromSession(req);
@@ -114,7 +113,7 @@ export async function POST(req: NextRequest) {
  */
 export async function DELETE(req: NextRequest) {
   try {
-    await connectDB();
+    await connectToDatabase();
 
     // Get user from session
     const user = await getUserFromSession(req);
