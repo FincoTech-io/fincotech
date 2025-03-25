@@ -4,6 +4,7 @@ import User from '@/models/User';
 import Wallet from '@/models/Wallet';
 import { jwtVerify } from 'jose';
 import { IUser } from '@/models/User';
+import { getAccessToken } from '@/utils/serverAuth';
 
 /**
  * GET /api/user/profile
@@ -15,26 +16,15 @@ import { IUser } from '@/models/User';
  */
 export async function GET(request: NextRequest) {
   try {
-    // Get token from Authorization header (for mobile apps)
-    const authHeader = request.headers.get('Authorization');
-    let token = authHeader && authHeader.startsWith('Bearer ') 
-      ? authHeader.substring(7) 
-      : null;
-    
-    // Fallback to cookies (for web apps)
-    if (!token) {
-      token = request.cookies.get('auth_token')?.value || null;
-    }
+    // Get token
+    const token = getAccessToken(request);
 
     // If no token, return unauthorized
     if (!token) {
-      return NextResponse.json(
-        { 
-          success: false,
-          error: 'No authentication token provided' 
-        },
-        { status: 401 }
-      );
+      return NextResponse.json({ 
+        authenticated: false,
+        message: 'No authentication token provided'
+      }, { status: 401 });
     }
 
     try {
@@ -141,26 +131,15 @@ export async function GET(request: NextRequest) {
  */
 export async function PATCH(request: NextRequest) {
   try {
-    // Get token from Authorization header (for mobile apps)
-    const authHeader = request.headers.get('Authorization');
-    let token = authHeader && authHeader.startsWith('Bearer ') 
-      ? authHeader.substring(7) 
-      : null;
-    
-    // Fallback to cookies (for web apps)
-    if (!token) {
-      token = request.cookies.get('auth_token')?.value || null;
-    }
+    // Get token
+    const token = getAccessToken(request);
 
     // If no token, return unauthorized
     if (!token) {
-      return NextResponse.json(
-        { 
-          success: false,
-          error: 'No authentication token provided' 
-        },
-        { status: 401 }
-      );
+      return NextResponse.json({ 
+        authenticated: false,
+        message: 'No authentication token provided'
+      }, { status: 401 });
     }
 
     try {
