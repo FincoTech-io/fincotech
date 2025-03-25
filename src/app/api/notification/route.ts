@@ -75,9 +75,9 @@ export async function POST(req: NextRequest) {
     const { notificationId, deleteAll } = body;
 
     if (deleteAll) {
-      await NotificationService.deleteAllNotifications(user);
+      await NotificationService.deleteAllNotifications(user._id.toString());
     } else if (notificationId) {
-      await NotificationService.deleteNotification(user, notificationId);
+      await NotificationService.deleteNotification(user._id.toString(), notificationId);
     }
 
     return NextResponse.json({
@@ -98,13 +98,25 @@ export async function POST(req: NextRequest) {
  */
 export async function DELETE(req: NextRequest) {
   try {
-    await connectToDatabase();
+    // Get token
+    const token = getAccessToken(req);
 
-    // Get user from session
-    const user = await getUserFromSession(req);
-    if (!user) {
-      return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
+    // If no token, return unauthorized
+    if (!token) {
+      return NextResponse.json({ 
+        authenticated: false,
+        message: 'No authentication token provided'
+      }, { status: 401 });
     }
+
+    // Verify the token
+    const payload = await verifyAccessToken(token);
+
+    // Extract userId from token payload
+    const userId = payload?.userId as string;
+
+    // Connect to database
+    await connectToDatabase();
 
     // Get request body
     const body = await req.json();
@@ -114,10 +126,10 @@ export async function DELETE(req: NextRequest) {
     
     // If deleteAll is true, delete all notifications
     if (deleteAll) {
-      await NotificationService.deleteAllNotifications(user);
+      await NotificationService.deleteAllNotifications(userId);
     } else if (notificationId) {
       // Delete a specific notification
-      await NotificationService.deleteNotification(user, notificationId);
+      await NotificationService.deleteNotification(userId, notificationId);
     } else {
       return NextResponse.json(
         { success: false, message: 'Either notificatio._id.toString()nId or deleteAll is required' },
@@ -126,7 +138,7 @@ export async function DELETE(req: NextRequest) {
     }
 
     // Get updated unread count
-    const { unreadCount } = await NotificationService.getUserNotifications(user._id.toString());
+    const { unreadCount } = await NotificationService.getUserNotifications(userId);
 
     return NextResponse.json({
       success: true,
