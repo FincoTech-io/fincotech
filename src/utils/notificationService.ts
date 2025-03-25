@@ -1,5 +1,4 @@
-import { INotification, Notification } from '../models/Notification';
-import { IUser, User } from '../models/User';
+import { IEmbeddedNotification, IUser, User } from '../models/User';
 import mongoose from 'mongoose';
 import twilio from 'twilio';
 import nodemailer from 'nodemailer';
@@ -64,25 +63,36 @@ export class NotificationService {
   /**
    * Create a new notification for a user
    */
-  static async createNotification(notificationData: NotificationPayload): Promise<INotification> {
+  static async createNotification(notificationData: NotificationPayload): Promise<IEmbeddedNotification> {
     try {
-      // Create notification in database
-      const notification = await Notification.create({
-        ...notificationData,
+      // Create notification object
+      const notification: IEmbeddedNotification = {
+        title: notificationData.title,
+        message: notificationData.message,
+        type: notificationData.type,
         creationTime: new Date(),
         isRead: false,
         pinned: false,
-      });
+        metadata: notificationData.metadata || {},
+      };
 
-      // Update user to indicate they have unread notifications
+      // Find user and push notification directly to their notifications array
       const user = await User.findById(notificationData.recipientId);
-      if (user) {
-        user.hasUnreadNotifications = true;
-        user.notifications?.push(notification);
-        await user.save();
+      if (!user) {
+        throw new Error(`User not found: ${notificationData.recipientId}`);
       }
 
-      return notification;
+      // Add notification to user's notifications array
+      user.notifications.push(notification);
+      
+      // Set unread flag
+      user.hasUnreadNotifications = true;
+      
+      // Save user with new notification
+      await user.save();
+
+      // Return the newly created notification (with _id assigned by MongoDB)
+      return user.notifications[user.notifications.length - 1];
     } catch (error) {
       console.error('Error creating notification:', error);
       throw error;
@@ -93,7 +103,7 @@ export class NotificationService {
    * Get all notifications for a user
    */
   static async getUserNotifications(userId: string): Promise<{
-    notifications: INotification[];
+    notifications: IEmbeddedNotification[];
     totalCount: number;
     unreadCount: number;
   }> {
@@ -118,58 +128,124 @@ export class NotificationService {
   }
 
   /**
-   * Mark notifications as read
+   * Mark a notification as read
    */
-  static async markNotificationsAsRead(userId: string, notificationIds?: string[]): Promise<void> {
+  static async markNotificationAsRead(userId: string, notificationId: string): Promise<boolean> {
     try {
-      const updateQuery: any = { recipientId: new mongoose.Types.ObjectId(userId) };
+      const user = await User.findById(userId);
+      if (!user) {
+        throw new Error('User not found');
+      }
+
+      // Find the notification in the user's notifications array
+      const notification = user.notifications.find(n => n._id?.toString() === notificationId);
+      if (!notification) {
+        return false;
+      }
+
+      // Update the notification
+      notification.isRead = true;
+
+      // Check if all notifications are read, and update hasUnreadNotifications accordingly
+      const hasUnread = user.notifications.some(n => !n.isRead);
+      user.hasUnreadNotifications = hasUnread;
       
-      // If specific notification IDs are provided, only mark those as read
-      if (notificationIds && notificationIds.length > 0) {
-        updateQuery._id = { $in: notificationIds.map(id => new mongoose.Types.ObjectId(id)) };
-      }
-
-      await Notification.updateMany(updateQuery, { isRead: true });
-
-      // Check if user has any unread notifications left
-      const unreadCount = await Notification.countDocuments({ 
-        recipientId: new mongoose.Types.ObjectId(userId), 
-        isRead: false 
-      });
-
-      // Update user's hasUnreadNotifications flag if needed
-      if (unreadCount === 0) {
-        await User.findByIdAndUpdate(userId, { hasUnreadNotifications: false });
-      }
+      await user.save();
+      return true;
     } catch (error) {
-      console.error('Error marking notifications as read:', error);
-      throw error;
+      console.error('Error marking notification as read:', error);
+      return false;
     }
   }
 
   /**
-   * Delete notifications
+   * Mark all notifications as read for a user
    */
-  static async deleteNotifications(userId: string, notificationIds: string[]): Promise<void> {
+  static async markAllNotificationsAsRead(userId: string): Promise<number> {
     try {
-      await Notification.deleteMany({
-        recipientId: new mongoose.Types.ObjectId(userId),
-        _id: { $in: notificationIds.map(id => new mongoose.Types.ObjectId(id)) }
-      });
-
-      // Check if user has any unread notifications left
-      const unreadCount = await Notification.countDocuments({ 
-        recipientId: new mongoose.Types.ObjectId(userId), 
-        isRead: false 
-      });
-
-      // Update user's hasUnreadNotifications flag if needed
-      if (unreadCount === 0) {
-        await User.findByIdAndUpdate(userId, { hasUnreadNotifications: false });
+      const user = await User.findById(userId);
+      if (!user) {
+        throw new Error('User not found');
       }
+
+      // Count unread notifications before update
+      const unreadCount = user.notifications.filter(n => !n.isRead).length;
+
+      // Mark all as read
+      user.notifications.forEach(notification => {
+        notification.isRead = true;
+      });
+
+      // Update hasUnreadNotifications flag
+      user.hasUnreadNotifications = false;
+      
+      await user.save();
+      
+      return unreadCount;
     } catch (error) {
-      console.error('Error deleting notifications:', error);
-      throw error;
+      console.error('Error marking all notifications as read:', error);
+      return 0;
+    }
+  }
+
+  /**
+   * Delete a notification
+   */
+  static async deleteNotification(userId: string, notificationId: string): Promise<boolean> {
+    try {
+      const user = await User.findById(userId);
+      if (!user) {
+        throw new Error('User not found');
+      }
+
+      // Find notification index
+      const notificationIndex = user.notifications.findIndex(
+        n => n._id?.toString() === notificationId
+      );
+
+      if (notificationIndex === -1) {
+        return false;
+      }
+
+      // Remove the notification from the array
+      user.notifications.splice(notificationIndex, 1);
+      
+      // Update hasUnreadNotifications flag
+      user.hasUnreadNotifications = user.notifications.some(n => !n.isRead);
+      
+      await user.save();
+      return true;
+    } catch (error) {
+      console.error('Error deleting notification:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Delete all notifications for a user
+   */
+  static async deleteAllNotifications(userId: string): Promise<number> {
+    try {
+      const user = await User.findById(userId);
+      if (!user) {
+        throw new Error('User not found');
+      }
+
+      // Count notifications before deletion
+      const count = user.notifications.length;
+      
+      // Clear the notifications array
+      user.notifications = [];
+      
+      // Update hasUnreadNotifications flag
+      user.hasUnreadNotifications = false;
+      
+      await user.save();
+      
+      return count;
+    } catch (error) {
+      console.error('Error deleting all notifications:', error);
+      return 0;
     }
   }
 
@@ -281,22 +357,37 @@ export class NotificationService {
     notificationData: Omit<NotificationPayload, 'recipientId'>
   ): Promise<number> {
     try {
-      const notifications = recipientIds.map(recipientId => ({
-        ...notificationData,
-        recipientId: new mongoose.Types.ObjectId(recipientId),
+      let successCount = 0;
+      
+      // Build the notification object without recipientId
+      const baseNotification = {
+        title: notificationData.title,
+        message: notificationData.message,
+        type: notificationData.type,
         creationTime: new Date(),
         isRead: false,
-      }));
+        pinned: false,
+        metadata: notificationData.metadata || {},
+      };
       
-      const result = await Notification.insertMany(notifications);
+      // Update users to add the notification to each user's array
+      const updatePromises = recipientIds.map(async (recipientId) => {
+        try {
+          const user = await User.findById(recipientId);
+          if (user) {
+            user.notifications.push(baseNotification);
+            user.hasUnreadNotifications = true;
+            await user.save();
+            successCount++;
+          }
+        } catch (error) {
+          console.error(`Error adding notification to user ${recipientId}:`, error);
+        }
+      });
       
-      // Update users to indicate they have unread notifications
-      await User.updateMany(
-        { _id: { $in: recipientIds.map(id => new mongoose.Types.ObjectId(id)) } },
-        { hasUnreadNotifications: true }
-      );
+      await Promise.all(updatePromises);
       
-      return result.length;
+      return successCount;
     } catch (error) {
       console.error('Error creating bulk notifications:', error);
       throw error;
@@ -307,7 +398,7 @@ export class NotificationService {
    * Process notification according to user preferences
    */
   static async processNotification(notification: NotificationPayload): Promise<{
-    notification: INotification;
+    notification: IEmbeddedNotification;
     channels: {
       inApp: boolean;
       sms: boolean;
@@ -316,7 +407,7 @@ export class NotificationService {
     };
   }> {
     try {
-      // Save notification to database
+      // Save notification to user's notifications array
       const savedNotification = await this.createNotification(notification);
       
       // Get user to check their notification preferences
@@ -378,7 +469,7 @@ export class NotificationService {
           notification.message,
           {
             type: notification.type,
-            notificationId: savedNotification._id.toString(),
+            notificationId: savedNotification._id?.toString(),
             ...notification.metadata
           }
         );

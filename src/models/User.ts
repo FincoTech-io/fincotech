@@ -1,5 +1,17 @@
 import mongoose, { Document, Schema } from 'mongoose';
-import { INotification } from './Notification';
+
+// Interface for an embedded notification
+export interface IEmbeddedNotification {
+  _id?: string;
+  title: string;
+  message: string;
+  creationTime: Date;
+  isRead: boolean;
+  type: 'UPDATE' | 'SYSTEM' | 'PROMOTIONAL' | 'SECURITY';
+  pinned: boolean;
+  metadata?: Record<string, any>;
+}
+
 // Interface for User document
 export interface IUser extends Document {
   _id: string;
@@ -30,7 +42,7 @@ export interface IUser extends Document {
   pushToken?: string;
   currentRegion?: string;
   hasUnreadNotifications: boolean;
-  notifications?: INotification[];
+  notifications: IEmbeddedNotification[];
   notificationPreferences: {
     paymentReceived: {
       sms: boolean;
@@ -174,8 +186,40 @@ const UserSchema = new Schema<IUser>(
       default: false,
     },
     notifications: {
-      type: [Schema.Types.ObjectId],
-      ref: 'Notification',
+      type: [{
+        title: {
+          type: String,
+          required: [true, 'Notification title is required'],
+          trim: true,
+        },
+        message: {
+          type: String,
+          required: [true, 'Notification message is required'],
+          trim: true,
+        },
+        creationTime: {
+          type: Date,
+          default: Date.now,
+        },
+        isRead: {
+          type: Boolean,
+          default: false,
+        },    
+        pinned: {
+          type: Boolean,
+          default: false,
+        },
+        type: {
+          type: String,
+          enum: ['UPDATE', 'SYSTEM', 'PROMOTIONAL', 'SECURITY'],
+          required: [true, 'Notification type is required'],
+        },
+        metadata: {
+          type: Schema.Types.Mixed,
+          default: {},
+        }
+      }],
+      default: [],
     },
     notificationPreferences: {
       paymentReceived: {

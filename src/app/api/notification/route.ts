@@ -147,16 +147,22 @@ export async function DELETE(req: NextRequest) {
 
     // Get request body
     const body = await req.json();
-    const { notificationIds } = body;
+    const { notificationId, deleteAll } = body;
 
-    if (!notificationIds || !Array.isArray(notificationIds) || notificationIds.length === 0) {
+    let result: boolean | number;
+    
+    // If deleteAll is true, delete all notifications
+    if (deleteAll) {
+      result = await NotificationService.deleteAllNotifications(user._id.toString());
+    } else if (notificationId) {
+      // Delete a specific notification
+      result = await NotificationService.deleteNotification(user._id.toString(), notificationId);
+    } else {
       return NextResponse.json(
-        { success: false, message: 'notificationIds array is required' },
+        { success: false, message: 'Either notificationId or deleteAll is required' },
         { status: 400 }
       );
     }
-
-    await NotificationService.deleteNotifications(user._id.toString(), notificationIds);
 
     // Get updated unread count
     const { unreadCount } = await NotificationService.getUserNotifications(user._id.toString());
@@ -164,6 +170,7 @@ export async function DELETE(req: NextRequest) {
     return NextResponse.json({
       success: true,
       data: {
+        result,
         unreadCount,
         hasUnread: unreadCount > 0,
       },

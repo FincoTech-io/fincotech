@@ -19,17 +19,30 @@ export async function PATCH(req: NextRequest) {
     
     // Get request body
     const body = await req.json();
-    const { notificationIds } = body;
+    const { notificationId, markAll } = body;
     
-    // If notificationIds is not provided, mark all notifications as read
-    await NotificationService.markNotificationsAsRead(user._id.toString(), notificationIds);
+    let result: boolean | number;
+    
+    // If markAll is true, mark all notifications as read
+    if (markAll) {
+      result = await NotificationService.markAllNotificationsAsRead(user._id.toString());
+    } else if (notificationId) {
+      // Mark a specific notification as read
+      result = await NotificationService.markNotificationAsRead(user._id.toString(), notificationId);
+    } else {
+      return NextResponse.json(
+        { success: false, message: 'Either notificationId or markAll is required' },
+        { status: 400 }
+      );
+    }
     
     // Get updated unread count
-    const { unreadCount } = await NotificationService.getUserNotifications(user._id.toString())
+    const { unreadCount } = await NotificationService.getUserNotifications(user._id.toString());
     
     return NextResponse.json({
       success: true,
       data: {
+        result,
         unreadCount,
         hasUnread: unreadCount > 0,
       },
