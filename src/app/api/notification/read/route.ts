@@ -25,7 +25,7 @@ export async function PATCH(req: NextRequest) {
     await NotificationService.markNotificationsAsRead(user._id.toString(), notificationIds);
     
     // Get updated unread count
-    const { unreadCount } = await NotificationService.getUserNotifications(user._id.toString(), { limit: 1 });
+    const { unreadCount } = await NotificationService.getUserNotifications(user._id.toString())
     
     return NextResponse.json({
       success: true,
