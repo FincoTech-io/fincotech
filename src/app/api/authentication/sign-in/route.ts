@@ -12,6 +12,12 @@ const ACCESS_TOKEN_EXPIRY = '15m'; // Short-lived access token
 const REFRESH_TOKEN_EXPIRY = '7d'; // Long-lived refresh token
 const REFRESH_TOKEN_PREFIX = 'refresh_token:';
 
+// Extend the API timeout limit to 60 seconds
+export const runtime = 'nodejs';
+export const revalidate = 0;
+export const fetchCache = 'force-no-store';
+export const maxDuration = 60; // Sets the timeout to 60 seconds
+
 export async function POST(request: Request) {
   const { phoneNumber, pin, pushToken } = await request.json();
 
@@ -49,9 +55,6 @@ export async function POST(request: Request) {
     }
   }
   
-  // Save changes to user
-  await user.save();
-
   // Generate a unique refresh token ID
   const refreshTokenId = uuidv4();
   
@@ -77,45 +80,57 @@ export async function POST(request: Request) {
     { expiresIn: REFRESH_TOKEN_EXPIRY }
   );
   
-  // Store refresh token information in Redis
+  // Run the save operation, redis update, and wallet lookup in parallel
   try {
     // Convert days to seconds for Redis expiry (7 Days)
     const expiryInSeconds = 60 * 60 * 24 * 7;
-    await redisService.setWithExpiry(
-      `${REFRESH_TOKEN_PREFIX}${refreshTokenId}`,
-      user._id.toString(),
-      expiryInSeconds
-    );
+    
+    const [_, wallet] = await Promise.all([
+      // Save user changes
+      user.save(),
+      
+      // Find wallet
+      Wallet.findOne({ userId: user._id }),
+      
+      // Store refresh token in Redis (we don't need to await its result specifically)
+      redisService.setWithExpiry(
+        `${REFRESH_TOKEN_PREFIX}${refreshTokenId}`,
+        user._id.toString(),
+        expiryInSeconds
+      ).catch(error => {
+        // Log the error but don't fail the sign-in process
+        console.error('Error storing refresh token:', error);
+        return null;
+      })
+    ]);
+
+    // Mobile app version: return tokens in response body
+    return NextResponse.json({ 
+      success: true,
+      accessToken: accessToken,
+      refreshToken: refreshToken,
+      pushTokenUpdated,
+      user: {
+        id: user._id.toString(),
+        phoneNumber: user.phoneNumber,
+        role: user.role,
+        profileImage: user.profileImage,
+        fullName: user.fullName,
+        email: user.email,
+        isActive: user.isActive,
+        pushToken: user.pushToken, // Include current pushToken in response
+        wallet: {
+          balance: wallet?.balance,
+          address: wallet?.address,
+        },
+        createdAt: user?.createdAt,
+        updatedAt: user?.updatedAt,
+      }
+    });
   } catch (error) {
-    console.error('Error storing refresh token:', error);
-    // Continue even if Redis fails
+    console.error('Error during sign-in process:', error);
+    return NextResponse.json({ error: 'An error occurred during sign-in' }, { status: 500 });
   }
-
-  const wallet = await Wallet.findOne({ userId: user._id }); 
-
-  // Mobile app version: return tokens in response body
-  return NextResponse.json({ 
-    success: true,
-    accessToken: accessToken,
-    refreshToken: refreshToken,
-    pushTokenUpdated,
-    user: {
-      id: user._id.toString(),
-      phoneNumber: user.phoneNumber,
-      role: user.role,
-      profileImage: user.profileImage,
-      fullName: user.fullName,
-      email: user.email,
-      isActive: user.isActive,
-      pushToken: user.pushToken, // Include current pushToken in response
-      wallet: {
-        balance: wallet?.balance,
-        address: wallet?.address,
-      },
-      createdAt: user?.createdAt,
-      updatedAt: user?.updatedAt,
-    }
-  });
 }
 
 
