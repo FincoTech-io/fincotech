@@ -2,6 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { jwtVerify } from 'jose';
 import { User } from '@/models/User';
 import { getAccessToken, verifyAccessToken } from '@/utils/serverAuth';
+import { connectToDatabase } from '@/utils/db';
+
+// Extend the API timeout limit
+export const runtime = 'nodejs';
+export const maxDuration = 30; // Sets the timeout to 30 seconds
 
 export async function GET(request: NextRequest) {
   // Get token
@@ -16,6 +21,9 @@ export async function GET(request: NextRequest) {
   } 
 
   try {
+    // Connect to the database before performing MongoDB operations
+    await connectToDatabase();
+    
     // Verify the token
     const payload = await verifyAccessToken(token) ;
     
@@ -39,6 +47,8 @@ export async function GET(request: NextRequest) {
       }
     });
   } catch (error) {
+    console.error('Error checking authentication:', error);
+    
     // Token is invalid
     const response = NextResponse.json({ 
       authenticated: false,

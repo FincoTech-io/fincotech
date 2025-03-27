@@ -40,11 +40,32 @@ export async function connectToDatabase() {
   if (!cached.promise) {
     const opts = {
       bufferCommands: false,
+      serverSelectionTimeoutMS: 30000, // 30 seconds (default is 30000)
+      socketTimeoutMS: 45000, // 45 seconds (default is 30000)
+      connectTimeoutMS: 30000, // 30 seconds (default is 30000)
+      maxPoolSize: 10, // Increase the connection pool size to handle more connections
+      minPoolSize: 5, // Maintain a minimum number of connections
     };
 
     cached.promise = mongoose.connect(MONGODB_URI, opts)
       .then((mongoose) => {
         console.log('Connected to MongoDB successfully');
+        
+        // Listen for connection errors
+        mongoose.connection.on('error', (err) => {
+          console.error('MongoDB connection error:', err);
+        });
+        
+        // Listen for disconnection events
+        mongoose.connection.on('disconnected', () => {
+          console.warn('MongoDB disconnected, attempting to reconnect...');
+        });
+        
+        // Listen for reconnection events
+        mongoose.connection.on('reconnected', () => {
+          console.log('MongoDB reconnected successfully');
+        });
+        
         return mongoose;
       });
   }
