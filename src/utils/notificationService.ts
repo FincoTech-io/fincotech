@@ -102,7 +102,7 @@ export class NotificationService {
   /**
    * Get all notifications for a user
    */
-  static async getUserNotifications(userId: string): Promise<{
+  static async getUserNotifications(userId: string, unreadOnly: boolean = false): Promise<{
     notifications: IEmbeddedNotification[];
     totalCount: number;
     unreadCount: number;
@@ -113,7 +113,10 @@ export class NotificationService {
         throw new Error('User not found');
       }
       
-      const notifications = user.notifications || [];
+      let notifications = user.notifications || [];
+      if (unreadOnly) {
+        notifications = notifications.filter(n => !n.isRead);
+      }
       const totalCount = notifications.length;
       const unreadCount = notifications.filter(n => !n.isRead).length;
 

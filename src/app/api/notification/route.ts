@@ -6,13 +6,14 @@ import { jwtVerify } from 'jose';
 import { getAccessToken, verifyAccessToken } from '@/utils/serverAuth';
 
 /**
- * GET /api/notification
+ * POST /api/notification
  * Get notifications for the authenticated user
  */
-export async function GET(request: NextRequest) {
+export async function POST(request: NextRequest) {
   try {
     // Get token
     const token = getAccessToken(request);
+    const {unreadOnly} = await request.json();
 
     // If no token, return unauthorized
     if (!token) {
@@ -34,7 +35,8 @@ export async function GET(request: NextRequest) {
 
     // Get notifications
     const { notifications, totalCount, unreadCount } = await NotificationService.getUserNotifications(
-      userId
+      userId,
+      unreadOnly
     );
 
     return NextResponse.json({
@@ -55,42 +57,6 @@ export async function GET(request: NextRequest) {
   }
 }
 
-
-/**
- * POST /api/notification
- * Create a new notification (for testing purposes)
- */
-export async function POST(req: NextRequest) {
-  try {
-    await connectToDatabase();
-
-    // Get user from session
-    const user = await getUserFromSession(req);
-    if (!user) {
-      return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
-    }
-
-    // Get request body
-    const body = await req.json();
-    const { notificationId, deleteAll } = body;
-
-    if (deleteAll) {
-      await NotificationService.deleteAllNotifications(user._id.toString());
-    } else if (notificationId) {
-      await NotificationService.deleteNotification(user._id.toString(), notificationId);
-    }
-
-    return NextResponse.json({
-      success: true,
-    });
-  } catch (error: any) {
-    console.error('Error in POST /api/notification:', error);
-    return NextResponse.json(
-      { success: false, message: error.message || 'Failed to create notification' },
-      { status: 500 }
-    );
-  }
-}
 
 /**
  * DELETE /api/notification
