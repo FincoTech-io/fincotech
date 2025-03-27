@@ -1,34 +1,47 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectToDatabase } from '@/utils/db';
 import { NotificationService } from '../../../../utils/notificationService';
-import { getUserFromSession } from '../../../../utils/serverAuth';
-
+import { getAccessToken, getUserFromSession, verifyAccessToken } from '../../../../utils/serverAuth';
+import User from '../../../../models/User';
 /**
  * PATCH /api/notification/read
  * Mark notifications as read
  */
-export async function PATCH(req: NextRequest) {
+export async function PATCH(request: NextRequest) {
   try {
-    await connectToDatabase();
-    
-    // Get user from session
-    const user = await getUserFromSession(req);
-    if (!user) {
-      return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
+    // Get token
+    const token = getAccessToken(request);
+    const {unreadOnly} = await request.json();
+
+    // If no token, return unauthorized
+    if (!token) {
+      return NextResponse.json({ 
+        authenticated: false,
+        message: 'No authentication token provided'
+      }, { status: 401 });
     }
-    
+
+    // Verify the token
+    const payload = await verifyAccessToken(token);
+
+    // Extract userId from token payload
+    const userId = payload?.userId as string;
+
+    // Connect to database
+    await connectToDatabase();
     // Get request body
-    const body = await req.json();
+    const body = await request.json();
+
     const { notificationId, markAll } = body;
     
     let result: boolean | number;
     
     // If markAll is true, mark all notifications as read
     if (markAll) {
-      result = await NotificationService.markAllNotificationsAsRead(user._id.toString());
+      result = await NotificationService.markAllNotificationsAsRead(userId);
     } else if (notificationId) {
       // Mark a specific notification as read
-      result = await NotificationService.markNotificationAsRead(user._id.toString(), notificationId);
+      result = await NotificationService.markNotificationAsRead(userId, notificationId);
     } else {
       return NextResponse.json(
         { success: false, message: 'Either notificationId or markAll is required' },
@@ -37,7 +50,7 @@ export async function PATCH(req: NextRequest) {
     }
     
     // Get updated unread count
-    const { unreadCount } = await NotificationService.getUserNotifications(user._id.toString());
+    const { unreadCount } = await NotificationService.getUserNotifications(userId, unreadOnly);
     
     return NextResponse.json({
       success: true,
