@@ -8,7 +8,7 @@ import mongoose from 'mongoose';
  * @param userId - The user ID to create the wallet for
  * @returns The created wallet and a flag indicating if it was newly created
  */
-export async function createWallet(userId: string): Promise<{ wallet: IWallet; created: boolean }> {
+export async function createWallet(userId: string, tier: string = 'BASIC'): Promise<{ wallet: IWallet; created: boolean }> {
   try {
     console.log(`Creating wallet for user: ${userId}`);
     
@@ -34,8 +34,8 @@ export async function createWallet(userId: string): Promise<{ wallet: IWallet; c
       balance: 0,
       currency: 'USD',
       isActive: true,
-      privacy: false,
-      tier: 'STANDARD',
+      privacy: false, 
+      tier: tier,
       monthlyTransactionCount: 0,
       lastTransactionReset: new Date(),
       transfersReceived: [],

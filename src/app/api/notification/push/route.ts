@@ -25,11 +25,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
     }
     
-    // Only allow users with admin role to send direct push notifications
-    if (user.role !== 'ADMIN') {
-      return NextResponse.json({ success: false, message: 'Permission denied' }, { status: 403 });
-    }
-    
     // Parse request body
     const body = await req.json();
     const { pushToken, title, body: messageBody, data } = body;

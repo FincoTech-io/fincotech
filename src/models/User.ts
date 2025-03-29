@@ -1,5 +1,4 @@
 import mongoose, { Document, Schema } from 'mongoose';
-
 // Interface for an embedded notification
 export interface IEmbeddedNotification {
   _id?: string;
@@ -36,12 +35,19 @@ export interface IUser extends Document {
     backImg?: string;
     facialData?: string;
   };
-  role: 'CUSTOMER' | 'ADMIN' | 'CUSTOMER_SUPPORT' | 'MERCHANT' | 'DRIVER';
+  role: 'CUSTOMER';
   lastLogin?: Date;
   isActive: boolean;
   pushToken?: string;
   currentRegion?: string;
+  currentAddress?: string;
   hasUnreadNotifications: boolean;
+  businessAccess?: {
+    userRole: 'ADMIN' | 'BUSINESS_OWNER' | 'BUSINESS_MANAGER' | 'BUSINESS_STAFF';
+    businessId: string;
+    businessName: string;
+  }[];
+  DriverAccountId?: string;
   notifications: IEmbeddedNotification[];
   notificationPreferences: {
     paymentReceived: {
