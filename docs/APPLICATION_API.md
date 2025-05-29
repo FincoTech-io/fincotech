@@ -389,17 +389,108 @@ GET /api/users/60d5f60f1234567890abcdef/applications
 For mobile apps using file:// URLs, convert images to base64 before sending:
 
 ```javascript
-// React Native example
+// React Native example with image compression
 import { launchImageLibrary } from 'react-native-image-picker';
 import RNFS from 'react-native-fs';
+import ImageResizer from 'react-native-image-resizer';
 
 const convertToBase64 = async (fileUri) => {
   try {
-    const base64 = await RNFS.readFile(fileUri, 'base64');
+    // First, compress/resize the image to reduce payload size
+    const resizedImage = await ImageResizer.createResizedImage(
+      fileUri,
+      800,  // max width
+      800,  // max height
+      'JPEG',
+      60    // quality (0-100)
+    );
+    
+    const base64 = await RNFS.readFile(resizedImage.uri, 'base64');
     return `data:image/jpeg;base64,${base64}`;
   } catch (error) {
     console.error('Error converting to base64:', error);
     return null;
+  }
+};
+
+// Web example with canvas compression
+const compressImage = (file, maxWidth = 800, quality = 0.6) => {
+  return new Promise((resolve) => {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    const img = new Image();
+    
+    img.onload = () => {
+      const ratio = Math.min(maxWidth / img.width, maxWidth / img.height);
+      canvas.width = img.width * ratio;
+      canvas.height = img.height * ratio;
+      
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      canvas.toBlob(resolve, 'image/jpeg', quality);
+    };
+    
+    img.src = URL.createObjectURL(file);
+  });
+};
+```
+
+## Performance Optimization
+
+### Image Upload Optimization
+
+The API processes multiple document uploads in parallel for better performance. To avoid timeout errors:
+
+1. **Compress images before upload**:
+   - Maximum recommended size: 800x800 pixels
+   - JPEG quality: 60-80%
+   - Target file size: <200KB per image
+
+2. **Total payload recommendations**:
+   - Keep total request size under 2MB
+   - Driver applications: 5 images max
+   - Business applications: 4 images max
+
+3. **Connection requirements**:
+   - Stable internet connection
+   - Minimum upload speed: 1 Mbps
+
+### Timeout Handling
+
+The API has a 60-second timeout limit. If you encounter 504 timeout errors:
+
+1. **Reduce image sizes** on the client side
+2. **Check image quality** - use JPEG with 60-70% quality
+3. **Retry with smaller images** if the first attempt fails
+4. **Consider uploading one document at a time** for very slow connections
+
+### Error Handling Example
+
+```javascript
+const submitApplication = async (applicationData) => {
+  try {
+    console.log('Submitting application...');
+    const response = await fetch('/api/commerce/apply', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(applicationData),
+    });
+    
+    if (!response.ok) {
+      if (response.status === 504) {
+        throw new Error('Request timeout - please compress your images and try again');
+      }
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    return await response.json();
+    
+  } catch (error) {
+    if (error.message.includes('timeout') || error.message.includes('504')) {
+      // Handle timeout - suggest image compression
+      console.error('Upload timeout - images may be too large');
+      throw new Error('Upload timeout. Please reduce image sizes and try again.');
+    }
+    throw error;
   }
 };
 ```

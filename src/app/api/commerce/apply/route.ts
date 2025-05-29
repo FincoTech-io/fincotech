@@ -14,12 +14,22 @@ import {
   transformDriverData
 } from '@/utils/applicationUtils';
 
+// Configure the API route for longer timeout and larger body size
+export const runtime = 'nodejs';
+export const maxDuration = 60; // 60 seconds for Vercel Pro plans, 10 seconds for hobby
+
 export async function POST(request: NextRequest) {
+  const startTime = Date.now();
+  
   try {
+    console.log('🚀 Starting application submission...');
     await connectToDatabase();
     
     const applicationData = await request.json();
     const { applicationType, applicantUserId, ...rawData } = applicationData;
+    
+    console.log(`📋 Application type: ${applicationType}, User ID: ${applicantUserId || 'N/A'}`);
+    console.log(`📊 Raw data size: ${JSON.stringify(rawData).length} characters`);
     
     // Validate application type
     if (!applicationType || !['business', 'driver'].includes(applicationType)) {
@@ -45,15 +55,18 @@ export async function POST(request: NextRequest) {
 
     // Generate application reference
     const applicationRef = generateApplicationRef(applicationType);
+    console.log(`🔖 Generated application reference: ${applicationRef}`);
 
     let processedApplicationData;
     let validationResult;
 
     if (applicationType === 'business') {
       // Validate business application data
+      console.log('🔍 Validating business application...');
       validationResult = validateBusinessApplication(data);
       
       if (!validationResult.isValid) {
+        console.log('❌ Business validation failed:', validationResult.errors);
         return NextResponse.json(
           { 
             success: false, 
@@ -65,6 +78,7 @@ export async function POST(request: NextRequest) {
       }
 
       // Process business document uploads
+      console.log('📤 Processing business document uploads...');
       const documentFields = getBusinessDocumentFields();
       const cloudinaryFolder = getCloudinaryFolder('business');
       
@@ -76,9 +90,11 @@ export async function POST(request: NextRequest) {
 
     } else if (applicationType === 'driver') {
       // Validate driver application data
+      console.log('🔍 Validating driver application...');
       validationResult = validateDriverApplication(data);
       
       if (!validationResult.isValid) {
+        console.log('❌ Driver validation failed:', validationResult.errors);
         return NextResponse.json(
           { 
             success: false, 
@@ -90,6 +106,7 @@ export async function POST(request: NextRequest) {
       }
 
       // Process driver document uploads
+      console.log('📤 Processing driver document uploads...');
       const documentFields = getDriverDocumentFields();
       const cloudinaryFolder = getCloudinaryFolder('driver');
       
@@ -101,6 +118,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Create the application record
+    console.log('💾 Creating application record...');
     const applicationDoc: any = {
       applicationType,
       applicantUserId: applicantUserId || null,
@@ -121,10 +139,12 @@ export async function POST(request: NextRequest) {
 
     const newApplication = new Application(applicationDoc);
     await newApplication.save();
+    console.log('✅ Application saved to database');
 
     // Add application reference to user's document if user ID is provided
     if (applicantUserId) {
       try {
+        console.log('👤 Updating user document with application reference...');
         await User.findByIdAndUpdate(
           applicantUserId,
           {
@@ -140,12 +160,16 @@ export async function POST(request: NextRequest) {
           },
           { new: true }
         );
-        console.log(`Added application reference to user ${applicantUserId}`);
+        console.log(`✅ Added application reference to user ${applicantUserId}`);
       } catch (userUpdateError) {
-        console.error('Error updating user with application reference:', userUpdateError);
+        console.error('❌ Error updating user with application reference:', userUpdateError);
         // Don't fail the whole request if user update fails
       }
     }
+
+    const endTime = Date.now();
+    const processingTime = endTime - startTime;
+    console.log(`🎉 Application submission completed in ${processingTime}ms`);
 
     return NextResponse.json({
       success: true,
@@ -154,12 +178,15 @@ export async function POST(request: NextRequest) {
         applicationId: newApplication._id,
         status: 'Pending',
         submissionDate: newApplication.submissionDate,
+        processingTime: `${processingTime}ms`,
         message: `${applicationType === 'business' ? 'Business' : 'Driver'} application submitted successfully`
       }
     }, { status: 201 });
 
   } catch (error: any) {
-    console.error('Error submitting application:', error);
+    const endTime = Date.now();
+    const processingTime = endTime - startTime;
+    console.error(`❌ Error submitting application (after ${processingTime}ms):`, error);
     
     // Handle specific validation errors
     if (error.name === 'ValidationError') {
@@ -175,6 +202,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { success: false, error: 'Application with this reference already exists' },
         { status: 409 }
+      );
+    }
+
+    // Handle timeout errors
+    if (error.message?.includes('timeout') || error.code === 'ETIMEOUT') {
+      return NextResponse.json(
+        { success: false, error: 'Request timeout - please try again with smaller images or check your connection' },
+        { status: 504 }
       );
     }
 

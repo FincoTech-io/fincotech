@@ -34,10 +34,11 @@ export async function uploadImageToCloudinary(
       resource_type: 'image',
       public_id: `${Date.now()}_${uuidv4()}`,
       transformation: [
-        { width: 1500, height: 1500, crop: 'limit' },
-        { quality: 'auto:good' },
+        { width: 1000, height: 1000, crop: 'limit' },
+        { quality: 'auto:low' },
         { format: 'jpg' }
-      ]
+      ],
+      timeout: 60000
     });
 
     return {
@@ -53,8 +54,9 @@ export async function uploadImageToCloudinary(
 }
 
 /**
- * Process file references in application data
+ * Process file references in application data - OPTIMIZED VERSION
  * Handles both base64 data URLs and file:// URLs from mobile apps
+ * Processes uploads in parallel for better performance
  */
 export async function processDocumentUploads(
   applicationData: any,
@@ -63,43 +65,57 @@ export async function processDocumentUploads(
 ): Promise<any> {
   const processedData = { ...applicationData };
   
+  // Collect all upload tasks to process in parallel
+  const uploadTasks: Promise<void>[] = [];
+  
   for (const field of documentFields) {
     const fieldValue = applicationData[field];
     
     if (fieldValue && typeof fieldValue === 'string') {
-      try {
-        if (fieldValue.startsWith('data:image/')) {
-          // Handle base64 data URLs directly
-          console.log(`Uploading ${field} to Cloudinary...`);
-          const uploadResult = await uploadImageToCloudinary(fieldValue, cloudinaryFolder, field);
-          processedData[field] = uploadResult;
-          console.log(`Successfully uploaded ${field}: ${uploadResult.url}`);
+      // Create upload task for each field
+      const uploadTask = (async () => {
+        try {
+          if (fieldValue.startsWith('data:image/')) {
+            // Handle base64 data URLs directly
+            console.log(`Starting upload for ${field} to Cloudinary...`);
+            const uploadResult = await uploadImageToCloudinary(fieldValue, cloudinaryFolder, field);
+            processedData[field] = uploadResult;
+            console.log(`✅ Successfully uploaded ${field}: ${uploadResult.url}`);
+            
+          } else if (fieldValue.startsWith('file://')) {
+            // Handle file:// URLs from mobile apps
+            console.log(`⚠️ File reference found for ${field}: ${fieldValue}`);
+            console.log('Note: File:// URLs need to be converted to base64 on the client side before submission');
+            processedData[field] = null;
+            
+          } else if (fieldValue.length > 1000) {
+            // Assume it's base64 data without proper data URL prefix
+            console.log(`Starting upload for ${field} as raw base64 data...`);
+            const uploadResult = await uploadImageToCloudinary(`data:image/jpeg;base64,${fieldValue}`, cloudinaryFolder, field);
+            processedData[field] = uploadResult;
+            console.log(`✅ Successfully uploaded ${field} (raw base64)`);
+            
+          } else {
+            // Keep other string values as is (URLs, etc.)
+            processedData[field] = fieldValue;
+          }
           
-        } else if (fieldValue.startsWith('file://')) {
-          // Handle file:// URLs from mobile apps
-          console.log(`File reference found for ${field}: ${fieldValue}`);
-          console.log('Note: File:// URLs need to be converted to base64 on the client side before submission');
-          
-          // For now, we'll remove the file reference and log a warning
-          // In production, you'd want to handle this differently or require client-side conversion
+        } catch (error) {
+          console.error(`❌ Error processing ${field}:`, error);
           processedData[field] = null;
-          
-        } else if (fieldValue.length > 1000) {
-          // Assume it's base64 data without proper data URL prefix
-          console.log(`Processing ${field} as raw base64 data...`);
-          const uploadResult = await uploadImageToCloudinary(`data:image/jpeg;base64,${fieldValue}`, cloudinaryFolder, field);
-          processedData[field] = uploadResult;
-          
-        } else {
-          // Keep other string values as is (URLs, etc.)
-          processedData[field] = fieldValue;
+          // Don't throw here, just log and continue with other uploads
         }
-        
-      } catch (error) {
-        console.error(`Error processing ${field}:`, error);
-        processedData[field] = null;
-      }
+      })();
+      
+      uploadTasks.push(uploadTask);
     }
+  }
+  
+  // Wait for all uploads to complete in parallel
+  if (uploadTasks.length > 0) {
+    console.log(`🚀 Processing ${uploadTasks.length} document uploads in parallel...`);
+    await Promise.allSettled(uploadTasks); // Use allSettled to handle individual failures
+    console.log(`✅ Completed processing all document uploads`);
   }
   
   return processedData;
