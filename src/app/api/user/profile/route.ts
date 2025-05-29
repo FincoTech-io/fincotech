@@ -73,6 +73,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({
         success: true,
         user: {
+          id: user._id.toString(),
           fullName: user.fullName,
           phoneNumber: user.phoneNumber,
           email: user.email,
@@ -224,6 +225,7 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({
         success: true,
         user: {
+          id: updatedUser._id.toString(),
           fullName: updatedUser.fullName,
           phoneNumber: updatedUser.phoneNumber,
           email: updatedUser.email,

@@ -712,4 +712,112 @@ When an application is submitted, the application reference is automatically add
     }
   ]
 }
+```
+
+## Frontend Integration
+
+### Getting the User ID
+
+To submit applications, you need the user's MongoDB ObjectId. This is available from several endpoints:
+
+#### 1. Sign-in Response
+```json
+{
+  "success": true,
+  "accessToken": "...",
+  "refreshToken": "...",
+  "user": {
+    "id": "60d5f60f1234567890abcdef", // ← Use this for applicantUserId
+    "phoneNumber": "+1234567890",
+    "fullName": "John Doe",
+    "email": "john@example.com",
+    // ... other fields
+  }
+}
+```
+
+#### 2. Profile Endpoint Response
+```json
+{
+  "success": true,
+  "user": {
+    "id": "60d5f60f1234567890abcdef", // ← Use this for applicantUserId
+    "fullName": "John Doe",
+    "phoneNumber": "+1234567890",
+    "email": "john@example.com",
+    // ... other fields
+  }
+}
+```
+
+### Frontend Implementation Example
+
+```javascript
+// Example for React Native/Mobile App
+const submitDriverApplication = async (applicationData) => {
+  try {
+    // Get user data from your state management (Redux, Context, etc.)
+    const user = getCurrentUser(); // Your method to get current user
+    
+    // Ensure user has an ID
+    if (!user?.id) {
+      throw new Error('User ID not found. Please log in again.');
+    }
+    
+    const payload = {
+      applicationType: 'driver',
+      applicantUserId: user.id, // This is the critical field
+      ...applicationData
+    };
+    
+    console.log('Submitting application with user ID:', user.id);
+    
+    const response = await fetch('/api/commerce/apply', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${accessToken}` // If needed
+      },
+      body: JSON.stringify(payload)
+    });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    return await response.json();
+    
+  } catch (error) {
+    console.error('Application submission error:', error);
+    throw error;
+  }
+};
+```
+
+### Troubleshooting User ID Issues
+
+If you get the error "No user ID found in user object":
+
+1. **Check your user state**: Ensure your user object includes the `id` field
+2. **Re-fetch user profile**: Call `GET /api/user/profile` to get updated user data
+3. **Check storage**: If using local storage/AsyncStorage, ensure the `id` is saved
+4. **Re-authenticate**: Sign in again to get fresh user data with ID
+
+#### Debug Helper
+```javascript
+const debugUserObject = (user) => {
+  console.log('User object:', user);
+  console.log('Has ID?', !!user?.id);
+  console.log('ID value:', user?.id);
+  console.log('ID type:', typeof user?.id);
+  
+  if (!user?.id) {
+    console.error('❌ User ID missing! User object keys:', Object.keys(user || {}));
+  } else {
+    console.log('✅ User ID found:', user.id);
+  }
+};
+
+// Use before submitting application
+debugUserObject(currentUser);
 ``` 
