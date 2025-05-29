@@ -11,6 +11,15 @@ export interface IEmbeddedNotification {
   metadata?: Record<string, any>;
 }
 
+// Interface for Application Reference
+export interface IApplicationReference {
+  applicationId: mongoose.Types.ObjectId;
+  applicationRef: string;
+  applicationType: 'business' | 'driver';
+  status: 'Pending' | 'In Review' | 'Approved' | 'Declined';
+  submissionDate: Date;
+}
+
 // Interface for User document
 export interface IUser extends Document {
   _id: string;
@@ -48,6 +57,7 @@ export interface IUser extends Document {
     merchantName: string;
   }[];
   driverAccountId?: string;
+  applications: IApplicationReference[];
   notifications: IEmbeddedNotification[];
   notificationPreferences: {
     paymentReceived: {
@@ -190,6 +200,35 @@ const UserSchema = new Schema<IUser>(
     hasUnreadNotifications: {
       type: Boolean,
       default: false,
+    },
+    applications: {
+      type: [{
+        applicationId: {
+          type: Schema.Types.ObjectId,
+          ref: 'Application',
+          required: true,
+        },
+        applicationRef: {
+          type: String,
+          required: true,
+          trim: true,
+        },
+        applicationType: {
+          type: String,
+          enum: ['business', 'driver'],
+          required: true,
+        },
+        status: {
+          type: String,
+          enum: ['Pending', 'In Review', 'Approved', 'Declined'],
+          required: true,
+        },
+        submissionDate: {
+          type: Date,
+          required: true,
+        },
+      }],
+      default: [],
     },
     notifications: {
       type: [{

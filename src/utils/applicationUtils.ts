@@ -366,7 +366,7 @@ export function transformDriverData(frontendData: any): any {
   }
   
   if (!transformed.verificationStatus) {
-    transformed.verificationStatus = 'pending';
+    transformed.verificationStatus = 'Pending';
   }
   
   return transformed;

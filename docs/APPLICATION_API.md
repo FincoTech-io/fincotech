@@ -1,6 +1,6 @@
 # Application API Documentation
 
-The Application API allows users to submit applications for both business merchants and drivers, with document upload support via Cloudinary.
+The Application API allows users to submit applications for both business merchants and drivers, with document upload support via Cloudinary. Application references are automatically added to the user's document for easy status tracking.
 
 ## Endpoints
 
@@ -8,7 +8,7 @@ The Application API allows users to submit applications for both business mercha
 
 **POST** `/api/commerce/apply`
 
-Submit a new business or driver application.
+Submit a new business or driver application. The application reference will be automatically added to the user's document if `applicantUserId` is provided.
 
 #### Request Body
 
@@ -187,7 +187,7 @@ Submit a new business or driver application.
   "data": {
     "applicationRef": "DRV-1703123456789-ABC123",
     "applicationId": "60d5f60f1234567890abcdef",
-    "status": "submitted",
+    "status": "Pending",
     "submissionDate": "2023-12-21T10:30:00.000Z",
     "message": "Driver application submitted successfully"
   }
@@ -248,14 +248,14 @@ GET /api/commerce/apply?status=submitted&limit=10&skip=0
 
 **PATCH** `/api/commerce/apply`
 
-Update application status and review information.
+Update application status and review information. The status will also be updated in the user's document automatically.
 
 #### Request Body
 
 ```json
 {
   "applicationRef": "DRV-1703123456789-ABC123",
-  "status": "approved",
+  "status": "Approved",
   "reviewNotes": "All documents verified successfully",
   "reviewedBy": "60d5f60f1234567890admin"
 }
@@ -263,11 +263,10 @@ Update application status and review information.
 
 #### Valid Statuses
 
-- `submitted` - Initial submission
-- `under_review` - Being reviewed by admin
-- `approved` - Application approved
-- `rejected` - Application rejected
-- `pending_documents` - Additional documents required
+- `Pending` - Initial submission (default)
+- `In Review` - Being reviewed by admin
+- `Approved` - Application approved
+- `Declined` - Application rejected
 
 #### Response
 
@@ -276,12 +275,60 @@ Update application status and review information.
   "success": true,
   "data": {
     "applicationRef": "DRV-1703123456789-ABC123",
-    "status": "approved",
+    "status": "Approved",
     "reviewDate": "2023-12-21T11:30:00.000Z",
     "approvalDate": "2023-12-21T11:30:00.000Z",
     "rejectionDate": null
   },
   "message": "Application updated successfully"
+}
+```
+
+### 4. Get User Applications
+
+**GET** `/api/users/{userId}/applications`
+
+Retrieve all applications for a specific user from their user document. This is a quick way for users to check their application status without querying the main applications collection.
+
+#### Parameters
+
+- `userId` - The user's ID (path parameter)
+
+#### Example
+
+```bash
+GET /api/users/60d5f60f1234567890abcdef/applications
+```
+
+#### Response
+
+```json
+{
+  "success": true,
+  "data": {
+    "userId": "60d5f60f1234567890abcdef",
+    "userInfo": {
+      "fullName": "John Doe",
+      "phoneNumber": "+1234567890"
+    },
+    "applications": [
+      {
+        "applicationId": "60d5f60f1234567890abcdef",
+        "applicationRef": "DRV-1703123456789-ABC123",
+        "applicationType": "driver",
+        "status": "Pending",
+        "submissionDate": "2023-12-21T10:30:00.000Z"
+      },
+      {
+        "applicationId": "60d5f60f1234567890abcde0",
+        "applicationRef": "BIZ-1703123456789-XYZ456",
+        "applicationType": "business",
+        "status": "In Review",
+        "submissionDate": "2023-12-20T08:15:00.000Z"
+      }
+    ],
+    "totalApplications": 2
+  }
 }
 ```
 
@@ -415,8 +462,27 @@ Applications are stored in the `applications` collection with the following stru
 
 ## Status Workflow
 
-1. **submitted** → Application initially submitted
-2. **under_review** → Admin reviewing application
-3. **pending_documents** → Additional documents required
-4. **approved** → Application approved, can create merchant/driver account
-5. **rejected** → Application rejected with reason 
+1. **Pending** → Application initially submitted (default status)
+2. **In Review** → Admin reviewing application
+3. **Approved** → Application approved, can create merchant/driver account
+4. **Declined** → Application rejected with reason
+
+## User Application Tracking
+
+When an application is submitted with a valid `applicantUserId`, the application reference is automatically added to the user's document in the `applications` array. This allows users to easily track their application status.
+
+### User Applications Structure
+
+```json
+{
+  "applications": [
+    {
+      "applicationId": "60d5f60f1234567890abcdef",
+      "applicationRef": "DRV-1703123456789-ABC123",
+      "applicationType": "driver",
+      "status": "Pending",
+      "submissionDate": "2023-12-21T10:30:00.000Z"
+    }
+  ]
+}
+``` 

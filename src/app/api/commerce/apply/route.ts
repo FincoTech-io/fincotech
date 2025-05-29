@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectToDatabase } from '@/utils/db';
 import Application from '@/models/Application';
+import User from '@/models/User';
 import {
   generateApplicationRef,
   validateBusinessApplication,
@@ -104,7 +105,7 @@ export async function POST(request: NextRequest) {
       applicationType,
       applicantUserId: applicantUserId || null,
       applicationRef,
-      status: 'submitted',
+      status: 'Pending',
       submissionDate: new Date(),
       ipAddress: clientIP,
       userAgent,
@@ -121,12 +122,37 @@ export async function POST(request: NextRequest) {
     const newApplication = new Application(applicationDoc);
     await newApplication.save();
 
+    // Add application reference to user's document if user ID is provided
+    if (applicantUserId) {
+      try {
+        await User.findByIdAndUpdate(
+          applicantUserId,
+          {
+            $push: {
+              applications: {
+                applicationId: newApplication._id,
+                applicationRef: applicationRef,
+                applicationType: applicationType,
+                status: 'Pending',
+                submissionDate: newApplication.submissionDate
+              }
+            }
+          },
+          { new: true }
+        );
+        console.log(`Added application reference to user ${applicantUserId}`);
+      } catch (userUpdateError) {
+        console.error('Error updating user with application reference:', userUpdateError);
+        // Don't fail the whole request if user update fails
+      }
+    }
+
     return NextResponse.json({
       success: true,
       data: {
         applicationRef,
         applicationId: newApplication._id,
-        status: 'submitted',
+        status: 'Pending',
         submissionDate: newApplication.submissionDate,
         message: `${applicationType === 'business' ? 'Business' : 'Driver'} application submitted successfully`
       }
@@ -240,7 +266,7 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
-    const validStatuses = ['submitted', 'under_review', 'approved', 'rejected', 'pending_documents'];
+    const validStatuses = ['Pending', 'In Review', 'Approved', 'Declined'];
     if (status && !validStatuses.includes(status)) {
       return NextResponse.json(
         { success: false, error: 'Invalid status. Valid statuses are: ' + validStatuses.join(', ') },
@@ -265,13 +291,35 @@ export async function PATCH(request: NextRequest) {
     
     application.reviewDate = new Date();
     
-    if (status === 'approved') {
+    if (status === 'Approved') {
       application.approvalDate = new Date();
-    } else if (status === 'rejected') {
+    } else if (status === 'Declined') {
       application.rejectionDate = new Date();
     }
 
     await application.save();
+
+    // Update user's application status if user exists
+    if (application.applicantUserId && status) {
+      try {
+        await User.findByIdAndUpdate(
+          application.applicantUserId,
+          {
+            $set: {
+              'applications.$[elem].status': status
+            }
+          },
+          {
+            arrayFilters: [{ 'elem.applicationRef': applicationRef }],
+            new: true
+          }
+        );
+        console.log(`Updated application status in user document for ${applicationRef}`);
+      } catch (userUpdateError) {
+        console.error('Error updating user application status:', userUpdateError);
+        // Don't fail the request if user update fails
+      }
+    }
 
     return NextResponse.json({
       success: true,

@@ -167,7 +167,7 @@ export interface IApplication extends Document {
   driverApplication?: IDriverApplication;
   
   // Application Status & Processing
-  status: 'submitted' | 'under_review' | 'approved' | 'rejected' | 'pending_documents';
+  status: 'Pending' | 'In Review' | 'Approved' | 'Declined';
   submissionDate: Date;
   reviewDate?: Date;
   approvalDate?: Date;
@@ -651,8 +651,8 @@ const ApplicationSchema = new Schema<IApplication>(
     // Application Status & Processing
     status: {
       type: String,
-      enum: ['submitted', 'under_review', 'approved', 'rejected', 'pending_documents'],
-      default: 'submitted',
+      enum: ['Pending', 'In Review', 'Approved', 'Declined'],
+      default: 'Pending',
     },
     submissionDate: {
       type: Date,
