@@ -1,6 +1,6 @@
 # Application API Documentation
 
-The Application API allows users to submit applications for both business merchants and drivers, with document upload support via Cloudinary. Application references are automatically added to the user's document for easy status tracking.
+The Application API allows users to submit applications for both business merchants and drivers, with document upload support via Cloudinary. All applications must be linked to a user account for proper tracking and management.
 
 ## Endpoints
 
@@ -8,17 +8,23 @@ The Application API allows users to submit applications for both business mercha
 
 **POST** `/api/commerce/apply`
 
-Submit a new business or driver application. The application reference will be automatically added to the user's document if `applicantUserId` is provided.
+Submit a new business or driver application. The application reference will be automatically added to the user's document.
 
 #### Request Body
 
 ```json
 {
   "applicationType": "business" | "driver",
-  "applicantUserId": "optional-user-id",
+  "applicantUserId": "required-user-id",
   ...applicationData
 }
 ```
+
+#### Required Fields
+
+- `applicationType`: Must be either "business" or "driver"
+- `applicantUserId`: **Required** - Must be a valid MongoDB ObjectId for an existing user
+- Additional fields based on application type (see examples below)
 
 #### Business Application Example
 
@@ -176,6 +182,32 @@ Submit a new business or driver application. The application reference will be a
     "sms": true
   },
   "verificationStatus": "pending"
+}
+```
+
+#### Validation Errors
+
+If `applicantUserId` is missing or invalid:
+
+```json
+{
+  "success": false,
+  "error": "Applicant user ID is required"
+}
+```
+
+```json
+{
+  "success": false,
+  "error": "Invalid applicant user ID format"
+}
+```
+
+```json
+{
+  "success": false,
+  "error": "User not found",
+  "details": "No user found with ID: 60d5f60f1234567890abcdef"
 }
 ```
 
@@ -662,7 +694,9 @@ Applications are stored in the `applications` collection with the following stru
 
 ## User Application Tracking
 
-When an application is submitted with a valid `applicantUserId`, the application reference is automatically added to the user's document in the `applications` array. This allows users to easily track their application status.
+When an application is submitted, the application reference is automatically added to the user's document in the `applications` array. This allows users to easily track their application status.
+
+**Note**: As of the latest version, `applicantUserId` is required for all application submissions. This ensures proper data consistency and eliminates sync issues between the applications collection and user documents.
 
 ### User Applications Structure
 

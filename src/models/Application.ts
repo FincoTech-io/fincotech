@@ -159,7 +159,7 @@ export interface IDriverApplication {
 export interface IApplication extends Document {
   _id: mongoose.Types.ObjectId;
   applicationType: 'business' | 'driver';
-  applicantUserId?: mongoose.Types.ObjectId;
+  applicantUserId: mongoose.Types.ObjectId;
   applicationRef: string;
   
   // Application Data (one will be populated based on type)
@@ -635,6 +635,7 @@ const ApplicationSchema = new Schema<IApplication>(
     applicantUserId: {
       type: Schema.Types.ObjectId,
       ref: 'User',
+      required: [true, 'Applicant user ID is required'],
       index: true,
     },
     applicationRef: {
