@@ -42,12 +42,12 @@ export interface IUser extends Document {
   currentRegion?: string;
   currentAddress?: string;
   hasUnreadNotifications: boolean;
-  businessAccess?: {
-    userRole: 'ADMIN' | 'BUSINESS_OWNER' | 'BUSINESS_MANAGER' | 'BUSINESS_STAFF';
-    businessId: string;
-    businessName: string;
+  merchantAccess?: {
+    userRole: 'ADMIN' | 'MERCHANT_OWNER' | 'MERCHANT_MANAGER' | 'MERCHANT_STAFF';
+    merchantId: string;
+    merchantName: string;
   }[];
-  DriverAccountId?: string;
+  driverAccountId?: string;
   notifications: IEmbeddedNotification[];
   notificationPreferences: {
     paymentReceived: {

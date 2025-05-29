@@ -50,18 +50,18 @@ export interface IAdvertisement {
   targetKeywords?: string[];
 }
 
-// Interface for Business document
-export interface IBusiness extends Document {
+// Interface for Merchant document
+export interface IMerchant extends Document {
   _id: string;
   phoneNumber: string;
   email: string;
-  businessName: string;
-  businessType: 'RESTAURANT' | 'RETAIL' | 'MARKET' | 'SERVICE' | 'EDUCATIONAL' | 'ENTERTAINMENT' | 'HOTEL' | 'RENTAL' | 'TRANSPORTATION' | 'OTHER';
-  businessAddress: string;
-  businessLicense: string;
-  businessStaff: {
+  merchantName: string;
+  merchantType: 'RESTAURANT' | 'RETAIL' | 'MARKET' | 'SERVICE' | 'EDUCATIONAL' | 'ENTERTAINMENT' | 'HOTEL' | 'RENTAL' | 'TRANSPORTATION' | 'OTHER';
+  merchantAddress: string;
+  merchantLicense: string;
+  merchantStaff: {
     name: string;
-    role: 'ADMIN' | 'BUSINESS_OWNER' | 'BUSINESS_MANAGER' | 'BUSINESS_STAFF';
+    role: 'ADMIN' | 'MERCHANT_OWNER' | 'MERCHANT_MANAGER' | 'MERCHANT_STAFF';
     email: string;
     phoneNumber: string;
     userId: string;
@@ -75,31 +75,31 @@ export interface IBusiness extends Document {
   advertisements?: IAdvertisement[];
   notificationPreferences: {
     paymentReceived: {
-      roles: 'ADMIN' | 'BUSINESS_OWNER' | 'BUSINESS_MANAGER' | 'BUSINESS_STAFF';
+      roles: 'ADMIN' | 'MERCHANT_OWNER' | 'MERCHANT_MANAGER' | 'MERCHANT_STAFF';
       sms: boolean;
       push: boolean;
       email: boolean;
     };
     paymentSent: {
-      roles: 'ADMIN' | 'BUSINESS_OWNER' | 'BUSINESS_MANAGER' | 'BUSINESS_STAFF';
+      roles: 'ADMIN' | 'MERCHANT_OWNER' | 'MERCHANT_MANAGER' | 'MERCHANT_STAFF';
       sms: boolean;
       push: boolean;
       email: boolean;
     };
     systemUpdates: {
-      roles: 'ADMIN' | 'BUSINESS_OWNER' | 'BUSINESS_MANAGER' | 'BUSINESS_STAFF';
+      roles: 'ADMIN' | 'MERCHANT_OWNER' | 'MERCHANT_MANAGER' | 'MERCHANT_STAFF';
       sms: boolean;
       push: boolean;
       email: boolean;
     };
     security: {
-      roles: 'ADMIN' | 'BUSINESS_OWNER' | 'BUSINESS_MANAGER' | 'BUSINESS_STAFF';
+      roles: 'ADMIN' | 'MERCHANT_OWNER' | 'MERCHANT_MANAGER' | 'MERCHANT_STAFF';
       sms: boolean;
       push: boolean;
       email: boolean;
     };
     promotions: {
-      roles: 'ADMIN' | 'BUSINESS_OWNER' | 'BUSINESS_MANAGER' | 'BUSINESS_STAFF';
+      roles: 'ADMIN' | 'MERCHANT_OWNER' | 'MERCHANT_MANAGER' | 'MERCHANT_STAFF';
       sms: boolean;
       push: boolean;
       email: boolean;
@@ -110,7 +110,7 @@ export interface IBusiness extends Document {
 }
 
 // Define the User schema
-const BusinessSchema = new Schema<IBusiness>(
+const MerchantSchema = new Schema<IMerchant>(
   {
     phoneNumber: {
       type: String,
@@ -122,23 +122,23 @@ const BusinessSchema = new Schema<IBusiness>(
       required: true,
       unique: true,
     },
-    businessName: {
+    merchantName: {
       type: String,
       required: true,
     },    
-    businessType: {
+    merchantType: {
       type: String,
       required: true,
     },
-    businessAddress: {
+    merchantAddress: {
       type: String, 
       required: true,
     },
-    businessLicense: {
+    merchantLicense: {
       type: String,
       required: true,
     },    
-    businessStaff: {
+    merchantStaff: {
       type: [{
         name: String,
         role: String,
@@ -278,7 +278,7 @@ const BusinessSchema = new Schema<IBusiness>(
 
 
 // Create or retrieve the User model
-export const Business = mongoose.models.Business as mongoose.Model<IBusiness> || 
-  mongoose.model<IBusiness>('Business', BusinessSchema);
+export const Merchant = mongoose.models.Merchant as mongoose.Model<IMerchant> || 
+  mongoose.model<IMerchant>('Merchant', MerchantSchema);
 
-export default Business; 
+export default Merchant; 

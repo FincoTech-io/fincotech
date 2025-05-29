@@ -11,7 +11,7 @@ export interface IWallet extends Document {
   currency: string;
   isActive: boolean;
   privacy: boolean;
-  tier: 'BASIC' | 'STANDARD' | 'PREMIUM' | 'VIP' | 'BUSINESS' | 'DRIVER';
+  tier: 'BASIC' | 'STANDARD' | 'PREMIUM' | 'VIP' | 'MERCHANT' | 'DRIVER';
   monthlyTransactionCount: number;
   lastTransactionReset: Date;
   transfersReceived: Array<{

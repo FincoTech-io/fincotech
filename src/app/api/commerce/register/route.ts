@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectToDatabase } from '@/utils/db';
-import Business from '@/models/Business';
-import { IBusiness } from '@/models/Business';
+import Merchant from '@/models/Merchant';
+import { IMerchant } from '@/models/Merchant';
 import { createWallet } from '@/utils/walletUtils';
 import jwt from 'jsonwebtoken';
 import redisService from '@/utils/redis';
@@ -15,34 +15,34 @@ export async function POST(request: NextRequest) {
         await connectToDatabase();
 
         // Parse the request body
-        const businessData = await request.json();
-        const { phoneNumber, email, businessName, businessType, businessAddress, businessLicense, businessStaff, verificationStatus, currentRegion, currentAddress, hasUnreadNotifications, notifications, advertisements, notificationPreferences, adminId } = businessData;
+        const merchantData = await request.json();
+        const { phoneNumber, email, merchantName, merchantType, merchantAddress, merchantLicense, merchantStaff, verificationStatus, currentRegion, currentAddress, hasUnreadNotifications, notifications, advertisements, notificationPreferences, adminId } = merchantData;
 
         // Validate required fields
-        if (!phoneNumber || !email || !businessName || !businessType || !businessAddress || !businessLicense) {
+        if (!phoneNumber || !email || !merchantName || !merchantType || !merchantAddress || !merchantLicense) {
             return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
         }
         // Normalize phone number
         const normalizedPhone = phoneNumber.replace(/\s+/g, '');
 
         // Check if business already exists 
-        const existingBusiness = await Business.findOne({ phoneNumber: { $regex: new RegExp('^' + normalizedPhone.replace(/[+]/g, '\\$&') + '$', 'i') } }).exec();
-        if (existingBusiness) {
-            return NextResponse.json({ error: 'Business with this phone number already exists' }, { status: 409 });
+        const existingMerchant = await Merchant.findOne({ phoneNumber: { $regex: new RegExp('^' + normalizedPhone.replace(/[+]/g, '\\$&') + '$', 'i') } }).exec();
+        if (existingMerchant) {
+            return NextResponse.json({ error: 'Merchant with this phone number already exists' }, { status: 409 });
         }
 
 
 
         // Create new business
-        const newBusiness = new Business({
+        const newMerchant = new Merchant({
             adminId,
             phoneNumber,
             email,
-            businessName,
-            businessType,
-            businessAddress,
-            businessLicense,
-            businessStaff,
+            merchantName,
+            merchantType,
+            merchantAddress,
+            merchantLicense,
+            merchantStaff,
             verificationStatus,
             currentRegion,
             currentAddress,
@@ -52,24 +52,24 @@ export async function POST(request: NextRequest) {
             notificationPreferences,
         });
 
-        // Save business to database
-        await newBusiness.save();
+        // Save merchant to database
+        await newMerchant.save();
 
         // Create a wallet for the business
         try {
-            const businessId = newBusiness._id.toString();
-            console.log('Creating wallet for new business:', businessId);
-            const walletResult = await createWallet(businessId, 'BUSINESS');
+            const merchantId = newMerchant._id.toString();
+            console.log('Creating wallet for new merchant:', merchantId);
+            const walletResult = await createWallet(merchantId, 'MERCHANT');
             console.log('Wallet created successfully:', walletResult.wallet.address);
         } catch (walletError) {
-            console.error('Error creating wallet for business:', walletError);
+            console.error('Error creating wallet for merchant:', walletError);
             // We won't fail the registration if wallet creation fails
             // The wallet can be created later if needed
         }
 
-        return NextResponse.json({ message: 'Business registered successfully' }, { status: 201 });
+        return NextResponse.json({ message: 'Merchant registered successfully' }, { status: 201 });
     } catch (error) {
-        console.error('Error registering business:', error);
+        console.error('Error registering merchant:', error);
         return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
 }
