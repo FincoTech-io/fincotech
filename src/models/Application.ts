@@ -696,10 +696,8 @@ const ApplicationSchema = new Schema<IApplication>(
   }
 );
 
-// Indexes for better query performance
+// Indexes for better query performance (only compound indexes and ones not already defined in field definitions)
 ApplicationSchema.index({ applicationType: 1, status: 1 });
-ApplicationSchema.index({ applicationRef: 1 });
-ApplicationSchema.index({ applicantUserId: 1 });
 ApplicationSchema.index({ submissionDate: -1 });
 ApplicationSchema.index({ status: 1, submissionDate: -1 });
 
