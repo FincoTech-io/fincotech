@@ -4,12 +4,12 @@ import User from '@/models/User';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { userId: string } }
+  { params }: { params: Promise<{ userId: string }> }
 ) {
   try {
     await connectToDatabase();
     
-    const { userId } = params;
+    const { userId } = await params;
     
     if (!userId) {
       return NextResponse.json(
