@@ -145,7 +145,26 @@ export async function POST(request: NextRequest) {
     if (applicantUserId) {
       try {
         console.log('👤 Updating user document with application reference...');
-        await User.findByIdAndUpdate(
+        console.log(`User ID: ${applicantUserId}`);
+        console.log(`Application ID: ${newApplication._id}`);
+        console.log(`Application Ref: ${applicationRef}`);
+        
+        // First, check if user exists
+        const existingUser = await User.findById(applicantUserId);
+        if (!existingUser) {
+          console.error(`❌ User with ID ${applicantUserId} not found`);
+          return NextResponse.json({
+            success: false,
+            error: 'User not found',
+            details: `No user found with ID: ${applicantUserId}`
+          }, { status: 404 });
+        }
+        
+        console.log(`✅ User found: ${existingUser.fullName} (${existingUser.phoneNumber})`);
+        console.log(`Current applications count: ${existingUser.applications?.length || 0}`);
+        
+        // Update user with application reference
+        const updatedUser = await User.findByIdAndUpdate(
           applicantUserId,
           {
             $push: {
@@ -158,13 +177,58 @@ export async function POST(request: NextRequest) {
               }
             }
           },
-          { new: true }
+          { 
+            new: true,
+            runValidators: true // Ensure validation runs
+          }
         );
-        console.log(`✅ Added application reference to user ${applicantUserId}`);
-      } catch (userUpdateError) {
+        
+        if (!updatedUser) {
+          console.error(`❌ Failed to update user ${applicantUserId} - user not found during update`);
+          return NextResponse.json({
+            success: false,
+            error: 'Failed to update user',
+            details: 'User not found during update operation'
+          }, { status: 404 });
+        }
+        
+        console.log(`✅ Successfully added application reference to user ${applicantUserId}`);
+        console.log(`New applications count: ${updatedUser.applications?.length || 0}`);
+        
+        // Verify the application was actually added
+        const applicationAdded = updatedUser.applications?.some(
+          app => app.applicationRef === applicationRef
+        );
+        
+        if (!applicationAdded) {
+          console.error(`❌ Application reference ${applicationRef} was not found in updated user document`);
+          return NextResponse.json({
+            success: false,
+            error: 'Failed to add application reference',
+            details: 'Application reference was not added to user document'
+          }, { status: 500 });
+        }
+        
+        console.log(`✅ Verified: Application reference ${applicationRef} successfully added to user document`);
+        
+      } catch (userUpdateError: any) {
         console.error('❌ Error updating user with application reference:', userUpdateError);
-        // Don't fail the whole request if user update fails
+        console.error('Error details:', {
+          name: userUpdateError.name,
+          message: userUpdateError.message,
+          code: userUpdateError.code,
+          stack: userUpdateError.stack
+        });
+        
+        // This is critical - if we can't update the user, return an error
+        return NextResponse.json({
+          success: false,
+          error: 'Failed to update user with application reference',
+          details: userUpdateError.message || 'Unknown error occurred while updating user'
+        }, { status: 500 });
       }
+    } else {
+      console.log('⚠️ No applicantUserId provided - skipping user document update');
     }
 
     const endTime = Date.now();

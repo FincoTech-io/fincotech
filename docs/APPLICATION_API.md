@@ -332,6 +332,108 @@ GET /api/users/60d5f60f1234567890abcdef/applications
 }
 ```
 
+### 5. Check User Application Sync
+
+**GET** `/api/users/{userId}/sync-applications`
+
+Check if all applications in the database are properly synced to the user's document. This endpoint helps identify discrepancies between the applications collection and user document.
+
+#### Example
+
+```bash
+GET /api/users/60d5f60f1234567890abcdef/sync-applications
+```
+
+#### Response
+
+```json
+{
+  "success": true,
+  "data": {
+    "user": {
+      "id": "60d5f60f1234567890abcdef",
+      "fullName": "John Doe",
+      "phoneNumber": "+1234567890"
+    },
+    "userApplications": 1,
+    "databaseApplications": 2,
+    "isInSync": false,
+    "discrepancies": {
+      "missingFromUser": 1,
+      "extraInUser": 0,
+      "missingApplications": ["DRV-1703123456789-ABC123"],
+      "extraApplications": []
+    },
+    "userApplicationsList": [...],
+    "databaseApplicationsList": [...]
+  }
+}
+```
+
+### 6. Sync User Applications
+
+**POST** `/api/users/{userId}/sync-applications`
+
+Manually sync missing applications from the applications collection to the user's document. This is useful for fixing applications that were saved but not added to the user document.
+
+#### Example
+
+```bash
+POST /api/users/60d5f60f1234567890abcdef/sync-applications
+```
+
+#### Response
+
+```json
+{
+  "success": true,
+  "message": "Successfully synced 1 applications",
+  "data": {
+    "userApplicationsBefore": 1,
+    "userApplicationsAfter": 2,
+    "databaseApplications": 2,
+    "synced": 1,
+    "syncedApplications": ["DRV-1703123456789-ABC123"]
+  }
+}
+```
+
+## Troubleshooting
+
+### Application Not Added to User Document
+
+If applications are being saved to the database but not appearing in the user's document:
+
+1. **Check the logs** - The API now provides detailed logging of the user update process
+2. **Verify user ID** - Ensure the `applicantUserId` is valid and the user exists
+3. **Use the sync endpoint** - Check discrepancies with `GET /api/users/{userId}/sync-applications`
+4. **Fix missing applications** - Use `POST /api/users/{userId}/sync-applications` to sync missing applications
+
+#### Common Issues:
+
+- **Invalid User ID**: The provided `applicantUserId` doesn't exist in the database
+- **Validation Errors**: The user document update fails validation
+- **Database Connection**: Connection issues during the user update operation
+- **Permission Issues**: Database permissions prevent updating user documents
+
+#### Error Response Examples:
+
+```json
+{
+  "success": false,
+  "error": "User not found",
+  "details": "No user found with ID: 60d5f60f1234567890abcdef"
+}
+```
+
+```json
+{
+  "success": false,
+  "error": "Failed to add application reference",
+  "details": "Application reference was not added to user document"
+}
+```
+
 ## Driver Application Fields
 
 ### Required Fields
