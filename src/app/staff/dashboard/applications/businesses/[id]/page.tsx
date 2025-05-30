@@ -30,82 +30,81 @@ interface BusinessApplication {
   submissionDate: string;
   businessApplication: {
     businessName: string;
+    businessDescription: string;
     businessCategory: string;
     businessIndustry: string;
     businessType: string;
+    businessWebsite?: string;
+    yearEstablished: string;
+    businessOwnershipPercentage: string;
     businessEmail: string;
     businessPhone: string;
+    useCurrentPhone: boolean;
+    businessStreetAddress: string;
+    businessCity: string;
+    businessState: string;
+    businessZipCode: string;
+    businessCountry: string;
+    businessAddress: string;
     businessRegistrationNumber: string;
-    businessAddress?: {
-      street: string;
-      city: string;
-      state: string;
-      zipCode: string;
-      country: string;
+    businessLicense: string;
+    taxId: string;
+    vatNumber?: string;
+    authorizedSignatory: string;
+    signatoryTitle: string;
+    businessBankName: string;
+    businessAccountType: string;
+    businessAccountNumber: string;
+    businessRoutingNumber: string;
+    primaryBusinessPurpose: string;
+    averageTransactionAmount: string;
+    expectedMonthlyVolume: string;
+    // Document uploads - direct properties
+    businessLicensePhoto?: { 
+      url: string; 
+      originalName: string; 
+      publicId?: string;
+      uploadedAt?: string;
+      _id?: string;
     };
-    taxId?: string;
-    website?: string;
-    description?: string;
-    ownerInformation?: {
-      firstName: string;
-      lastName: string;
+    businessRegistrationDocument?: { 
+      url: string; 
+      originalName: string; 
+      publicId?: string;
+      uploadedAt?: string;
+      _id?: string;
+    };
+    businessInsuranceDocument?: { 
+      url: string; 
+      originalName: string; 
+      publicId?: string;
+      uploadedAt?: string;
+      _id?: string;
+    };
+    taxCertificatePhoto?: { 
+      url: string; 
+      originalName: string; 
+      publicId?: string;
+      uploadedAt?: string;
+      _id?: string;
+    };
+    businessStaff: Array<{
+      name: string;
+      role: string;
       email: string;
-      phone: string;
-      title: string;
+      phoneNumber: string;
+    }>;
+    advertisements: any[];
+    notifications: any[];
+    hasUnreadNotifications: boolean;
+    notificationPreferences: {
+      email: boolean;
+      push: boolean;
+      sms: boolean;
     };
-    bankingInformation?: {
-      accountHolderName: string;
-      bankName: string;
-      accountNumber: string;
-      routingNumber: string;
-      accountType: string;
-    };
-    businessHours?: {
-      monday: { open: string; close: string; closed: boolean };
-      tuesday: { open: string; close: string; closed: boolean };
-      wednesday: { open: string; close: string; closed: boolean };
-      thursday: { open: string; close: string; closed: boolean };
-      friday: { open: string; close: string; closed: boolean };
-      saturday: { open: string; close: string; closed: boolean };
-      sunday: { open: string; close: string; closed: boolean };
-    };
-    documents?: {
-      businessLicense?: { 
-        url: string; 
-        originalName: string; 
-        publicId?: string;
-        uploadedAt?: string;
-        _id?: string;
-      };
-      taxDocument?: { 
-        url: string; 
-        originalName: string; 
-        publicId?: string;
-        uploadedAt?: string;
-        _id?: string;
-      };
-      ownerID?: { 
-        url: string; 
-        originalName: string; 
-        publicId?: string;
-        uploadedAt?: string;
-        _id?: string;
-      };
-      bankStatement?: { 
-        url: string; 
-        originalName: string; 
-        publicId?: string;
-        uploadedAt?: string;
-        _id?: string;
-      };
-      businessInsurance?: { 
-        url: string; 
-        originalName: string; 
-        publicId?: string;
-        uploadedAt?: string;
-        _id?: string;
-      };
-    };
+    currentAddress: string;
+    currentRegion: string;
+    verificationStatus: 'pending' | 'under_review' | 'approved' | 'rejected';
   };
   applicantUserId: string;
   reviewNotes?: string;
@@ -377,6 +376,28 @@ export default function BusinessApplicationDetailPage() {
                 <p className="text-white">{application.businessApplication.taxId}</p>
               </div>
             )}
+            {application.businessApplication.vatNumber && (
+              <div>
+                <label className="text-sm text-gray-400">VAT Number</label>
+                <p className="text-white">{application.businessApplication.vatNumber}</p>
+              </div>
+            )}
+            <div>
+              <label className="text-sm text-gray-400">Year Established</label>
+              <p className="text-white">{application.businessApplication.yearEstablished}</p>
+            </div>
+            <div>
+              <label className="text-sm text-gray-400">Ownership Percentage</label>
+              <p className="text-white">{application.businessApplication.businessOwnershipPercentage}%</p>
+            </div>
+            <div>
+              <label className="text-sm text-gray-400">Authorized Signatory</label>
+              <p className="text-white">{application.businessApplication.authorizedSignatory}</p>
+            </div>
+            <div>
+              <label className="text-sm text-gray-400">Signatory Title</label>
+              <p className="text-white">{application.businessApplication.signatoryTitle}</p>
+            </div>
           </div>
         </div>
 
@@ -396,48 +417,62 @@ export default function BusinessApplicationDetailPage() {
               <label className="text-sm text-gray-400">Phone</label>
               <p className="text-white">{application.businessApplication.businessPhone}</p>
             </div>
-            {application.businessApplication.website && (
+            {application.businessApplication.businessWebsite && (
               <div>
                 <label className="text-sm text-gray-400">Website</label>
-                <p className="text-white">{application.businessApplication.website}</p>
+                <p className="text-white">{application.businessApplication.businessWebsite}</p>
               </div>
             )}
           </div>
         </div>
 
-        {/* Owner Information */}
-        {application.businessApplication.ownerInformation && (
+        {/* Business Staff Information */}
+        {application.businessApplication.businessStaff && application.businessApplication.businessStaff.length > 0 ? (
           <div className="bg-gray-800 rounded-xl p-6 border border-gray-700">
             <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
               <UserIcon className="w-5 h-5 mr-2" />
-              Owner Information
+              Business Staff
             </h3>
             
             <div className="space-y-4">
-              <div>
-                <label className="text-sm text-gray-400">Name</label>
-                <p className="text-white">
-                  {application.businessApplication.ownerInformation.firstName} {application.businessApplication.ownerInformation.lastName}
-                </p>
-              </div>
-              <div>
-                <label className="text-sm text-gray-400">Title</label>
-                <p className="text-white">{application.businessApplication.ownerInformation.title}</p>
-              </div>
-              <div>
-                <label className="text-sm text-gray-400">Email</label>
-                <p className="text-white">{application.businessApplication.ownerInformation.email}</p>
-              </div>
-              <div>
-                <label className="text-sm text-gray-400">Phone</label>
-                <p className="text-white">{application.businessApplication.ownerInformation.phone}</p>
-              </div>
+              {application.businessApplication.businessStaff.map((staff, index) => (
+                <div key={index} className="border-b border-gray-700 pb-4 last:border-b-0 last:pb-0">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-sm text-gray-400">Name</label>
+                      <p className="text-white">{staff.name}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm text-gray-400">Role</label>
+                      <p className="text-white">{staff.role}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm text-gray-400">Email</label>
+                      <p className="text-white">{staff.email}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm text-gray-400">Phone</label>
+                      <p className="text-white">{staff.phoneNumber}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <div className="bg-gray-800 rounded-xl p-6 border border-gray-700">
+            <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
+              <UserIcon className="w-5 h-5 mr-2" />
+              Business Staff
+            </h3>
+            <div className="text-center py-4">
+              <p className="text-gray-400">No staff information provided</p>
             </div>
           </div>
         )}
 
         {/* Banking Information */}
-        {application.businessApplication.bankingInformation && (
+        {application.businessApplication.businessBankName && (
           <div className="bg-gray-800 rounded-xl p-6 border border-gray-700">
             <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
               <CreditCardIcon className="w-5 h-5 mr-2" />
@@ -446,28 +481,47 @@ export default function BusinessApplicationDetailPage() {
             
             <div className="space-y-4">
               <div>
-                <label className="text-sm text-gray-400">Account Holder</label>
-                <p className="text-white">{application.businessApplication.bankingInformation.accountHolderName}</p>
-              </div>
-              <div>
                 <label className="text-sm text-gray-400">Bank Name</label>
-                <p className="text-white">{application.businessApplication.bankingInformation.bankName}</p>
+                <p className="text-white">{application.businessApplication.businessBankName}</p>
               </div>
               <div>
                 <label className="text-sm text-gray-400">Account Number</label>
-                <p className="text-white">****{application.businessApplication.bankingInformation.accountNumber.slice(-4)}</p>
+                <p className="text-white">****{application.businessApplication.businessAccountNumber.slice(-4)}</p>
               </div>
               <div>
                 <label className="text-sm text-gray-400">Routing Number</label>
-                <p className="text-white">{application.businessApplication.bankingInformation.routingNumber}</p>
+                <p className="text-white">{application.businessApplication.businessRoutingNumber}</p>
               </div>
               <div>
                 <label className="text-sm text-gray-400">Account Type</label>
-                <p className="text-white">{application.businessApplication.bankingInformation.accountType}</p>
+                <p className="text-white">{application.businessApplication.businessAccountType}</p>
               </div>
             </div>
           </div>
         )}
+
+        {/* Business Operations */}
+        <div className="bg-gray-800 rounded-xl p-6 border border-gray-700">
+          <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
+            <CreditCardIcon className="w-5 h-5 mr-2" />
+            Business Operations
+          </h3>
+          
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm text-gray-400">Primary Business Purpose</label>
+              <p className="text-white">{application.businessApplication.primaryBusinessPurpose}</p>
+            </div>
+            <div>
+              <label className="text-sm text-gray-400">Average Transaction Amount</label>
+              <p className="text-white">{application.businessApplication.averageTransactionAmount}</p>
+            </div>
+            <div>
+              <label className="text-sm text-gray-400">Expected Monthly Volume</label>
+              <p className="text-white">{application.businessApplication.expectedMonthlyVolume}</p>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Business Address */}
@@ -478,37 +532,20 @@ export default function BusinessApplicationDetailPage() {
             Business Address
           </h3>
           <div className="text-white">
-            <p>{application.businessApplication.businessAddress.street}</p>
+            <p>{application.businessApplication.businessStreetAddress}</p>
             <p>
-              {application.businessApplication.businessAddress.city}, {application.businessApplication.businessAddress.state} {application.businessApplication.businessAddress.zipCode}
+              {application.businessApplication.businessCity}, {application.businessApplication.businessState} {application.businessApplication.businessZipCode}
             </p>
-            <p>{application.businessApplication.businessAddress.country}</p>
+            <p>{application.businessApplication.businessCountry}</p>
           </div>
         </div>
       )}
 
       {/* Business Description */}
-      {application.businessApplication.description && (
+      {application.businessApplication.businessDescription && (
         <div className="bg-gray-800 rounded-xl p-6 border border-gray-700">
           <h3 className="text-lg font-semibold text-white mb-4">Business Description</h3>
-          <p className="text-gray-300">{application.businessApplication.description}</p>
-        </div>
-      )}
-
-      {/* Business Hours */}
-      {application.businessApplication.businessHours && (
-        <div className="bg-gray-800 rounded-xl p-6 border border-gray-700">
-          <h3 className="text-lg font-semibold text-white mb-4">Business Hours</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {Object.entries(application.businessApplication.businessHours).map(([day, hours]) => (
-              <div key={day} className="flex justify-between items-center py-2 border-b border-gray-700 last:border-b-0">
-                <span className="text-gray-300 capitalize font-medium">{day}</span>
-                <span className="text-white">
-                  {hours.closed ? 'Closed' : `${hours.open} - ${hours.close}`}
-                </span>
-              </div>
-            ))}
-          </div>
+          <p className="text-gray-300">{application.businessApplication.businessDescription}</p>
         </div>
       )}
 
@@ -517,122 +554,110 @@ export default function BusinessApplicationDetailPage() {
         <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
           <PhotoIcon className="w-5 h-5 mr-2" />
           Uploaded Documents
-          {/* Debug info */}
-          <span className="ml-2 text-xs text-gray-400">
-            {application.businessApplication.documents ? 
-              `(${Object.keys(application.businessApplication.documents).length} total, ${Object.entries(application.businessApplication.documents).filter(([key, doc]) => doc?.url).length} with URLs)` 
-              : '(No documents object)'}
-          </span>
         </h3>
         
-        {/* Debug section - remove this after fixing */}
-        {application.businessApplication.documents && (
-          <div className="mb-4 p-3 bg-gray-700 rounded text-xs text-gray-300">
-            <strong>Debug Info:</strong>
-            <pre className="mt-1 overflow-x-auto">
-              {JSON.stringify(application.businessApplication.documents, null, 2)}
-            </pre>
-          </div>
-        )}
-        
-        {application.businessApplication.documents && Object.keys(application.businessApplication.documents).length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {Object.entries(application.businessApplication.documents).map(([docType, doc]) => {
-              console.log('Processing business document:', docType, doc); // Debug log
-              
-              if (!doc || !doc.url) {
-                console.log('Skipping business document - no doc or no URL:', docType); // Debug log
-                return null;
-              }
-              
-              return (
-                <div key={docType} className="bg-gray-700 rounded-lg p-4 border border-gray-600 hover:border-gray-500 transition-colors">
-                  <div className="flex items-center justify-between mb-3">
-                    <h4 className="text-sm font-medium text-white capitalize">
-                      {docType.replace(/([A-Z])/g, ' $1').replace(/ID/g, 'ID').trim()}
-                    </h4>
-                    <span className="text-xs text-gray-400 bg-gray-600 px-2 py-1 rounded">
-                      {docType.includes('license') ? '📜' : 
-                       docType.includes('tax') ? '📊' : 
-                       docType.includes('owner') && docType.includes('ID') ? '🪪' : 
-                       docType.includes('bank') ? '🏦' : 
-                       docType.includes('insurance') ? '🛡️' : '📄'}
-                    </span>
-                  </div>
-                  
-                  <div className="relative group">
-                    <img 
-                      src={doc.url} 
-                      alt={doc.originalName || docType}
-                      className="w-full h-32 object-cover rounded-lg mb-2 cursor-pointer hover:opacity-80 transition-opacity"
-                      onError={(e) => {
-                        console.error('Business image failed to load:', doc.url); // Debug log
-                        const target = e.target as HTMLImageElement;
-                        target.style.display = 'none';
-                        const fallback = target.nextElementSibling as HTMLElement;
-                        if (fallback) fallback.style.display = 'flex';
-                      }}
-                      onLoad={() => {
-                        console.log('Business image loaded successfully:', doc.url); // Debug log
-                      }}
-                      onClick={() => window.open(doc.url, '_blank')}
-                    />
-                    {/* Fallback for failed images */}
-                    <div className="hidden w-full h-32 bg-gray-600 rounded-lg mb-2 items-center justify-center flex-col text-gray-400">
-                      <PhotoIcon className="w-8 h-8 mb-1" />
-                      <span className="text-xs">Document unavailable</span>
+        {(() => {
+          const documents = [
+            { key: 'businessLicensePhoto', doc: application.businessApplication.businessLicensePhoto, label: 'Business License', icon: '📜' },
+            { key: 'businessRegistrationDocument', doc: application.businessApplication.businessRegistrationDocument, label: 'Registration Document', icon: '📋' },
+            { key: 'businessInsuranceDocument', doc: application.businessApplication.businessInsuranceDocument, label: 'Insurance Document', icon: '🛡️' },
+            { key: 'taxCertificatePhoto', doc: application.businessApplication.taxCertificatePhoto, label: 'Tax Certificate', icon: '📊' }
+          ];
+
+          const validDocuments = documents.filter(({ doc }) => doc?.url);
+
+          if (validDocuments.length === 0) {
+            return (
+              <div className="text-center py-8">
+                <div className="w-16 h-16 bg-gray-700 rounded-full mx-auto mb-4 flex items-center justify-center">
+                  <PhotoIcon className="w-8 h-8 text-gray-400" />
+                </div>
+                <h4 className="text-lg font-medium text-white mb-2">No Documents Uploaded</h4>
+                <p className="text-gray-400 text-sm">
+                  The business has not uploaded any documents yet.
+                </p>
+              </div>
+            );
+          }
+
+          return (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {validDocuments.map(({ key, doc, label, icon }) => {
+                if (!doc) return null; // Additional safety check
+                
+                return (
+                  <div key={key} className="bg-gray-700 rounded-lg p-4 border border-gray-600 hover:border-gray-500 transition-colors">
+                    <div className="flex items-center justify-between mb-3">
+                      <h4 className="text-sm font-medium text-white">{label}</h4>
+                      <span className="text-xs text-gray-400 bg-gray-600 px-2 py-1 rounded">
+                        {icon}
+                      </span>
                     </div>
                     
-                    {/* Hover overlay */}
-                    <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 rounded-lg transition-all duration-200 flex items-center justify-center opacity-0 group-hover:opacity-100">
-                      <div className="text-white text-sm font-medium bg-black bg-opacity-50 px-3 py-1 rounded-full">
-                        Click to enlarge
+                    <div className="relative group">
+                      <img 
+                        src={doc.url} 
+                        alt={doc.originalName || label}
+                        className="w-full h-32 object-cover rounded-lg mb-2 cursor-pointer hover:opacity-80 transition-opacity"
+                        onError={(e) => {
+                          console.error('Business image failed to load:', doc.url);
+                          const target = e.target as HTMLImageElement;
+                          target.style.display = 'none';
+                          const fallback = target.nextElementSibling as HTMLElement;
+                          if (fallback) fallback.style.display = 'flex';
+                        }}
+                        onLoad={() => {
+                          console.log('Business image loaded successfully:', doc.url);
+                        }}
+                        onClick={() => window.open(doc.url, '_blank')}
+                      />
+                      {/* Fallback for failed images */}
+                      <div className="hidden w-full h-32 bg-gray-600 rounded-lg mb-2 items-center justify-center flex-col text-gray-400">
+                        <PhotoIcon className="w-8 h-8 mb-1" />
+                        <span className="text-xs">Document unavailable</span>
+                      </div>
+                      
+                      {/* Hover overlay */}
+                      <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 rounded-lg transition-all duration-200 flex items-center justify-center opacity-0 group-hover:opacity-100">
+                        <div className="text-white text-sm font-medium bg-black bg-opacity-50 px-3 py-1 rounded-full">
+                          Click to enlarge
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <p className="text-xs text-gray-400 truncate" title={doc.originalName}>
+                        📎 {doc.originalName || 'Document'}
+                      </p>
+                      {doc.uploadedAt && (
+                        <p className="text-xs text-gray-500">
+                          📅 {new Date(doc.uploadedAt).toLocaleDateString()}
+                        </p>
+                      )}
+                      <div className="flex space-x-2">
+                        <a 
+                          href={doc.url} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="flex-1 text-center px-2 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
+                        >
+                          View Full Size
+                        </a>
+                        <button
+                          onClick={() => navigator.clipboard.writeText(doc.url)}
+                          className="px-2 py-1 text-xs bg-gray-600 text-white rounded hover:bg-gray-500 transition-colors"
+                          title="Copy URL"
+                        >
+                          📋
+                        </button>
                       </div>
                     </div>
                   </div>
-                  
-                  <div className="space-y-2">
-                    <p className="text-xs text-gray-400 truncate" title={doc.originalName}>
-                      📎 {doc.originalName || 'Document'}
-                    </p>
-                    {doc.uploadedAt && (
-                      <p className="text-xs text-gray-500">
-                        📅 {new Date(doc.uploadedAt).toLocaleDateString()}
-                      </p>
-                    )}
-                    <div className="flex space-x-2">
-                      <a 
-                        href={doc.url} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="flex-1 text-center px-2 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
-                      >
-                        View Full Size
-                      </a>
-                      <button
-                        onClick={() => navigator.clipboard.writeText(doc.url)}
-                        className="px-2 py-1 text-xs bg-gray-600 text-white rounded hover:bg-gray-500 transition-colors"
-                        title="Copy URL"
-                      >
-                        📋
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        ) : (
-          <div className="text-center py-8">
-            <div className="w-16 h-16 bg-gray-700 rounded-full mx-auto mb-4 flex items-center justify-center">
-              <PhotoIcon className="w-8 h-8 text-gray-400" />
+                );
+              })}
             </div>
-            <h4 className="text-lg font-medium text-white mb-2">No Documents Uploaded</h4>
-            <p className="text-gray-400 text-sm">
-              The business has not uploaded any documents yet.
-            </p>
-          </div>
-        )}
+          );
+        })()}
       </div>
 
       {/* Application Timeline */}
