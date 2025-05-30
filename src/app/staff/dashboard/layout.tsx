@@ -3,7 +3,16 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { ChevronDownIcon, ChevronRightIcon, UserCircleIcon, BellIcon } from '@heroicons/react/24/outline';
+import { 
+  ChevronDownIcon, 
+  ChevronRightIcon, 
+  UserCircleIcon, 
+  BellIcon,
+  HomeIcon,
+  DocumentTextIcon,
+  TruckIcon,
+  BuildingOfficeIcon
+} from '@heroicons/react/24/outline';
 
 export default function DashboardLayout({
   children,
@@ -14,9 +23,9 @@ export default function DashboardLayout({
   const pathname = usePathname();
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-900">
       {/* Modern Dark Header */}
-      <header className="bg-gray-900 border-b border-gray-800">
+      <header className="bg-gray-800 border-b border-gray-700">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
             <div className="flex items-center">
@@ -45,8 +54,8 @@ export default function DashboardLayout({
       </header>
 
       <div className="flex">
-        {/* Modern Sidebar */}
-        <nav className="w-64 bg-white border-r border-gray-200 min-h-[calc(100vh-4rem)] shadow-sm">
+        {/* Modern Dark Sidebar */}
+        <nav className="w-64 bg-gray-800 border-r border-gray-700 min-h-[calc(100vh-4rem)] shadow-sm">
           <div className="p-6">
             <div className="space-y-6">
               <div>
@@ -59,21 +68,21 @@ export default function DashboardLayout({
                       href="/staff/dashboard"
                       className={`flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${
                         pathname === '/staff/dashboard'
-                          ? 'bg-blue-50 text-blue-700 border-r-2 border-blue-500'
-                          : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+                          ? 'bg-gray-700 text-white border-r-2 border-blue-500'
+                          : 'text-gray-300 hover:bg-gray-700 hover:text-white'
                       }`}
                     >
-                      <span className="w-2 h-2 bg-gray-400 rounded-full mr-3"></span>
+                      <HomeIcon className="w-4 h-4 mr-3" />
                       Overview
                     </Link>
                   </li>
                   <li>
                     <button
                       onClick={() => setIsApplicationsOpen(!isApplicationsOpen)}
-                      className="flex items-center justify-between w-full px-3 py-2 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-50 transition-all duration-200"
+                      className="flex items-center justify-between w-full px-3 py-2 text-sm font-medium text-gray-300 rounded-lg hover:bg-gray-700 hover:text-white transition-all duration-200"
                     >
                       <div className="flex items-center">
-                        <span className="w-2 h-2 bg-gray-400 rounded-full mr-3"></span>
+                        <DocumentTextIcon className="w-4 h-4 mr-3" />
                         <span>Applications</span>
                       </div>
                       {isApplicationsOpen ? (
@@ -84,29 +93,31 @@ export default function DashboardLayout({
                     </button>
                     
                     {isApplicationsOpen && (
-                      <ul className="ml-5 mt-2 space-y-1 border-l border-gray-200 pl-4">
+                      <ul className="ml-5 mt-2 space-y-1 border-l border-gray-700 pl-4">
                         <li>
                           <Link
                             href="/staff/dashboard/applications/drivers"
-                            className={`block px-3 py-2 text-sm rounded-lg transition-all duration-200 ${
+                            className={`flex items-center px-3 py-2 text-sm rounded-lg transition-all duration-200 ${
                               pathname === '/staff/dashboard/applications/drivers'
-                                ? 'bg-blue-50 text-blue-700 font-medium'
-                                : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                                ? 'bg-gray-700 text-white font-medium'
+                                : 'text-gray-400 hover:bg-gray-700 hover:text-white'
                             }`}
                           >
-                            🚗 Drivers
+                            <TruckIcon className="w-4 h-4 mr-2" />
+                            Drivers
                           </Link>
                         </li>
                         <li>
                           <Link
                             href="/staff/dashboard/applications/businesses"
-                            className={`block px-3 py-2 text-sm rounded-lg transition-all duration-200 ${
+                            className={`flex items-center px-3 py-2 text-sm rounded-lg transition-all duration-200 ${
                               pathname === '/staff/dashboard/applications/businesses'
-                                ? 'bg-blue-50 text-blue-700 font-medium'
-                                : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                                ? 'bg-gray-700 text-white font-medium'
+                                : 'text-gray-400 hover:bg-gray-700 hover:text-white'
                             }`}
                           >
-                            🏢 Businesses
+                            <BuildingOfficeIcon className="w-4 h-4 mr-2" />
+                            Businesses
                           </Link>
                         </li>
                       </ul>
@@ -118,8 +129,8 @@ export default function DashboardLayout({
           </div>
         </nav>
 
-        {/* Main Content with Modern Container */}
-        <main className="flex-1 overflow-auto">
+        {/* Main Content with Dark Container */}
+        <main className="flex-1 overflow-auto bg-gray-900">
           <div className="max-w-7xl mx-auto px-6 py-8">
             {children}
           </div>
