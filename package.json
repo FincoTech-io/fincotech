@@ -9,7 +9,9 @@
     "lint": "next lint",
     "clean": "rimraf .next",
     "vercel-build": "npm install --include=dev --legacy-peer-deps && npm run clean && npm run build",
-    "setup:fees": "npx ts-node --project scripts/tsconfig.script.json scripts/setup-fees.ts"
+    "setup:fees": "npx ts-node --project scripts/tsconfig.script.json scripts/setup-fees.ts",
+    "create-staff": "node scripts/create-staff.js",
+    "create-staff:quick": "node scripts/create-staff.js --quick"
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",
@@ -32,6 +34,7 @@
     "expo-server-sdk": "^3.14.0",
     "ioredis": "^4.28.5",
     "jose": "^6.0.10",
+    "jsonwebtoken": "^9.0.2",
     "mongodb": "^6.14.2",
     "mongoose": "^8.12.1",
     "multer": "^1.4.5-lts.2",

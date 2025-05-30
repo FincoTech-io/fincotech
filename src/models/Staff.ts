@@ -29,6 +29,7 @@ export interface IStaff extends Document {
   email: string;
   team: string;
   hireDate: Date;
+  lastLogin?: Date;
   createdAt: Date;
   updatedAt: Date;
   comparePassword(candidatePassword: string): Promise<boolean>;
@@ -157,6 +158,10 @@ const StaffSchema = new Schema<IStaff>({
     type: Date,
     required: true,
     default: Date.now
+  },
+  lastLogin: {
+    type: Date,
+    required: false
   }
 }, {
   timestamps: true,
