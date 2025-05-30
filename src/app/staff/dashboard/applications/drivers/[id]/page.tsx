@@ -326,6 +326,39 @@ export default function DriverApplicationDetailPage() {
               <label className="text-sm text-gray-400">Account Holder Name</label>
               <p className="text-white">{application.driverApplication.accountHolderName}</p>
             </div>
+
+            {/* Profile Photo */}
+            {application.driverApplication.documents?.profilePhoto && (
+              <div className="mt-4">
+                <label className="text-sm text-gray-400 mb-2 block">Profile Photo</label>
+                <div className="w-24 h-24">
+                  <img 
+                    src={application.driverApplication.documents.profilePhoto.url} 
+                    alt="Profile Photo"
+                    className="w-full h-full object-cover rounded-full cursor-pointer hover:opacity-80 transition-opacity border-2 border-gray-600"
+                    onClick={() => application.driverApplication.documents?.profilePhoto && window.open(application.driverApplication.documents.profilePhoto.url, '_blank')}
+                    onError={(e) => {
+                      console.error('Profile image failed:', application.driverApplication.documents?.profilePhoto?.url);
+                      (e.target as HTMLElement).style.display = 'none';
+                    }}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Debug section - remove this after fixing */}
+            {application.driverApplication.documents && (
+              <div className="mt-4 p-3 bg-gray-700 rounded text-xs text-gray-300">
+                <strong>Debug - Documents Available:</strong>
+                <ul className="mt-1">
+                  {Object.entries(application.driverApplication.documents).map(([key, doc]) => (
+                    <li key={key}>
+                      {key}: {doc ? `✅ URL: ${doc.url.substring(0, 50)}...` : '❌ No data'}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </div>
         </div>
 
@@ -376,6 +409,45 @@ export default function DriverApplicationDetailPage() {
               <label className="text-sm text-gray-400">Class</label>
               <p className="text-white">{application.driverApplication.licenseClass}</p>
             </div>
+
+            {/* License Photos */}
+            {application.driverApplication.documents && (application.driverApplication.documents.licensePhotoFront || application.driverApplication.documents.licensePhotoBack) && (
+              <div className="mt-4">
+                <label className="text-sm text-gray-400 mb-2 block">License Photos</label>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {application.driverApplication.documents.licensePhotoFront && (
+                    <div className="bg-gray-700 rounded-lg p-3 border border-gray-600">
+                      <p className="text-xs text-gray-400 mb-2">Front</p>
+                      <img 
+                        src={application.driverApplication.documents.licensePhotoFront.url} 
+                        alt="License Front"
+                        className="w-full h-24 object-cover rounded cursor-pointer hover:opacity-80 transition-opacity"
+                        onClick={() => application.driverApplication.documents?.licensePhotoFront && window.open(application.driverApplication.documents.licensePhotoFront.url, '_blank')}
+                        onError={(e) => {
+                          console.error('License front image failed:', application.driverApplication.documents?.licensePhotoFront?.url);
+                          (e.target as HTMLElement).style.display = 'none';
+                        }}
+                      />
+                    </div>
+                  )}
+                  {application.driverApplication.documents.licensePhotoBack && (
+                    <div className="bg-gray-700 rounded-lg p-3 border border-gray-600">
+                      <p className="text-xs text-gray-400 mb-2">Back</p>
+                      <img 
+                        src={application.driverApplication.documents.licensePhotoBack.url} 
+                        alt="License Back"
+                        className="w-full h-24 object-cover rounded cursor-pointer hover:opacity-80 transition-opacity"
+                        onClick={() => application.driverApplication.documents?.licensePhotoBack && window.open(application.driverApplication.documents.licensePhotoBack.url, '_blank')}
+                        onError={(e) => {
+                          console.error('License back image failed:', application.driverApplication.documents?.licensePhotoBack?.url);
+                          (e.target as HTMLElement).style.display = 'none';
+                        }}
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -410,6 +482,45 @@ export default function DriverApplicationDetailPage() {
                 <label className="text-sm text-gray-400">Capacity</label>
                 <p className="text-white">{application.driverApplication.vehicleCapacity} passengers</p>
               </div>
+
+              {/* Vehicle Documents */}
+              {application.driverApplication.documents && (application.driverApplication.documents.registrationPhoto || application.driverApplication.documents.insurancePhoto) && (
+                <div className="mt-4">
+                  <label className="text-sm text-gray-400 mb-2 block">Vehicle Documents</label>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {application.driverApplication.documents.registrationPhoto && (
+                      <div className="bg-gray-700 rounded-lg p-3 border border-gray-600">
+                        <p className="text-xs text-gray-400 mb-2">Registration</p>
+                        <img 
+                          src={application.driverApplication.documents.registrationPhoto.url} 
+                          alt="Vehicle Registration"
+                          className="w-full h-24 object-cover rounded cursor-pointer hover:opacity-80 transition-opacity"
+                          onClick={() => application.driverApplication.documents?.registrationPhoto && window.open(application.driverApplication.documents.registrationPhoto.url, '_blank')}
+                          onError={(e) => {
+                            console.error('Registration image failed:', application.driverApplication.documents?.registrationPhoto?.url);
+                            (e.target as HTMLElement).style.display = 'none';
+                          }}
+                        />
+                      </div>
+                    )}
+                    {application.driverApplication.documents.insurancePhoto && (
+                      <div className="bg-gray-700 rounded-lg p-3 border border-gray-600">
+                        <p className="text-xs text-gray-400 mb-2">Insurance</p>
+                        <img 
+                          src={application.driverApplication.documents.insurancePhoto.url} 
+                          alt="Insurance Document"
+                          className="w-full h-24 object-cover rounded cursor-pointer hover:opacity-80 transition-opacity"
+                          onClick={() => application.driverApplication.documents?.insurancePhoto && window.open(application.driverApplication.documents.insurancePhoto.url, '_blank')}
+                          onError={(e) => {
+                            console.error('Insurance image failed:', application.driverApplication.documents?.insurancePhoto?.url);
+                            (e.target as HTMLElement).style.display = 'none';
+                          }}
+                        />
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           ) : (
             <p className="text-gray-400">No vehicle information provided</p>
@@ -444,128 +555,6 @@ export default function DriverApplicationDetailPage() {
           </div>
         </div>
       )}
-
-      {/* Documents */}
-      <div className="bg-gray-800 rounded-xl p-6 border border-gray-700">
-        <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
-          <PhotoIcon className="w-5 h-5 mr-2" />
-          Uploaded Documents
-          {/* Debug info */}
-          <span className="ml-2 text-xs text-gray-400">
-            {application.driverApplication.documents ? 
-              `(${Object.keys(application.driverApplication.documents).length} total, ${Object.entries(application.driverApplication.documents).filter(([key, doc]) => doc?.url).length} with URLs)` 
-              : '(No documents object)'}
-          </span>
-        </h3>
-        
-        {/* Debug section - remove this after fixing */}
-        {application.driverApplication.documents && (
-          <div className="mb-4 p-3 bg-gray-700 rounded text-xs text-gray-300">
-            <strong>Debug Info:</strong>
-            <pre className="mt-1 overflow-x-auto">
-              {JSON.stringify(application.driverApplication.documents, null, 2)}
-            </pre>
-          </div>
-        )}
-        
-        {application.driverApplication.documents && Object.keys(application.driverApplication.documents).length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {Object.entries(application.driverApplication.documents).map(([docType, doc]) => {
-              console.log('Processing document:', docType, doc); // Debug log
-              
-              if (!doc || !doc.url) {
-                console.log('Skipping document - no doc or no URL:', docType); // Debug log
-                return null;
-              }
-              
-              return (
-                <div key={docType} className="bg-gray-700 rounded-lg p-4 border border-gray-600 hover:border-gray-500 transition-colors">
-                  <div className="flex items-center justify-between mb-3">
-                    <h4 className="text-sm font-medium text-white capitalize">
-                      {docType.replace(/([A-Z])/g, ' $1').replace(/photo/gi, 'Photo').trim()}
-                    </h4>
-                    <span className="text-xs text-gray-400 bg-gray-600 px-2 py-1 rounded">
-                      {docType.includes('license') ? '🪪' : 
-                       docType.includes('registration') ? '📋' : 
-                       docType.includes('insurance') ? '🛡️' : 
-                       docType.includes('profile') ? '👤' : '📄'}
-                    </span>
-                  </div>
-                  
-                  <div className="relative group">
-                    <img 
-                      src={doc.url} 
-                      alt={doc.originalName || docType}
-                      className="w-full h-32 object-cover rounded-lg mb-2 cursor-pointer hover:opacity-80 transition-opacity"
-                      onError={(e) => {
-                        console.error('Image failed to load:', doc.url); // Debug log
-                        const target = e.target as HTMLImageElement;
-                        target.style.display = 'none';
-                        const fallback = target.nextElementSibling as HTMLElement;
-                        if (fallback) fallback.style.display = 'flex';
-                      }}
-                      onLoad={() => {
-                        console.log('Image loaded successfully:', doc.url); // Debug log
-                      }}
-                      onClick={() => window.open(doc.url, '_blank')}
-                    />
-                    {/* Fallback for failed images */}
-                    <div className="hidden w-full h-32 bg-gray-600 rounded-lg mb-2 items-center justify-center flex-col text-gray-400">
-                      <PhotoIcon className="w-8 h-8 mb-1" />
-                      <span className="text-xs">Image unavailable</span>
-                    </div>
-                    
-                    {/* Hover overlay */}
-                    <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 rounded-lg transition-all duration-200 flex items-center justify-center opacity-0 group-hover:opacity-100">
-                      <div className="text-white text-sm font-medium bg-black bg-opacity-50 px-3 py-1 rounded-full">
-                        Click to enlarge
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <p className="text-xs text-gray-400 truncate" title={doc.originalName}>
-                      📎 {doc.originalName || 'Document'}
-                    </p>
-                    {doc.uploadedAt && (
-                      <p className="text-xs text-gray-500">
-                        📅 {new Date(doc.uploadedAt).toLocaleDateString()}
-                      </p>
-                    )}
-                    <div className="flex space-x-2">
-                      <a 
-                        href={doc.url} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="flex-1 text-center px-2 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
-                      >
-                        View Full Size
-                      </a>
-                      <button
-                        onClick={() => navigator.clipboard.writeText(doc.url)}
-                        className="px-2 py-1 text-xs bg-gray-600 text-white rounded hover:bg-gray-500 transition-colors"
-                        title="Copy URL"
-                      >
-                        📋
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        ) : (
-          <div className="text-center py-8">
-            <div className="w-16 h-16 bg-gray-700 rounded-full mx-auto mb-4 flex items-center justify-center">
-              <PhotoIcon className="w-8 h-8 text-gray-400" />
-            </div>
-            <h4 className="text-lg font-medium text-white mb-2">No Documents Uploaded</h4>
-            <p className="text-gray-400 text-sm">
-              The applicant has not uploaded any documents yet.
-            </p>
-          </div>
-        )}
-      </div>
 
       {/* Application Timeline */}
       <div className="bg-gray-800 rounded-xl p-6 border border-gray-700">
