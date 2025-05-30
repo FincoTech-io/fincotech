@@ -15,6 +15,7 @@ import {
   transformDriverData
 } from '@/utils/applicationUtils';
 import { getAuthenticatedStaff, isAdmin, unauthorizedResponse, forbiddenResponse } from '@/utils/staffAuth';
+import { createMerchantFromApplication } from '@/utils/merchantUtils';
 
 // Configure the API route for longer timeout and larger body size
 export const runtime = 'nodejs';
@@ -405,6 +406,34 @@ export async function PATCH(request: NextRequest) {
     
     if (status === 'Approved') {
       application.approvalDate = new Date();
+      
+      // Auto-create merchant if this is an approved business application
+      if (application.applicationType === 'business' && application.businessApplication) {
+        try {
+          const merchantResult = await createMerchantFromApplication(
+            application.businessApplication,
+            application.applicantUserId.toString(),
+            staff._id.toString(),
+            application.applicationRef
+          );
+          
+          if (merchantResult.success) {
+            console.log(`✅ Merchant created successfully for application ${application.applicationRef}`);
+            // Optionally add merchant info to response
+            application.reviewNotes = (application.reviewNotes || '') + 
+              `\n[Auto-created merchant account: ${merchantResult.merchant._id}]`;
+          } else {
+            console.error(`❌ Failed to create merchant for application ${application.applicationRef}:`, merchantResult.error);
+            // Don't fail the approval, just log the error
+            application.reviewNotes = (application.reviewNotes || '') + 
+              `\n[Warning: Failed to auto-create merchant account: ${merchantResult.error}]`;
+          }
+        } catch (error) {
+          console.error(`❌ Error during merchant creation for application ${application.applicationRef}:`, error);
+          application.reviewNotes = (application.reviewNotes || '') + 
+            `\n[Warning: Error during merchant account creation]`;
+        }
+      }
     } else if (status === 'Declined') {
       application.rejectionDate = new Date();
     }
