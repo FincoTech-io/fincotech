@@ -53,15 +53,15 @@ export default function DriverApplicationsPage() {
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
       case 'pending':
-        return 'bg-yellow-100 text-yellow-800';
+        return 'bg-yellow-50 text-yellow-700 border border-yellow-200';
       case 'in review':
-        return 'bg-blue-100 text-blue-800';
+        return 'bg-blue-50 text-blue-700 border border-blue-200';
       case 'approved':
-        return 'bg-green-100 text-green-800';
+        return 'bg-green-50 text-green-700 border border-green-200';
       case 'declined':
-        return 'bg-red-100 text-red-800';
+        return 'bg-red-50 text-red-700 border border-red-200';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-gray-50 text-gray-700 border border-gray-200';
     }
   };
 
@@ -73,182 +73,243 @@ export default function DriverApplicationsPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <div className="relative">
+          <div className="w-12 h-12 rounded-full border-4 border-blue-100"></div>
+          <div className="w-12 h-12 rounded-full border-4 border-blue-500 border-t-transparent animate-spin absolute top-0"></div>
+        </div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="bg-red-50 border border-red-200 rounded-md p-4">
-        <div className="text-red-800">
-          <strong>Error:</strong> {error}
+      <div className="bg-red-50 border border-red-200 rounded-xl p-6">
+        <div className="flex items-center space-x-3">
+          <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+            <span className="text-red-600 text-lg">⚠️</span>
+          </div>
+          <div>
+            <h3 className="text-red-800 font-semibold">Error Loading Applications</h3>
+            <p className="text-red-600 text-sm">{error}</p>
+          </div>
         </div>
         <button 
           onClick={fetchApplications}
-          className="mt-2 px-3 py-1 bg-red-600 text-white rounded text-sm hover:bg-red-700"
+          className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm font-medium"
         >
-          Retry
+          Try Again
         </button>
       </div>
     );
   }
 
   return (
-    <div>
-      {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Driver Applications</h1>
+    <div className="space-y-8">
+      {/* Header Section */}
+      <div>
+        <div className="flex items-center space-x-3 mb-2">
+          <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+            <span className="text-blue-600 text-lg">🚗</span>
+          </div>
+          <h1 className="text-2xl font-bold text-gray-900">Driver Applications</h1>
+        </div>
         <p className="text-gray-600">Review and manage driver application submissions</p>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-          <div className="text-2xl font-bold text-blue-600">{applications.length}</div>
-          <div className="text-sm text-gray-500">Total Applications</div>
-        </div>
-        <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-          <div className="text-2xl font-bold text-yellow-600">
-            {applications.filter(app => app.status.toLowerCase() === 'pending').length}
+      {/* Statistics Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-all duration-300">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-2xl font-bold text-blue-600">{applications.length}</div>
+              <div className="text-sm text-gray-500 font-medium">Total Applications</div>
+            </div>
+            <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+              <span className="text-blue-600 text-lg">📋</span>
+            </div>
           </div>
-          <div className="text-sm text-gray-500">Pending</div>
         </div>
-        <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-          <div className="text-2xl font-bold text-blue-600">
-            {applications.filter(app => app.status.toLowerCase() === 'in review').length}
+        
+        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-all duration-300">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-2xl font-bold text-yellow-600">
+                {applications.filter(app => app.status.toLowerCase() === 'pending').length}
+              </div>
+              <div className="text-sm text-gray-500 font-medium">Pending</div>
+            </div>
+            <div className="w-10 h-10 bg-yellow-100 rounded-lg flex items-center justify-center">
+              <span className="text-yellow-600 text-lg">⏳</span>
+            </div>
           </div>
-          <div className="text-sm text-gray-500">In Review</div>
         </div>
-        <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-          <div className="text-2xl font-bold text-green-600">
-            {applications.filter(app => app.status.toLowerCase() === 'approved').length}
+        
+        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-all duration-300">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-2xl font-bold text-blue-600">
+                {applications.filter(app => app.status.toLowerCase() === 'in review').length}
+              </div>
+              <div className="text-sm text-gray-500 font-medium">In Review</div>
+            </div>
+            <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+              <span className="text-blue-600 text-lg">👀</span>
+            </div>
           </div>
-          <div className="text-sm text-gray-500">Approved</div>
+        </div>
+        
+        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-all duration-300">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-2xl font-bold text-green-600">
+                {applications.filter(app => app.status.toLowerCase() === 'approved').length}
+              </div>
+              <div className="text-sm text-gray-500 font-medium">Approved</div>
+            </div>
+            <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+              <span className="text-green-600 text-lg">✅</span>
+            </div>
+          </div>
         </div>
       </div>
 
       {/* Filters */}
-      <div className="mb-6">
-        <div className="flex space-x-2">
-          <button
-            onClick={() => setFilter('all')}
-            className={`px-3 py-1 rounded-md text-sm ${
-              filter === 'all' 
-                ? 'bg-blue-600 text-white' 
-                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-            }`}
-          >
-            All ({applications.length})
-          </button>
-          <button
-            onClick={() => setFilter('pending')}
-            className={`px-3 py-1 rounded-md text-sm ${
-              filter === 'pending' 
-                ? 'bg-yellow-600 text-white' 
-                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-            }`}
-          >
-            Pending ({applications.filter(app => app.status.toLowerCase() === 'pending').length})
-          </button>
-          <button
-            onClick={() => setFilter('in review')}
-            className={`px-3 py-1 rounded-md text-sm ${
-              filter === 'in review' 
-                ? 'bg-blue-600 text-white' 
-                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-            }`}
-          >
-            In Review ({applications.filter(app => app.status.toLowerCase() === 'in review').length})
-          </button>
-          <button
-            onClick={() => setFilter('approved')}
-            className={`px-3 py-1 rounded-md text-sm ${
-              filter === 'approved' 
-                ? 'bg-green-600 text-white' 
-                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-            }`}
-          >
-            Approved ({applications.filter(app => app.status.toLowerCase() === 'approved').length})
-          </button>
-          <button
-            onClick={() => setFilter('declined')}
-            className={`px-3 py-1 rounded-md text-sm ${
-              filter === 'declined' 
-                ? 'bg-red-600 text-white' 
-                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-            }`}
-          >
-            Declined ({applications.filter(app => app.status.toLowerCase() === 'declined').length})
-          </button>
-        </div>
+      <div className="flex flex-wrap gap-2">
+        <button
+          onClick={() => setFilter('all')}
+          className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+            filter === 'all' 
+              ? 'bg-blue-600 text-white shadow-md' 
+              : 'bg-white text-gray-700 border border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+          }`}
+        >
+          All Applications ({applications.length})
+        </button>
+        <button
+          onClick={() => setFilter('pending')}
+          className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+            filter === 'pending' 
+              ? 'bg-yellow-600 text-white shadow-md' 
+              : 'bg-white text-gray-700 border border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+          }`}
+        >
+          Pending ({applications.filter(app => app.status.toLowerCase() === 'pending').length})
+        </button>
+        <button
+          onClick={() => setFilter('in review')}
+          className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+            filter === 'in review' 
+              ? 'bg-blue-600 text-white shadow-md' 
+              : 'bg-white text-gray-700 border border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+          }`}
+        >
+          In Review ({applications.filter(app => app.status.toLowerCase() === 'in review').length})
+        </button>
+        <button
+          onClick={() => setFilter('approved')}
+          className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+            filter === 'approved' 
+              ? 'bg-green-600 text-white shadow-md' 
+              : 'bg-white text-gray-700 border border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+          }`}
+        >
+          Approved ({applications.filter(app => app.status.toLowerCase() === 'approved').length})
+        </button>
+        <button
+          onClick={() => setFilter('declined')}
+          className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+            filter === 'declined' 
+              ? 'bg-red-600 text-white shadow-md' 
+              : 'bg-white text-gray-700 border border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+          }`}
+        >
+          Declined ({applications.filter(app => app.status.toLowerCase() === 'declined').length})
+        </button>
       </div>
 
       {/* Applications Table */}
-      <div className="bg-white shadow-sm rounded-lg border border-gray-200 overflow-hidden">
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
         {filteredApplications.length === 0 ? (
-          <div className="p-8 text-center text-gray-500">
-            {filter === 'all' 
-              ? 'No driver applications found.' 
-              : `No ${filter} driver applications found.`}
+          <div className="text-center py-16">
+            <div className="w-16 h-16 bg-gray-100 rounded-full mx-auto mb-4 flex items-center justify-center">
+              <span className="text-2xl text-gray-400">🚗</span>
+            </div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              {filter === 'all' ? 'No Applications Found' : `No ${filter.charAt(0).toUpperCase() + filter.slice(1)} Applications`}
+            </h3>
+            <p className="text-gray-500 text-sm">
+              {filter === 'all' 
+                ? 'Driver applications will appear here once submitted.' 
+                : `No applications with ${filter} status found.`}
+            </p>
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+            <table className="min-w-full">
+              <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Application Ref
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    Application
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Driver Name
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    Driver
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    License #
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                    License
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                     Vehicle
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                     Status
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                     Submitted
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                     Actions
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="divide-y divide-gray-200">
                 {filteredApplications.map((application) => (
-                  <tr key={application._id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      {application.applicationRef}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {application.driverApplication?.accountHolderName || 'N/A'}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {application.driverApplication?.licenseNumber || 'N/A'}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {application.driverApplication?.vehicleType && application.driverApplication?.vehicleMake 
-                        ? `${application.driverApplication.vehicleMake} ${application.driverApplication.vehicleModel || ''} (${application.driverApplication.vehicleType})`
-                        : 'N/A'}
+                  <tr key={application._id} className="hover:bg-gray-50 transition-colors">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm font-medium text-gray-900">
+                        {application.applicationRef}
+                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(application.status)}`}>
+                      <div className="text-sm text-gray-900 font-medium">
+                        {application.driverApplication?.accountHolderName || 'N/A'}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-600">
+                        {application.driverApplication?.licenseNumber || 'N/A'}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-600">
+                        {application.driverApplication?.vehicleType && application.driverApplication?.vehicleMake 
+                          ? `${application.driverApplication.vehicleMake} ${application.driverApplication.vehicleModel || ''} (${application.driverApplication.vehicleType})`
+                          : 'N/A'}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`inline-flex px-3 py-1 text-xs font-medium rounded-full ${getStatusColor(application.status)}`}>
                         {application.status}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {new Date(application.submissionDate).toLocaleDateString()}
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-600">
+                        {new Date(application.submissionDate).toLocaleDateString()}
+                      </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    <td className="px-6 py-4 whitespace-nowrap">
                       <Link
                         href={`/staff/dashboard/applications/drivers/${application._id}`}
-                        className="text-blue-600 hover:text-blue-900"
+                        className="inline-flex items-center px-3 py-1.5 text-sm font-medium text-blue-600 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 hover:border-blue-300 transition-all duration-200"
                       >
                         Review
                       </Link>
