@@ -247,6 +247,23 @@ export default function DriverApplicationDetailPage() {
 
   return (
     <div className="space-y-6">
+      {/* Debug section - remove this after fixing */}
+      <div className="mb-6 p-4 bg-red-900/20 border border-red-700 rounded-xl">
+        <h3 className="text-red-300 font-semibold mb-2">🔍 Debug Information</h3>
+        <div className="text-xs text-gray-300">
+          <p><strong>Documents object exists:</strong> {application.driverApplication.documents ? 'YES' : 'NO'}</p>
+          {application.driverApplication.documents && (
+            <div className="mt-2">
+              <p><strong>Documents found:</strong></p>
+              <pre className="mt-1 p-2 bg-gray-800 rounded text-xs overflow-x-auto">
+                {JSON.stringify(application.driverApplication.documents, null, 2)}
+              </pre>
+              <p className="mt-2"><strong>Document keys:</strong> {Object.keys(application.driverApplication.documents).join(', ')}</p>
+            </div>
+          )}
+        </div>
+      </div>
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
@@ -327,33 +344,53 @@ export default function DriverApplicationDetailPage() {
               <p className="text-white">{application.driverApplication.accountHolderName}</p>
             </div>
 
-            {/* Profile Photo */}
-            {application.driverApplication.documents?.profilePhoto && (
-              <div className="mt-4">
-                <label className="text-sm text-gray-400 mb-2 block">Profile Photo</label>
-                <div className="w-24 h-24">
-                  <img 
-                    src={application.driverApplication.documents.profilePhoto.url} 
-                    alt="Profile Photo"
-                    className="w-full h-full object-cover rounded-full cursor-pointer hover:opacity-80 transition-opacity border-2 border-gray-600"
-                    onClick={() => application.driverApplication.documents?.profilePhoto && window.open(application.driverApplication.documents.profilePhoto.url, '_blank')}
-                    onError={(e) => {
-                      console.error('Profile image failed:', application.driverApplication.documents?.profilePhoto?.url);
-                      (e.target as HTMLElement).style.display = 'none';
-                    }}
-                  />
+            {/* Profile Photo - Simplified conditional */}
+            <div className="mt-4 p-2 bg-blue-900/20 rounded">
+              <p className="text-xs text-blue-300 mb-2">🔍 Profile Photo Debug:</p>
+              <p className="text-xs text-gray-400">
+                Documents exists: {application.driverApplication.documents ? 'YES' : 'NO'}
+                {application.driverApplication.documents && (
+                  <>
+                    <br />ProfilePhoto exists: {application.driverApplication.documents.profilePhoto ? 'YES' : 'NO'}
+                    {application.driverApplication.documents.profilePhoto && (
+                      <>
+                        <br />ProfilePhoto URL: {application.driverApplication.documents.profilePhoto.url}
+                      </>
+                    )}
+                  </>
+                )}
+              </p>
+              
+              {application.driverApplication.documents?.profilePhoto?.url && (
+                <div className="mt-2">
+                  <label className="text-sm text-gray-400 mb-2 block">Profile Photo</label>
+                  <div className="w-24 h-24">
+                    <img 
+                      src={application.driverApplication.documents.profilePhoto.url} 
+                      alt="Profile Photo"
+                      className="w-full h-full object-cover rounded-full cursor-pointer hover:opacity-80 transition-opacity border-2 border-gray-600"
+                      onClick={() => window.open(application.driverApplication.documents?.profilePhoto?.url || '', '_blank')}
+                      onError={(e) => {
+                        console.error('Profile image failed:', application.driverApplication.documents?.profilePhoto?.url);
+                        (e.target as HTMLElement).style.display = 'none';
+                      }}
+                      onLoad={() => {
+                        console.log('Profile image loaded successfully:', application.driverApplication.documents?.profilePhoto?.url);
+                      }}
+                    />
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
 
-            {/* Debug section - remove this after fixing */}
+            {/* Original debug section - remove this after fixing */}
             {application.driverApplication.documents && (
               <div className="mt-4 p-3 bg-gray-700 rounded text-xs text-gray-300">
                 <strong>Debug - Documents Available:</strong>
                 <ul className="mt-1">
                   {Object.entries(application.driverApplication.documents).map(([key, doc]) => (
                     <li key={key}>
-                      {key}: {doc ? `✅ URL: ${doc.url.substring(0, 50)}...` : '❌ No data'}
+                      {key}: {doc ? `✅ URL: ${(doc as any).url?.substring(0, 50)}...` : '❌ No data'}
                     </li>
                   ))}
                 </ul>
@@ -410,44 +447,64 @@ export default function DriverApplicationDetailPage() {
               <p className="text-white">{application.driverApplication.licenseClass}</p>
             </div>
 
-            {/* License Photos */}
-            {application.driverApplication.documents && (application.driverApplication.documents.licensePhotoFront || application.driverApplication.documents.licensePhotoBack) && (
-              <div className="mt-4">
-                <label className="text-sm text-gray-400 mb-2 block">License Photos</label>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {application.driverApplication.documents.licensePhotoFront && (
-                    <div className="bg-gray-700 rounded-lg p-3 border border-gray-600">
-                      <p className="text-xs text-gray-400 mb-2">Front</p>
-                      <img 
-                        src={application.driverApplication.documents.licensePhotoFront.url} 
-                        alt="License Front"
-                        className="w-full h-24 object-cover rounded cursor-pointer hover:opacity-80 transition-opacity"
-                        onClick={() => application.driverApplication.documents?.licensePhotoFront && window.open(application.driverApplication.documents.licensePhotoFront.url, '_blank')}
-                        onError={(e) => {
-                          console.error('License front image failed:', application.driverApplication.documents?.licensePhotoFront?.url);
-                          (e.target as HTMLElement).style.display = 'none';
-                        }}
-                      />
-                    </div>
-                  )}
-                  {application.driverApplication.documents.licensePhotoBack && (
-                    <div className="bg-gray-700 rounded-lg p-3 border border-gray-600">
-                      <p className="text-xs text-gray-400 mb-2">Back</p>
-                      <img 
-                        src={application.driverApplication.documents.licensePhotoBack.url} 
-                        alt="License Back"
-                        className="w-full h-24 object-cover rounded cursor-pointer hover:opacity-80 transition-opacity"
-                        onClick={() => application.driverApplication.documents?.licensePhotoBack && window.open(application.driverApplication.documents.licensePhotoBack.url, '_blank')}
-                        onError={(e) => {
-                          console.error('License back image failed:', application.driverApplication.documents?.licensePhotoBack?.url);
-                          (e.target as HTMLElement).style.display = 'none';
-                        }}
-                      />
-                    </div>
-                  )}
+            {/* License Photos - Simplified with debug */}
+            <div className="mt-4 p-2 bg-green-900/20 rounded">
+              <p className="text-xs text-green-300 mb-2">🔍 License Photos Debug:</p>
+              <p className="text-xs text-gray-400">
+                License Front exists: {application.driverApplication.documents?.licensePhotoFront ? 'YES' : 'NO'}
+                <br />License Back exists: {application.driverApplication.documents?.licensePhotoBack ? 'YES' : 'NO'}
+                {application.driverApplication.documents?.licensePhotoFront && (
+                  <><br />Front URL: {application.driverApplication.documents.licensePhotoFront.url}</>
+                )}
+                {application.driverApplication.documents?.licensePhotoBack && (
+                  <><br />Back URL: {application.driverApplication.documents.licensePhotoBack.url}</>
+                )}
+              </p>
+              
+              {(application.driverApplication.documents?.licensePhotoFront?.url || application.driverApplication.documents?.licensePhotoBack?.url) && (
+                <div className="mt-2">
+                  <label className="text-sm text-gray-400 mb-2 block">License Photos</label>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {application.driverApplication.documents?.licensePhotoFront?.url && (
+                      <div className="bg-gray-700 rounded-lg p-3 border border-gray-600">
+                        <p className="text-xs text-gray-400 mb-2">Front</p>
+                        <img 
+                          src={application.driverApplication.documents.licensePhotoFront.url} 
+                          alt="License Front"
+                          className="w-full h-24 object-cover rounded cursor-pointer hover:opacity-80 transition-opacity"
+                          onClick={() => window.open(application.driverApplication.documents?.licensePhotoFront?.url || '', '_blank')}
+                          onError={(e) => {
+                            console.error('License front image failed:', application.driverApplication.documents?.licensePhotoFront?.url);
+                            (e.target as HTMLElement).style.display = 'none';
+                          }}
+                          onLoad={() => {
+                            console.log('License front image loaded:', application.driverApplication.documents?.licensePhotoFront?.url);
+                          }}
+                        />
+                      </div>
+                    )}
+                    {application.driverApplication.documents?.licensePhotoBack?.url && (
+                      <div className="bg-gray-700 rounded-lg p-3 border border-gray-600">
+                        <p className="text-xs text-gray-400 mb-2">Back</p>
+                        <img 
+                          src={application.driverApplication.documents.licensePhotoBack.url} 
+                          alt="License Back"
+                          className="w-full h-24 object-cover rounded cursor-pointer hover:opacity-80 transition-opacity"
+                          onClick={() => window.open(application.driverApplication.documents?.licensePhotoBack?.url || '', '_blank')}
+                          onError={(e) => {
+                            console.error('License back image failed:', application.driverApplication.documents?.licensePhotoBack?.url);
+                            (e.target as HTMLElement).style.display = 'none';
+                          }}
+                          onLoad={() => {
+                            console.log('License back image loaded:', application.driverApplication.documents?.licensePhotoBack?.url);
+                          }}
+                        />
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         </div>
 
@@ -483,44 +540,64 @@ export default function DriverApplicationDetailPage() {
                 <p className="text-white">{application.driverApplication.vehicleCapacity} passengers</p>
               </div>
 
-              {/* Vehicle Documents */}
-              {application.driverApplication.documents && (application.driverApplication.documents.registrationPhoto || application.driverApplication.documents.insurancePhoto) && (
-                <div className="mt-4">
-                  <label className="text-sm text-gray-400 mb-2 block">Vehicle Documents</label>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {application.driverApplication.documents.registrationPhoto && (
-                      <div className="bg-gray-700 rounded-lg p-3 border border-gray-600">
-                        <p className="text-xs text-gray-400 mb-2">Registration</p>
-                        <img 
-                          src={application.driverApplication.documents.registrationPhoto.url} 
-                          alt="Vehicle Registration"
-                          className="w-full h-24 object-cover rounded cursor-pointer hover:opacity-80 transition-opacity"
-                          onClick={() => application.driverApplication.documents?.registrationPhoto && window.open(application.driverApplication.documents.registrationPhoto.url, '_blank')}
-                          onError={(e) => {
-                            console.error('Registration image failed:', application.driverApplication.documents?.registrationPhoto?.url);
-                            (e.target as HTMLElement).style.display = 'none';
-                          }}
-                        />
-                      </div>
-                    )}
-                    {application.driverApplication.documents.insurancePhoto && (
-                      <div className="bg-gray-700 rounded-lg p-3 border border-gray-600">
-                        <p className="text-xs text-gray-400 mb-2">Insurance</p>
-                        <img 
-                          src={application.driverApplication.documents.insurancePhoto.url} 
-                          alt="Insurance Document"
-                          className="w-full h-24 object-cover rounded cursor-pointer hover:opacity-80 transition-opacity"
-                          onClick={() => application.driverApplication.documents?.insurancePhoto && window.open(application.driverApplication.documents.insurancePhoto.url, '_blank')}
-                          onError={(e) => {
-                            console.error('Insurance image failed:', application.driverApplication.documents?.insurancePhoto?.url);
-                            (e.target as HTMLElement).style.display = 'none';
-                          }}
-                        />
-                      </div>
-                    )}
+              {/* Vehicle Documents - Simplified with debug */}
+              <div className="mt-4 p-2 bg-purple-900/20 rounded">
+                <p className="text-xs text-purple-300 mb-2">🔍 Vehicle Documents Debug:</p>
+                <p className="text-xs text-gray-400">
+                  Registration exists: {application.driverApplication.documents?.registrationPhoto ? 'YES' : 'NO'}
+                  <br />Insurance exists: {application.driverApplication.documents?.insurancePhoto ? 'YES' : 'NO'}
+                  {application.driverApplication.documents?.registrationPhoto && (
+                    <><br />Registration URL: {application.driverApplication.documents.registrationPhoto.url}</>
+                  )}
+                  {application.driverApplication.documents?.insurancePhoto && (
+                    <><br />Insurance URL: {application.driverApplication.documents.insurancePhoto.url}</>
+                  )}
+                </p>
+                
+                {(application.driverApplication.documents?.registrationPhoto?.url || application.driverApplication.documents?.insurancePhoto?.url) && (
+                  <div className="mt-2">
+                    <label className="text-sm text-gray-400 mb-2 block">Vehicle Documents</label>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {application.driverApplication.documents?.registrationPhoto?.url && (
+                        <div className="bg-gray-700 rounded-lg p-3 border border-gray-600">
+                          <p className="text-xs text-gray-400 mb-2">Registration</p>
+                          <img 
+                            src={application.driverApplication.documents.registrationPhoto.url} 
+                            alt="Vehicle Registration"
+                            className="w-full h-24 object-cover rounded cursor-pointer hover:opacity-80 transition-opacity"
+                            onClick={() => window.open(application.driverApplication.documents?.registrationPhoto?.url || '', '_blank')}
+                            onError={(e) => {
+                              console.error('Registration image failed:', application.driverApplication.documents?.registrationPhoto?.url);
+                              (e.target as HTMLElement).style.display = 'none';
+                            }}
+                            onLoad={() => {
+                              console.log('Registration image loaded:', application.driverApplication.documents?.registrationPhoto?.url);
+                            }}
+                          />
+                        </div>
+                      )}
+                      {application.driverApplication.documents?.insurancePhoto?.url && (
+                        <div className="bg-gray-700 rounded-lg p-3 border border-gray-600">
+                          <p className="text-xs text-gray-400 mb-2">Insurance</p>
+                          <img 
+                            src={application.driverApplication.documents.insurancePhoto.url} 
+                            alt="Insurance Document"
+                            className="w-full h-24 object-cover rounded cursor-pointer hover:opacity-80 transition-opacity"
+                            onClick={() => window.open(application.driverApplication.documents?.insurancePhoto?.url || '', '_blank')}
+                            onError={(e) => {
+                              console.error('Insurance image failed:', application.driverApplication.documents?.insurancePhoto?.url);
+                              (e.target as HTMLElement).style.display = 'none';
+                            }}
+                            onLoad={() => {
+                              console.log('Insurance image loaded:', application.driverApplication.documents?.insurancePhoto?.url);
+                            }}
+                          />
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
+              </div>
             </div>
           ) : (
             <p className="text-gray-400">No vehicle information provided</p>
