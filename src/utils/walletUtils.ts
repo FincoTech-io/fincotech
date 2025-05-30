@@ -67,7 +67,7 @@ export async function createWallet(
 
     // Create the wallet first without the address
     const wallet = new Wallet({
-      userId: entityType === 'USER' ? entityId : undefined, // Keep for backward compatibility
+      userId: entityType === 'USER' ? entityId : undefined, // Set userId only for USER entities
       entityType,
       entityId,
       fullName,
@@ -111,7 +111,17 @@ export async function getContacts(userId: string): Promise<Array<{
   lastTransactionDate: Date;
 }> | null> {
   try {
-    const wallet = await Wallet.findOne({ userId }).populate('contacts.userId', 'fullName phoneNumber email');
+    // Try to find wallet by userId first (backward compatibility)
+    let wallet = await Wallet.findOne({ userId }).populate('contacts.userId', 'fullName phoneNumber email');
+    
+    // If not found, try by entityType and entityId
+    if (!wallet) {
+      wallet = await Wallet.findOne({ 
+        entityType: 'USER', 
+        entityId: userId 
+      }).populate('contacts.userId', 'fullName phoneNumber email');
+    }
+    
     if (!wallet) {
       console.error('Wallet not found:', userId);
       return null;
@@ -119,6 +129,45 @@ export async function getContacts(userId: string): Promise<Array<{
     return wallet.contacts;
   } catch (error) {
     console.error('Error getting contacts:', error);
+    throw error;
+  }
+}
+
+/**
+ * Find a wallet by entity type and ID
+ */
+export async function findWalletByEntity(
+  entityType: 'USER' | 'MERCHANT' | 'DRIVER',
+  entityId: string
+): Promise<IWallet | null> {
+  try {
+    const wallet = await Wallet.findOne({ entityType, entityId });
+    return wallet;
+  } catch (error) {
+    console.error('Error finding wallet by entity:', error);
+    throw error;
+  }
+}
+
+/**
+ * Find a user's wallet (backward compatible)
+ */
+export async function findUserWallet(userId: string): Promise<IWallet | null> {
+  try {
+    // Try to find wallet by userId first (backward compatibility)
+    let wallet = await Wallet.findOne({ userId });
+    
+    // If not found, try by entityType and entityId
+    if (!wallet) {
+      wallet = await Wallet.findOne({ 
+        entityType: 'USER', 
+        entityId: userId 
+      });
+    }
+    
+    return wallet;
+  } catch (error) {
+    console.error('Error finding user wallet:', error);
     throw error;
   }
 }

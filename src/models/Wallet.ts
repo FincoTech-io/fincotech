@@ -43,8 +43,7 @@ const WalletSchema = new Schema<IWallet>(
     userId: {
       type: Schema.Types.ObjectId,
       ref: 'User',
-      required: [true, 'User ID is required'],
-      unique: true,
+      required: false,
       index: true,
     },
     entityType: {
