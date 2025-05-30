@@ -1,158 +1,49 @@
 #!/usr/bin/env node
 
 const mongoose = require('mongoose');
-const readline = require('readline');
-const path = require('path');
 const bcrypt = require('bcryptjs');
+const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '../.env.local') });
 
-// Define Staff schema directly in the script to avoid TypeScript import issues
+// Define Staff schema directly in the script
 const { Schema } = mongoose;
 
 // Address Schema
 const AddressSchema = new Schema({
-  unit: {
-    type: String,
-    required: false,
-    trim: true
-  },
-  street: {
-    type: String,
-    required: true,
-    trim: true
-  },
-  city: {
-    type: String,
-    required: true,
-    trim: true
-  },
-  postalCode: {
-    type: String,
-    required: true,
-    trim: true
-  },
-  country: {
-    type: String,
-    required: true,
-    trim: true,
-    uppercase: true
-  }
+  unit: { type: String, required: false, trim: true },
+  street: { type: String, required: true, trim: true },
+  city: { type: String, required: true, trim: true },
+  postalCode: { type: String, required: true, trim: true },
+  country: { type: String, required: true, trim: true, uppercase: true }
 });
 
 // Staff Schema
 const StaffSchema = new Schema({
-  firstName: {
-    type: String,
-    required: true,
-    trim: true,
-    maxlength: 50
-  },
-  middleName: {
-    type: String,
-    required: false,
-    trim: true,
-    maxlength: 50
-  },
-  lastName: {
-    type: String,
-    required: true,
-    trim: true,
-    maxlength: 50
-  },
-  dateOfBirth: {
-    type: Date,
-    required: true
-  },
-  employeeNumber: {
-    type: String,
-    required: true,
-    unique: true,
-    trim: true,
-    match: /^[A-Z]{3}-\d{7}$/
-  },
-  password: {
-    type: String,
-    required: true,
-    minlength: 6
-  },
-  employmentStatus: {
-    type: String,
-    required: true,
-    enum: ['Active', 'Inactive', 'Terminated', 'On Leave', 'Probation'],
-    default: 'Active'
-  },
-  phoneNumber: {
-    type: String,
-    required: true,
-    trim: true,
-    unique: true
-  },
-  jobTitle: {
-    type: String,
-    required: true,
-    trim: true,
-    maxlength: 100
-  },
-  reportsTo: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Staff',
-    required: false
-  },
-  address: {
-    type: AddressSchema,
-    required: true
-  },
-  role: {
-    type: String,
-    required: true,
-    enum: ['Admin', 'Manager', 'Supervisor', 'Staff', 'Support'],
-    default: 'Staff'
-  },
-  taxId: {
-    type: String,
-    required: true,
-    trim: true,
-    unique: true
-  },
-  email: {
-    type: String,
-    required: true,
-    trim: true,
-    lowercase: true,
-    unique: true,
-    match: /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/
-  },
-  team: {
-    type: String,
-    required: true,
-    trim: true,
-    maxlength: 100
-  },
-  hireDate: {
-    type: Date,
-    required: true,
-    default: Date.now
-  },
-  lastLogin: {
-    type: Date,
-    required: false
-  }
+  firstName: { type: String, required: true, trim: true, maxlength: 50 },
+  middleName: { type: String, required: false, trim: true, maxlength: 50 },
+  lastName: { type: String, required: true, trim: true, maxlength: 50 },
+  dateOfBirth: { type: Date, required: true },
+  employeeNumber: { type: String, required: true, unique: true, trim: true, match: /^[A-Z]{3}-\d{7}$/ },
+  password: { type: String, required: true, minlength: 6 },
+  employmentStatus: { type: String, required: true, enum: ['Active', 'Inactive', 'Terminated', 'On Leave', 'Probation'], default: 'Active' },
+  phoneNumber: { type: String, required: true, trim: true, unique: true },
+  jobTitle: { type: String, required: true, trim: true, maxlength: 100 },
+  reportsTo: { type: mongoose.Schema.Types.ObjectId, ref: 'Staff', required: false },
+  address: { type: AddressSchema, required: true },
+  role: { type: String, required: true, enum: ['Admin', 'Manager', 'Supervisor', 'Staff', 'Support'], default: 'Staff' },
+  taxId: { type: String, required: true, trim: true, unique: true },
+  email: { type: String, required: true, trim: true, lowercase: true, unique: true, match: /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/ },
+  team: { type: String, required: true, trim: true, maxlength: 100 },
+  hireDate: { type: Date, required: true, default: Date.now },
+  lastLogin: { type: Date, required: false }
 }, {
   timestamps: true,
-  toJSON: {
-    transform: function(doc, ret) {
-      delete ret.password;
-      return ret;
-    }
-  }
+  toJSON: { transform: function(doc, ret) { delete ret.password; return ret; } }
 });
 
 // Pre-save hook to hash password
 StaffSchema.pre('save', async function(next) {
-  if (!this.isModified('password')) {
-    return next();
-  }
-
+  if (!this.isModified('password')) return next();
   try {
     const salt = await bcrypt.genSalt(12);
     this.password = await bcrypt.hash(this.password, salt);
@@ -165,83 +56,20 @@ StaffSchema.pre('save', async function(next) {
 // Static method to generate employee number
 StaffSchema.statics.generateEmployeeNumber = async function(countryCode) {
   const formattedCountryCode = countryCode.toUpperCase().padEnd(3, 'X').substring(0, 3);
-  
   const lastEmployee = await this.findOne(
     { employeeNumber: new RegExp(`^${formattedCountryCode}-`) },
     {},
     { sort: { employeeNumber: -1 } }
   );
-
   let nextNumber = 1;
   if (lastEmployee && lastEmployee.employeeNumber) {
     const lastNumberStr = lastEmployee.employeeNumber.split('-')[1];
-    const lastNumber = parseInt(lastNumberStr, 10);
-    nextNumber = lastNumber + 1;
+    nextNumber = parseInt(lastNumberStr, 10) + 1;
   }
-
-  const formattedNumber = nextNumber.toString().padStart(7, '0');
-  return `${formattedCountryCode}-${formattedNumber}`;
+  return `${formattedCountryCode}-${nextNumber.toString().padStart(7, '0')}`;
 };
 
-// Instance method to compare password
-StaffSchema.methods.comparePassword = async function(candidatePassword) {
-  return bcrypt.compare(candidatePassword, this.password);
-};
-
-// Create the model
 const Staff = mongoose.models.Staff || mongoose.model('Staff', StaffSchema);
-
-const rl = readline.createInterface({
-  input: process.stdin,
-  output: process.stdout
-});
-
-// Helper function to prompt for input
-const prompt = (question) => {
-  return new Promise((resolve) => {
-    rl.question(question, (answer) => {
-      resolve(answer.trim());
-    });
-  });
-};
-
-// Helper function to prompt for password (hidden input)
-const promptPassword = (question) => {
-  return new Promise((resolve) => {
-    process.stdout.write(question);
-    process.stdin.setRawMode(true);
-    process.stdin.resume();
-    
-    let password = '';
-    process.stdin.on('data', function(char) {
-      char = char + '';
-      
-      switch (char) {
-        case '\n':
-        case '\r':
-        case '\u0004': // Ctrl+D
-          process.stdin.setRawMode(false);
-          process.stdin.pause();
-          process.stdout.write('\n');
-          resolve(password);
-          break;
-        case '\u0003': // Ctrl+C
-          process.exit();
-          break;
-        case '\u007f': // Backspace
-          if (password.length > 0) {
-            password = password.slice(0, -1);
-            process.stdout.write('\b \b');
-          }
-          break;
-        default:
-          password += char;
-          process.stdout.write('*');
-          break;
-      }
-    });
-  });
-};
 
 // Connect to MongoDB
 async function connectDB() {
@@ -250,7 +78,6 @@ async function connectDB() {
     if (!MONGODB_URI) {
       throw new Error('MONGODB_URI not found in environment variables');
     }
-    
     await mongoose.connect(MONGODB_URI);
     console.log('✅ Connected to MongoDB');
   } catch (error) {
@@ -259,18 +86,37 @@ async function connectDB() {
   }
 }
 
-// Validate email format
+// Validate email
 function isValidEmail(email) {
-  const emailRegex = /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/;
-  return emailRegex.test(email);
+  return /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/.test(email);
 }
 
-// Main function to create staff member
+// Prompt with basic readline that won't break
+const readline = require('readline');
+async function prompt(question) {
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout
+  });
+  
+  return new Promise((resolve) => {
+    rl.question(question, (answer) => {
+      rl.close();
+      resolve(answer.trim());
+    });
+  });
+}
+
+async function promptPassword(question) {
+  console.log('⚠️  Note: Password will be visible while typing (for terminal compatibility)');
+  return await prompt(question);
+}
+
+// Interactive staff creation
 async function createStaff() {
   console.log('\n🚀 FincoTech Staff Creation Tool\n');
   
   try {
-    // Collect staff information
     const firstName = await prompt('First Name: ');
     if (!firstName) {
       console.log('❌ First name is required');
@@ -327,38 +173,24 @@ async function createStaff() {
       return;
     }
 
-    // Role selection
     console.log('\nSelect Role:');
-    console.log('1. Admin');
-    console.log('2. Manager');
-    console.log('3. Supervisor');
-    console.log('4. Staff');
-    console.log('5. Support');
-    
+    console.log('1. Admin\n2. Manager\n3. Supervisor\n4. Staff\n5. Support');
     const roleChoice = await prompt('Choice (1-5): ');
     const roles = ['Admin', 'Manager', 'Supervisor', 'Staff', 'Support'];
     const role = roles[parseInt(roleChoice) - 1];
-    
     if (!role) {
       console.log('❌ Invalid role selection');
       return;
     }
 
-    // Employment status
     console.log('\nSelect Employment Status:');
-    console.log('1. Active');
-    console.log('2. Inactive');
-    console.log('3. On Leave');
-    console.log('4. Probation');
-    
+    console.log('1. Active\n2. Inactive\n3. On Leave\n4. Probation');
     const statusChoice = await prompt('Choice (1-4) [default: Active]: ') || '1';
     const statuses = ['Active', 'Inactive', 'On Leave', 'Probation'];
     const employmentStatus = statuses[parseInt(statusChoice) - 1] || 'Active';
 
-    // Country code for employee number
     const countryCode = await prompt('Country Code (3 letters) [default: ZWE]: ') || 'ZWE';
 
-    // Address information
     console.log('\n📍 Address Information:');
     const unit = await prompt('Unit/Apt (optional): ');
     const street = await prompt('Street: ');
@@ -385,45 +217,19 @@ async function createStaff() {
       return;
     }
 
-    // Create address object
-    const address = {
-      street,
-      city,
-      postalCode,
-      country: country.toUpperCase()
-    };
-    
-    if (unit) {
-      address.unit = unit;
-    }
+    const address = { street, city, postalCode, country: country.toUpperCase() };
+    if (unit) address.unit = unit;
 
-    // Generate employee number
     console.log('\n⏳ Generating employee number...');
     const employeeNumber = await Staff.generateEmployeeNumber(countryCode);
 
-    // Create staff member
     console.log('⏳ Creating staff member...');
-    
     const staffData = {
-      firstName,
-      lastName,
-      email: email.toLowerCase(),
-      password,
-      phoneNumber,
-      dateOfBirth: new Date(dateOfBirth),
-      jobTitle,
-      team,
-      taxId,
-      role,
-      employmentStatus,
-      employeeNumber,
-      address,
-      hireDate: new Date()
+      firstName, lastName, email: email.toLowerCase(), password, phoneNumber,
+      dateOfBirth: new Date(dateOfBirth), jobTitle, team, taxId, role,
+      employmentStatus, employeeNumber, address, hireDate: new Date()
     };
-
-    if (middleName) {
-      staffData.middleName = middleName;
-    }
+    if (middleName) staffData.middleName = middleName;
 
     const newStaff = new Staff(staffData);
     const savedStaff = await newStaff.save();
@@ -431,14 +237,14 @@ async function createStaff() {
     console.log('\n✅ Staff member created successfully!');
     console.log('📋 Details:');
     console.log(`   Employee Number: ${savedStaff.employeeNumber}`);
-    console.log(`   Name: ${savedStaff.firstName} ${savedStaff.middleName || ''} ${savedStaff.lastName}`);
+    console.log(`   Name: ${savedStaff.firstName} ${savedStaff.middleName || ''} ${savedStaff.lastName}`.trim());
     console.log(`   Email: ${savedStaff.email}`);
     console.log(`   Role: ${savedStaff.role}`);
     console.log(`   Team: ${savedStaff.team}`);
     console.log(`   Status: ${savedStaff.employmentStatus}`);
     console.log('\n🔐 Login Credentials:');
     console.log(`   Employee ID: ${savedStaff.employeeNumber}`);
-    console.log(`   Password: [Hidden - use the password you entered]`);
+    console.log(`   Password: [Hidden]`);
     console.log('\n🌐 Login URL: http://localhost:3000/staff');
 
   } catch (error) {
@@ -450,91 +256,70 @@ async function createStaff() {
   }
 }
 
-// Handle command line arguments for quick creation
-async function handleQuickCreate() {
-  const args = process.argv.slice(2);
+// Quick creation mode
+async function quickCreate() {
+  console.log('🚀 Quick Staff Creation Mode\n');
   
-  if (args.length > 0 && args[0] === '--help') {
-    console.log(`
-🚀 FincoTech Staff Creation Tool
-
-Usage:
-  node scripts/create-staff.js                    # Interactive mode
-  node scripts/create-staff.js --quick           # Quick creation with prompts
-  node scripts/create-staff.js --help            # Show this help
-
-Examples:
-  node scripts/create-staff.js
-  npm run create-staff
-
-Interactive mode will prompt you for all required information.
-    `);
-    return;
-  }
-
-  if (args.length > 0 && args[0] === '--quick') {
-    console.log('🚀 Quick Staff Creation Mode\n');
-    
-    // Quick mode with minimal prompts
-    const firstName = await prompt('First Name: ');
-    const lastName = await prompt('Last Name: ');
-    const email = await prompt('Email: ');
-    const password = await promptPassword('Password: ');
-    
-    console.log('\n⏳ Creating staff with default values...');
-    
-    try {
-      const employeeNumber = await Staff.generateEmployeeNumber('ZWE');
-      
-      const staffData = {
-        firstName,
-        lastName,
-        email: email.toLowerCase(),
-        password,
-        phoneNumber: '+263771234567', // Default
-        dateOfBirth: new Date('1990-01-01'), // Default
-        jobTitle: 'Staff Member',
-        team: 'General',
-        taxId: `TAX-${Date.now()}`, // Auto-generated
-        role: 'Staff',
-        employmentStatus: 'Active',
-        employeeNumber,
-        address: {
-          street: '123 Main Street',
-          city: 'Harare',
-          postalCode: '00263',
-          country: 'ZWE'
-        },
-        hireDate: new Date()
-      };
-
-      const newStaff = new Staff(staffData);
-      const savedStaff = await newStaff.save();
-
-      console.log(`\n✅ Staff created! Employee ID: ${savedStaff.employeeNumber}`);
-      console.log(`🌐 Login at: http://localhost:3000/staff`);
-      
-    } catch (error) {
-      console.log('❌ Error:', error.message);
-    }
-    
+  const firstName = await prompt('First Name: ');
+  const lastName = await prompt('Last Name: ');
+  const email = await prompt('Email: ');
+  const password = await promptPassword('Password: ');
+  
+  if (!firstName || !lastName || !email || !password) {
+    console.log('❌ All fields are required');
     return;
   }
   
-  // Default interactive mode
-  await createStaff();
+  console.log('\n⏳ Creating staff with default values...');
+  
+  try {
+    const employeeNumber = await Staff.generateEmployeeNumber('ZWE');
+    const staffData = {
+      firstName, lastName, email: email.toLowerCase(), password,
+      phoneNumber: `+263${Date.now().toString().slice(-9)}`, 
+      dateOfBirth: new Date('1990-01-01'),
+      jobTitle: 'Staff Member', team: 'General', 
+      taxId: `TAX-${Date.now()}`,
+      role: 'Staff', employmentStatus: 'Active', employeeNumber,
+      address: { street: '123 Main Street', city: 'Harare', postalCode: '00263', country: 'ZWE' },
+      hireDate: new Date()
+    };
+
+    const newStaff = new Staff(staffData);
+    const savedStaff = await newStaff.save();
+
+    console.log(`\n✅ Staff created! Employee ID: ${savedStaff.employeeNumber}`);
+    console.log(`🌐 Login at: http://localhost:3000/staff`);
+  } catch (error) {
+    console.log('❌ Error:', error.message);
+  }
 }
 
 // Main execution
 async function main() {
+  const args = process.argv.slice(2);
+  
+  if (args[0] === '--help') {
+    console.log('\n🚀 FincoTech Staff Creation Tool\n');
+    console.log('Usage:');
+    console.log('  node scripts/create-staff.js           # Interactive mode');
+    console.log('  node scripts/create-staff.js --quick   # Quick mode');
+    console.log('  node scripts/create-staff.js --help    # This help');
+    return;
+  }
+
   await connectDB();
-  await handleQuickCreate();
-  rl.close();
+  
+  if (args[0] === '--quick') {
+    await quickCreate();
+  } else {
+    await createStaff();
+  }
+  
   mongoose.connection.close();
   console.log('\n👋 Goodbye!');
 }
 
-// Run the script
 main().catch((error) => {
   console.error('❌ Script error:', error);
   process.exit(1);
