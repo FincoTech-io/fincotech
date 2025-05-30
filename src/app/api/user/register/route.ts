@@ -186,7 +186,7 @@ export async function POST(request: NextRequest) {
     try {
       const userId = newUser._id.toString();
       console.log('Creating wallet for new user:', userId);
-      const walletResult = await createWallet(userId);
+      const walletResult = await createWallet(userId, 'BASIC', 'USER');
       console.log('Wallet created successfully:', walletResult.wallet.address);
     } catch (walletError) {
       console.error('Error creating wallet for user:', walletError);

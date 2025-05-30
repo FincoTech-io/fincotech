@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectToDatabase } from '@/utils/db';
 import Merchant from '@/models/Merchant';
-import { IMerchant } from '@/models/Merchant';
 import { createWallet } from '@/utils/walletUtils';
 import { validateMerchantData, MERCHANT_TYPES } from '@/utils/merchantUtils';
-import { getAuthenticatedStaff, isAdmin, unauthorizedResponse, forbiddenResponse } from '@/utils/staffAuth';
+import { getAuthenticatedStaff, unauthorizedResponse } from '@/utils/staffAuth';
 
 export async function POST(request: NextRequest) {
     try {
@@ -82,9 +81,9 @@ export async function POST(request: NextRequest) {
         let walletInfo = null;
         try {
             const merchantId = newMerchant._id.toString();
-            console.log('Creating wallet for new merchant:', merchantId);
-            const walletResult = await createWallet(merchantId, 'MERCHANT');
-            console.log('Wallet created successfully:', walletResult.wallet.address);
+            console.log('Creating wallet for merchant:', merchantId);
+            const walletResult = await createWallet(merchantId, 'MERCHANT', 'MERCHANT');
+            console.log('Wallet created successfully for merchant:', walletResult.wallet.address);
             walletInfo = {
                 address: walletResult.wallet.address,
                 success: true
@@ -92,7 +91,7 @@ export async function POST(request: NextRequest) {
         } catch (walletError) {
             console.error('Error creating wallet for merchant:', walletError);
             walletInfo = {
-                error: 'Failed to create wallet',
+                error: walletError instanceof Error ? walletError.message : 'Failed to create wallet',
                 success: false
             };
         }

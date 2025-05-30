@@ -24,7 +24,7 @@ export async function POST(request: Request) {
     }
 
     // Create wallet
-    const result = await createWallet(userId);
+    const result = await createWallet(userId, 'BASIC', 'USER');
     
     return NextResponse.json({ 
       success: true,

@@ -543,4 +543,65 @@ for (const merchant of merchants) {
     });
   }
 }
+```
+
+## Automatic Wallet Creation
+When a merchant account is created (either through application approval or direct registration), the system automatically creates a wallet **directly associated with the merchant** with the following features:
+- **Direct Association**: Wallet is linked directly to the merchant account (not the user)
+- **Entity Type**: 'MERCHANT' entity type for business transactions
+- **Tier**: Set to 'MERCHANT' for business accounts  
+- **Automatic Address Generation**: Unique wallet address generated using bcrypt hash
+- **Business Focus**: Optimized for merchant payment processing
+
+### Wallet Creation Process
+1. **Application Approval**: When a business application is approved, the system automatically:
+   - Creates a merchant account from application data
+   - Creates a MERCHANT tier wallet directly for the merchant account
+   - Links wallet to merchant via entityId and entityType fields
+   
+2. **Direct Registration**: When staff creates a merchant directly:
+   - Merchant account is created with staff information
+   - Wallet is created directly for the merchant account
+   - No user association required for wallet creation
+
+### Entity-Based Wallet System
+The wallet system now supports multiple entity types:
+- **USER**: Personal wallets for individual users
+- **MERCHANT**: Business wallets for merchant accounts  
+- **DRIVER**: Service wallets for driver accounts
+
+Each wallet has:
+```typescript
+interface IWallet {
+  entityType: 'USER' | 'MERCHANT' | 'DRIVER';
+  entityId: ObjectId; // References User, Merchant, or Driver
+  userId: ObjectId; // Kept for backward compatibility
+  // ... other fields
+}
+```
+
+## Endpoints
+
+### Staff Endpoints
+
+#### Fix Missing Merchant Wallets
+**POST** `/api/staff/merchants/fix-wallets`
+
+Utility endpoint for admins to create missing wallets for existing merchants.
+
+**Authentication**: Admin staff token required
+
+**Response**:
+```json
+{
+  "success": true,
+  "message": "Merchant wallet fix completed",
+  "data": {
+    "processed": 10,
+    "created": 3,
+    "errors": [],
+    "executedBy": "John Doe",
+    "executedAt": "2024-01-15T10:30:00.000Z"
+  }
+}
 ``` 

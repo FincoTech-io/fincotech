@@ -4,6 +4,8 @@ import { IUser } from './User';
 // Interface for Wallet document
 export interface IWallet extends Document {
   userId: mongoose.Types.ObjectId | IUser;
+  entityType: 'USER' | 'MERCHANT' | 'DRIVER';
+  entityId: mongoose.Types.ObjectId;
   address: string;
   fullName: string;
   phoneNumber: string;
@@ -45,6 +47,16 @@ const WalletSchema = new Schema<IWallet>(
       unique: true,
       index: true,
     },
+    entityType: {
+      type: String,
+      enum: ['USER', 'MERCHANT', 'DRIVER'],
+      required: true,
+    },
+    entityId: {
+      type: Schema.Types.ObjectId,
+      required: true,
+      index: true,
+    },
     address: {
       type: String,
       unique: true,
@@ -82,7 +94,7 @@ const WalletSchema = new Schema<IWallet>(
     },
     tier: {
       type: String,
-      enum: ['BASIC', 'STANDARD', 'PREMIUM', 'VIP'],
+      enum: ['BASIC', 'STANDARD', 'PREMIUM', 'VIP', 'MERCHANT', 'DRIVER'],
       default: 'STANDARD',
       uppercase: true,
     },
@@ -146,6 +158,22 @@ const WalletSchema = new Schema<IWallet>(
     timestamps: true,
   }
 );
+
+// Add compound unique index for entityType and entityId
+WalletSchema.index({ entityType: 1, entityId: 1 }, { unique: true });
+
+// Virtual populate for dynamic entity reference
+WalletSchema.virtual('entity', {
+  refPath: function(doc: any) {
+    if (doc.entityType === 'USER') return 'User';
+    if (doc.entityType === 'MERCHANT') return 'Merchant';  
+    if (doc.entityType === 'DRIVER') return 'Driver';
+    return 'User'; // fallback
+  },
+  localField: 'entityId',
+  foreignField: '_id',
+  justOne: true
+});
 
 // Create or retrieve the Wallet model
 export const Wallet = mongoose.models.Wallet as mongoose.Model<IWallet> ||

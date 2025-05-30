@@ -173,12 +173,12 @@ export async function createMerchantFromApplication(
     // Create wallet for the merchant
     try {
       const merchantId = newMerchant._id.toString();
-      console.log('Creating wallet for new merchant:', merchantId);
-      const walletResult = await createWallet(merchantId, 'MERCHANT');
-      console.log('Wallet created successfully:', walletResult.wallet.address);
+      console.log('Creating wallet for merchant:', merchantId);
+      const walletResult = await createWallet(merchantId, 'MERCHANT', 'MERCHANT');
+      console.log('Wallet created successfully for merchant:', walletResult.wallet.address);
     } catch (walletError) {
       console.error('Error creating wallet for merchant:', walletError);
-      // Don't fail merchant creation if wallet fails
+      // Don't fail merchant creation if wallet fails, but log it for investigation
     }
 
     return {
@@ -431,5 +431,62 @@ export async function removeUserFromMerchant(
       success: false,
       error: error instanceof Error ? error.message : 'Failed to remove user from merchant'
     };
+  }
+}
+
+/**
+ * Check and create missing wallets for existing merchants
+ * This utility can be run to fix any merchants that were created without wallets
+ */
+export async function createMissingMerchantWallets(): Promise<{ 
+  processed: number; 
+  created: number; 
+  errors: string[]; 
+}> {
+  try {
+    const { createWallet } = await import('@/utils/walletUtils');
+    const { Wallet } = await import('@/models/Wallet');
+    
+    // Get all verified merchants
+    const merchants = await Merchant.find({ verificationStatus: 'VERIFIED' }).exec();
+    
+    const results = {
+      processed: 0,
+      created: 0,
+      errors: [] as string[]
+    };
+    
+    for (const merchant of merchants) {
+      try {
+        results.processed++;
+        
+        const merchantId = merchant._id.toString();
+        
+        // Check if wallet already exists for this merchant
+        const existingWallet = await Wallet.findOne({ 
+          entityType: 'MERCHANT', 
+          entityId: merchantId 
+        });
+        if (existingWallet) {
+          console.log(`Wallet already exists for merchant: ${merchantId}`);
+          continue;
+        }
+        
+        // Create wallet for the merchant
+        console.log(`Creating missing wallet for merchant: ${merchantId}`);
+        await createWallet(merchantId, 'MERCHANT', 'MERCHANT');
+        results.created++;
+        
+      } catch (error) {
+        const errorMsg = `Error processing merchant ${merchant.merchantName}: ${error instanceof Error ? error.message : 'Unknown error'}`;
+        results.errors.push(errorMsg);
+        console.error(errorMsg);
+      }
+    }
+    
+    return results;
+  } catch (error) {
+    console.error('Error in createMissingMerchantWallets:', error);
+    throw error;
   }
 } 

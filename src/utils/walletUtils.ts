@@ -3,34 +3,75 @@ import { Wallet, IWallet } from '@/models/Wallet';
 import { IUser, User } from '@/models/User';
 import mongoose from 'mongoose';
 /**
- * Creates a wallet for a user
+ * Creates a wallet for a user, merchant, or driver
  * 
- * @param userId - The user ID to create the wallet for
+ * @param entityId - The entity ID (user, merchant, or driver ID)
+ * @param tier - The wallet tier 
+ * @param entityType - The type of entity ('USER', 'MERCHANT', 'DRIVER')
  * @returns The created wallet and a flag indicating if it was newly created
  */
-export async function createWallet(userId: string, tier: string = 'BASIC'): Promise<{ wallet: IWallet; created: boolean }> {
+export async function createWallet(
+  entityId: string, 
+  tier: string = 'BASIC',
+  entityType: 'USER' | 'MERCHANT' | 'DRIVER' = 'USER'
+): Promise<{ wallet: IWallet; created: boolean }> {
   try {
-    console.log(`Creating wallet for user: ${userId}`);
+    console.log(`Creating wallet for ${entityType.toLowerCase()}: ${entityId}`);
     
-    // Check if wallet already exists
-    const existingWallet = await Wallet.findOne({ userId });
+    // Check if wallet already exists for this entity
+    const existingWallet = await Wallet.findOne({ entityType, entityId });
     if (existingWallet) {
-      console.log(`Wallet already exists for user: ${userId}`);
+      console.log(`Wallet already exists for ${entityType.toLowerCase()}: ${entityId}`);
       return { wallet: existingWallet, created: false };
     }
     
-    // Find the user to get their information
-    const user = await User.findById(userId);
-    if (!user) {
-      console.error(`User not found: ${userId}`);
-      throw new Error('User not found');
+    let fullName = '';
+    let phoneNumber = '';
+
+    // Get entity information based on type
+    if (entityType === 'USER') {
+      const user = await User.findById(entityId);
+      if (!user) {
+        console.error(`User not found: ${entityId}`);
+        throw new Error('User not found');
+      }
+      fullName = user.fullName;
+      phoneNumber = user.phoneNumber;
+    } else if (entityType === 'MERCHANT') {
+      const Merchant = (await import('@/models/Merchant')).default;
+      const merchant = await Merchant.findById(entityId);
+      if (!merchant) {
+        console.error(`Merchant not found: ${entityId}`);
+        throw new Error('Merchant not found');
+      }
+      fullName = merchant.merchantName;
+      phoneNumber = merchant.phoneNumber;
+    } else if (entityType === 'DRIVER') {
+      const Driver = (await import('@/models/Driver')).default;
+      const driver = await Driver.findById(entityId);
+      if (!driver) {
+        console.error(`Driver not found: ${entityId}`);
+        throw new Error('Driver not found');
+      }
+      fullName = driver.accountHolderName;
+      
+      // Get phone number from the associated user
+      try {
+        const user = await User.findById(driver.applicantUserId);
+        phoneNumber = user?.phoneNumber || '';
+      } catch (userError) {
+        console.warn(`Could not get phone number for driver ${entityId}:`, userError);
+        phoneNumber = '';
+      }
     }
 
     // Create the wallet first without the address
     const wallet = new Wallet({
-      userId,
-      fullName: user.fullName,
-      phoneNumber: user.phoneNumber,
+      userId: entityType === 'USER' ? entityId : undefined, // Keep for backward compatibility
+      entityType,
+      entityId,
+      fullName,
+      phoneNumber,
       balance: 0,
       currency: 'USD',
       isActive: true,
@@ -48,23 +89,21 @@ export async function createWallet(userId: string, tier: string = 'BASIC'): Prom
     
     // Now generate the address using the wallet ID
     const salt = await bcrypt.genSalt(10);
-    // Use a type-safe way to get the wallet ID
     const walletId = wallet._id ? wallet._id.toString() : wallet.id;
     const address = await bcrypt.hash(walletId, salt);
- 
     
     // Update the wallet with the generated address
     wallet.address = address;
     await wallet.save();
     
-    console.log(`Wallet created successfully for user: ${userId} with address derived from wallet ID`);
+    console.log(`Wallet created successfully for ${entityType.toLowerCase()}: ${entityId} with address derived from wallet ID`);
 
     return { wallet, created: true };
   } catch (error) {
     console.error('Error creating wallet:', error);
     throw error;
   }
-} 
+}
 
 export async function getContacts(userId: string): Promise<Array<{
   userId: mongoose.Types.ObjectId | IUser;
