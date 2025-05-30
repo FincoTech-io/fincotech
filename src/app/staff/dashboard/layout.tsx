@@ -101,8 +101,8 @@ export default function StaffDashboardLayout({
         { name: 'Businesses', href: '/staff/dashboard/applications/businesses' }
       ]
     },
-    { name: 'Merchants', href: '/staff/dashboard/merchants', icon: BuildingOfficeIcon },
-    { name: 'Drivers', href: '/staff/dashboard/drivers', icon: TruckIcon },
+    { name: 'Active Merchants', href: '/staff/dashboard/merchants', icon: BuildingOfficeIcon },
+    { name: 'Active Drivers', href: '/staff/dashboard/drivers', icon: TruckIcon },
     { name: 'Staff Management', href: '/staff/dashboard/staff', icon: UserGroupIcon },
     { name: 'Settings', href: '/staff/dashboard/settings', icon: CogIcon },
   ];

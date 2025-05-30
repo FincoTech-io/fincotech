@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectToDatabase } from '@/utils/db';
-import Application from '@/models/Application';
+import Driver from '@/models/Driver';
 import { getAuthenticatedStaff, unauthorizedResponse } from '@/utils/staffAuth';
 
 export async function GET(request: NextRequest) {
@@ -20,46 +20,44 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '50');
     const skip = parseInt(searchParams.get('skip') || '0');
 
-    // Build query for driver applications
-    let query: any = {
-      applicationType: 'driver',
-      driverApplication: { $exists: true }
-    };
+    // Build query for drivers - by default only show verified/active drivers
+    let query: any = {};
+    
+    // Only show verified drivers unless explicitly requesting all statuses
+    if (!status || status === 'verified') {
+      query.verificationStatus = 'VERIFIED';
+      query.isActive = true;
+    } else if (status !== 'all') {
+      // Map frontend status values to database values
+      const statusMapping: { [key: string]: string } = {
+        'approved': 'VERIFIED',
+        'pending': 'PENDING',
+        'suspended': 'SUSPENDED',
+        'deactivated': 'DEACTIVATED'
+      };
+      query.verificationStatus = statusMapping[status] || status.toUpperCase();
+    }
     
     if (search) {
       query.$or = [
-        { 'driverApplication.accountHolderName': { $regex: search, $options: 'i' } },
-        { 'driverApplication.licenseNumber': { $regex: search, $options: 'i' } },
-        { 'driverApplication.vehiclePlate': { $regex: search, $options: 'i' } }
+        { accountHolderName: { $regex: search, $options: 'i' } },
+        { licenseNumber: { $regex: search, $options: 'i' } },
+        { vehiclePlate: { $regex: search, $options: 'i' } }
       ];
     }
     
-    if (status && status !== 'all') {
-      query['driverApplication.verificationStatus'] = status;
-    }
-    
     if (service && service !== 'all') {
-      query[`driverApplication.serviceTypes.${service}`] = true;
+      query[`serviceTypes.${service}`] = true;
     }
 
-    const applications = await Application.find(query)
-      .sort({ submissionDate: -1 })
+    const drivers = await Driver.find(query)
+      .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)
-      .select('_id applicationRef driverApplication applicantUserId submissionDate createdAt updatedAt')
+      .select('-__v') // Exclude version field
       .lean();
 
-    const total = await Application.countDocuments(query);
-
-    // Transform applications to driver format
-    const drivers = applications.map(app => ({
-      _id: app._id,
-      applicationRef: app.applicationRef,
-      applicantUserId: app.applicantUserId,
-      createdAt: app.createdAt || app.submissionDate,
-      updatedAt: app.updatedAt || app.submissionDate,
-      ...app.driverApplication
-    }));
+    const total = await Driver.countDocuments(query);
 
     return NextResponse.json({
       success: true,
@@ -105,7 +103,7 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
-    const validStatuses = ['pending', 'under_review', 'approved', 'rejected'];
+    const validStatuses = ['VERIFIED', 'PENDING', 'SUSPENDED', 'DEACTIVATED'];
     if (verificationStatus && !validStatuses.includes(verificationStatus)) {
       return NextResponse.json(
         { success: false, error: 'Invalid verification status' },
@@ -113,45 +111,34 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
-    const application = await Application.findById(driverId);
+    const driver = await Driver.findById(driverId);
     
-    if (!application || application.applicationType !== 'driver' || !application.driverApplication) {
+    if (!driver) {
       return NextResponse.json(
-        { success: false, error: 'Driver application not found' },
+        { success: false, error: 'Driver not found' },
         { status: 404 }
       );
     }
 
     // Update driver verification status
     if (verificationStatus) {
-      application.driverApplication.verificationStatus = verificationStatus;
+      driver.verificationStatus = verificationStatus;
       
-      // Also update the main application status based on verification status
-      const statusMapping: { [key: string]: 'Pending' | 'In Review' | 'Approved' | 'Declined' } = {
-        'pending': 'Pending',
-        'under_review': 'In Review', 
-        'approved': 'Approved',
-        'rejected': 'Declined'
-      };
-      application.status = (statusMapping[verificationStatus] || 'Pending') as 'Pending' | 'In Review' | 'Approved' | 'Declined';
-      
-      if (verificationStatus === 'approved') {
-        application.approvalDate = new Date();
-      } else if (verificationStatus === 'rejected') {
-        application.rejectionDate = new Date();
+      // Update active status based on verification status
+      if (verificationStatus === 'VERIFIED') {
+        driver.isActive = true;
+      } else if (verificationStatus === 'SUSPENDED' || verificationStatus === 'DEACTIVATED') {
+        driver.isActive = false;
       }
-      
-      application.reviewDate = new Date();
-      application.reviewedBy = staff._id as any;
     }
     
     // Add staff note to driver notifications if provided
     if (notes) {
-      if (!application.driverApplication.notifications) {
-        application.driverApplication.notifications = [];
+      if (!driver.notifications) {
+        driver.notifications = [];
       }
       
-      application.driverApplication.notifications.push({
+      driver.notifications.push({
         title: 'Status Update',
         message: notes,
         type: 'SYSTEM',
@@ -164,21 +151,17 @@ export async function PATCH(request: NextRequest) {
           statusChange: verificationStatus
         }
       });
-      application.driverApplication.hasUnreadNotifications = true;
+      driver.hasUnreadNotifications = true;
     }
 
-    if (notes) {
-      application.reviewNotes = notes;
-    }
-
-    await application.save();
+    await driver.save();
 
     return NextResponse.json({
       success: true,
       data: {
-        driverId: application._id,
-        verificationStatus: application.driverApplication.verificationStatus,
-        applicationStatus: application.status,
+        driverId: driver._id,
+        verificationStatus: driver.verificationStatus,
+        isActive: driver.isActive,
         updatedBy: {
           staffId: staff._id,
           name: `${staff.firstName} ${staff.lastName}`,

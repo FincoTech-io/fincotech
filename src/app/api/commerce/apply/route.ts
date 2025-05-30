@@ -16,6 +16,7 @@ import {
 } from '@/utils/applicationUtils';
 import { getAuthenticatedStaff, isAdmin, unauthorizedResponse, forbiddenResponse } from '@/utils/staffAuth';
 import { createMerchantFromApplication } from '@/utils/merchantUtils';
+import { createDriverFromApplication } from '@/utils/driverUtils';
 
 // Configure the API route for longer timeout and larger body size
 export const runtime = 'nodejs';
@@ -432,6 +433,34 @@ export async function PATCH(request: NextRequest) {
           console.error(`❌ Error during merchant creation for application ${application.applicationRef}:`, error);
           application.reviewNotes = (application.reviewNotes || '') + 
             `\n[Warning: Error during merchant account creation]`;
+        }
+      }
+      
+      // Auto-create driver if this is an approved driver application
+      if (application.applicationType === 'driver' && application.driverApplication) {
+        try {
+          const driverResult = await createDriverFromApplication(
+            application.driverApplication,
+            application.applicantUserId.toString(),
+            staff._id.toString(),
+            application.applicationRef
+          );
+          
+          if (driverResult.success) {
+            console.log(`✅ Driver created successfully for application ${application.applicationRef}`);
+            // Optionally add driver info to response
+            application.reviewNotes = (application.reviewNotes || '') + 
+              `\n[Auto-created driver account: ${driverResult.driver._id}]`;
+          } else {
+            console.error(`❌ Failed to create driver for application ${application.applicationRef}:`, driverResult.error);
+            // Don't fail the approval, just log the error
+            application.reviewNotes = (application.reviewNotes || '') + 
+              `\n[Warning: Failed to auto-create driver account: ${driverResult.error}]`;
+          }
+        } catch (error) {
+          console.error(`❌ Error during driver creation for application ${application.applicationRef}:`, error);
+          application.reviewNotes = (application.reviewNotes || '') + 
+            `\n[Warning: Error during driver account creation]`;
         }
       }
     } else if (status === 'Declined') {

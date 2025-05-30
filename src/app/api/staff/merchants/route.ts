@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '50');
     const skip = parseInt(searchParams.get('skip') || '0');
 
-    // Build query
+    // Build query - by default only show verified merchants
     let query: any = {};
     
     if (search) {
@@ -31,7 +31,10 @@ export async function GET(request: NextRequest) {
       ];
     }
     
-    if (status && status !== 'all') {
+    // Only show verified merchants unless explicitly requesting all statuses
+    if (!status || status === 'verified') {
+      query.verificationStatus = 'VERIFIED';
+    } else if (status !== 'all') {
       query.verificationStatus = status.toUpperCase();
     }
     

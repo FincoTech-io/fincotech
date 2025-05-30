@@ -42,7 +42,7 @@ export default function MerchantsManagementPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [statusFilter, setStatusFilter] = useState<string>('verified');
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [staffUser, setStaffUser] = useState<any>(null);
   
@@ -182,8 +182,8 @@ export default function MerchantsManagementPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">Merchant Management</h1>
-          <p className="text-gray-400">Manage and oversee all merchant accounts</p>
+          <h1 className="text-2xl font-bold text-white">Active Merchants</h1>
+          <p className="text-gray-400">Manage verified merchant accounts and operations</p>
         </div>
         
         <div className="flex items-center space-x-3">
@@ -222,8 +222,8 @@ export default function MerchantsManagementPage() {
               onChange={(e) => setStatusFilter(e.target.value)}
               className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-green-500"
             >
+              <option value="verified">Verified (Active)</option>
               <option value="all">All Statuses</option>
-              <option value="verified">Verified</option>
               <option value="pending">Pending</option>
               <option value="rejected">Rejected</option>
             </select>
@@ -252,7 +252,7 @@ export default function MerchantsManagementPage() {
         <div className="bg-gray-800 rounded-xl p-6 border border-gray-700">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-gray-400 text-sm">Total Merchants</p>
+              <p className="text-gray-400 text-sm">Active Merchants</p>
               <p className="text-2xl font-bold text-white">{merchants.length}</p>
             </div>
             <BuildingOfficeIcon className="w-8 h-8 text-blue-400" />
@@ -393,7 +393,7 @@ export default function MerchantsManagementPage() {
               <h3 className="text-lg font-medium text-white mb-2">No merchants found</h3>
               <p className="text-gray-400 text-sm">
                 {merchants.length === 0
-                  ? "No merchants have been created yet."
+                  ? "No verified merchants found."
                   : "Try adjusting your search or filter criteria."}
               </p>
             </div>

@@ -49,9 +49,13 @@ interface Driver {
     sunday: boolean;
   };
   maxDeliveryDistance: string;
-  verificationStatus: 'pending' | 'under_review' | 'approved' | 'rejected';
+  verificationStatus: 'PENDING' | 'VERIFIED' | 'SUSPENDED' | 'DEACTIVATED';
+  isActive: boolean;
   applicantUserId?: string;
   applicationRef?: string;
+  totalRides: number;
+  totalDeliveries: number;
+  averageRating: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -61,7 +65,7 @@ export default function DriversManagementPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [statusFilter, setStatusFilter] = useState<string>('verified');
   const [serviceFilter, setServiceFilter] = useState<string>('all');
   const [staffUser, setStaffUser] = useState<any>(null);
 
@@ -109,13 +113,13 @@ export default function DriversManagementPage() {
 
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
-      case 'approved':
+      case 'verified':
         return 'bg-green-900/30 text-green-400 border border-green-700';
       case 'pending':
         return 'bg-yellow-900/30 text-yellow-400 border border-yellow-700';
-      case 'under_review':
-        return 'bg-blue-900/30 text-blue-400 border border-blue-700';
-      case 'rejected':
+      case 'suspended':
+        return 'bg-orange-900/30 text-orange-400 border border-orange-700';
+      case 'deactivated':
         return 'bg-red-900/30 text-red-400 border border-red-700';
       default:
         return 'bg-gray-700 text-gray-300 border border-gray-600';
@@ -124,13 +128,13 @@ export default function DriversManagementPage() {
 
   const getStatusIcon = (status: string) => {
     switch (status.toLowerCase()) {
-      case 'approved':
+      case 'verified':
         return <CheckCircleIcon className="w-4 h-4" />;
       case 'pending':
         return <ClockIcon className="w-4 h-4" />;
-      case 'under_review':
-        return <EyeIcon className="w-4 h-4" />;
-      case 'rejected':
+      case 'suspended':
+        return <XCircleIcon className="w-4 h-4" />;
+      case 'deactivated':
         return <XCircleIcon className="w-4 h-4" />;
       default:
         return <ClockIcon className="w-4 h-4" />;
@@ -208,8 +212,8 @@ export default function DriversManagementPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">Driver Management</h1>
-          <p className="text-gray-400">Manage and oversee all driver accounts</p>
+          <h1 className="text-2xl font-bold text-white">Active Drivers</h1>
+          <p className="text-gray-400">Manage approved driver accounts and operations</p>
         </div>
         
         <div className="flex items-center space-x-3">
@@ -248,11 +252,11 @@ export default function DriversManagementPage() {
               onChange={(e) => setStatusFilter(e.target.value)}
               className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-green-500"
             >
+              <option value="verified">Verified (Active)</option>
               <option value="all">All Statuses</option>
-              <option value="approved">Approved</option>
               <option value="pending">Pending</option>
-              <option value="under_review">Under Review</option>
-              <option value="rejected">Rejected</option>
+              <option value="suspended">Suspended</option>
+              <option value="deactivated">Deactivated</option>
             </select>
           </div>
 
@@ -278,7 +282,7 @@ export default function DriversManagementPage() {
         <div className="bg-gray-800 rounded-xl p-6 border border-gray-700">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-gray-400 text-sm">Total Drivers</p>
+              <p className="text-gray-400 text-sm">Active Drivers</p>
               <p className="text-2xl font-bold text-white">{drivers.length}</p>
             </div>
             <TruckIcon className="w-8 h-8 text-blue-400" />
@@ -288,9 +292,9 @@ export default function DriversManagementPage() {
         <div className="bg-gray-800 rounded-xl p-6 border border-gray-700">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-gray-400 text-sm">Approved</p>
+              <p className="text-gray-400 text-sm">Verified</p>
               <p className="text-2xl font-bold text-green-400">
-                {drivers.filter(d => d.verificationStatus === 'approved').length}
+                {drivers.filter(d => d.verificationStatus === 'VERIFIED').length}
               </p>
             </div>
             <CheckCircleIcon className="w-8 h-8 text-green-400" />
@@ -302,7 +306,7 @@ export default function DriversManagementPage() {
             <div>
               <p className="text-gray-400 text-sm">Pending</p>
               <p className="text-2xl font-bold text-yellow-400">
-                {drivers.filter(d => d.verificationStatus === 'pending').length}
+                {drivers.filter(d => d.verificationStatus === 'PENDING').length}
               </p>
             </div>
             <ClockIcon className="w-8 h-8 text-yellow-400" />
@@ -441,7 +445,7 @@ export default function DriversManagementPage() {
               <h3 className="text-lg font-medium text-white mb-2">No drivers found</h3>
               <p className="text-gray-400 text-sm">
                 {drivers.length === 0
-                  ? "No drivers have been registered yet."
+                  ? "No approved drivers found."
                   : "Try adjusting your search or filter criteria."}
               </p>
             </div>
