@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { connectToDatabase } from '@/utils/db';
 import Application from '@/models/Application';
 import User from '@/models/User';
+import mongoose from 'mongoose';
 import {
   generateApplicationRef,
   validateBusinessApplication,
@@ -13,6 +14,7 @@ import {
   sanitizeApplicationData,
   transformDriverData
 } from '@/utils/applicationUtils';
+import { getAuthenticatedStaff, isAdmin, unauthorizedResponse, forbiddenResponse } from '@/utils/staffAuth';
 
 // Configure the API route for longer timeout and larger body size
 export const runtime = 'nodejs';
@@ -353,7 +355,20 @@ export async function PATCH(request: NextRequest) {
   try {
     await connectToDatabase();
     
-    const { applicationRef, status, reviewNotes, rejectionReason, reviewedBy } = await request.json();
+    // Authenticate staff member
+    const authResult = await getAuthenticatedStaff(request);
+    if (!authResult) {
+      return unauthorizedResponse('Staff authentication required');
+    }
+    
+    const { staff } = authResult;
+    
+    // Check if staff member is Admin
+    if (!isAdmin(staff.role)) {
+      return forbiddenResponse('Only Admin users can modify applications');
+    }
+    
+    const { applicationRef, status, reviewNotes, rejectionReason } = await request.json();
     
     if (!applicationRef) {
       return NextResponse.json(
@@ -383,8 +398,9 @@ export async function PATCH(request: NextRequest) {
     if (status) application.status = status;
     if (reviewNotes) application.reviewNotes = reviewNotes;
     if (rejectionReason) application.rejectionReason = rejectionReason;
-    if (reviewedBy) application.reviewedBy = reviewedBy;
     
+    // Set reviewedBy to the actual staff member's ObjectId
+    application.reviewedBy = staff._id as any;
     application.reviewDate = new Date();
     
     if (status === 'Approved') {
@@ -424,7 +440,12 @@ export async function PATCH(request: NextRequest) {
         status: application.status,
         reviewDate: application.reviewDate,
         approvalDate: application.approvalDate,
-        rejectionDate: application.rejectionDate
+        rejectionDate: application.rejectionDate,
+        reviewedBy: {
+          staffId: staff._id,
+          name: `${staff.firstName} ${staff.lastName}`,
+          employeeNumber: staff.employeeNumber
+        }
       },
       message: 'Application updated successfully'
     });

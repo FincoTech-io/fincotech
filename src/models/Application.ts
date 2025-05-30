@@ -666,7 +666,7 @@ const ApplicationSchema = new Schema<IApplication>(
     // Review Information
     reviewedBy: {
       type: Schema.Types.ObjectId,
-      ref: 'User',
+      ref: 'Staff',
     },
     reviewNotes: {
       type: String,

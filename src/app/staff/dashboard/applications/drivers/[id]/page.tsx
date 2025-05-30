@@ -16,7 +16,13 @@ import {
   PencilIcon,
   CheckIcon,
   XMarkIcon,
-  PhotoIcon
+  PhotoIcon,
+  ChevronLeftIcon,
+  CalendarIcon,
+  PhoneIcon,
+  EnvelopeIcon,
+  MapPinIcon,
+  ExclamationTriangleIcon
 } from '@heroicons/react/24/outline';
 
 interface DriverApplication {
@@ -121,8 +127,19 @@ export default function DriverApplicationDetailPage() {
   const [statusUpdate, setStatusUpdate] = useState('');
   const [reviewNotes, setReviewNotes] = useState('');
   const [saving, setSaving] = useState(false);
+  const [staffUser, setStaffUser] = useState<any>(null);
 
   useEffect(() => {
+    // Get staff user from localStorage
+    const staffData = localStorage.getItem('staff');
+    if (staffData) {
+      try {
+        setStaffUser(JSON.parse(staffData));
+      } catch (error) {
+        console.error('Error parsing staff data:', error);
+      }
+    }
+    
     if (params.id) {
       fetchApplication();
     }
@@ -155,23 +172,28 @@ export default function DriverApplicationDetailPage() {
   };
 
   const handleStatusUpdate = async () => {
-    if (!application) return;
+    if (!application || !staffUser) return;
     
     try {
       setSaving(true);
+      const token = localStorage.getItem('staff-token');
+      
       const response = await fetch('/api/commerce/apply', {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
         body: JSON.stringify({
           applicationRef: application.applicationRef,
           status: statusUpdate,
           reviewNotes: reviewNotes,
-          reviewedBy: 'Staff Member' // In real app, this would be the logged-in staff member
         })
       });
 
       if (!response.ok) {
-        throw new Error('Failed to update status');
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to update status');
       }
 
       const result = await response.json();
@@ -268,45 +290,59 @@ export default function DriverApplicationDetailPage() {
         </div>
       </div>
 
-      {/* Status Update Section */}
-      <div className="bg-gray-800 rounded-xl p-6 border border-gray-700">
-        <h3 className="text-lg font-semibold text-white mb-4">Review & Status</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">Status</label>
-            <select
-              value={statusUpdate}
-              onChange={(e) => setStatusUpdate(e.target.value)}
+      {/* Review & Status */}
+      {staffUser?.role === 'Admin' ? (
+        <div className="bg-gray-800 rounded-xl p-6 border border-gray-700">
+          <h3 className="text-lg font-semibold text-white mb-4">Review & Status</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">Status</label>
+              <select
+                value={statusUpdate}
+                onChange={(e) => setStatusUpdate(e.target.value)}
+                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="Pending">Pending</option>
+                <option value="In Review">In Review</option>
+                <option value="Approved">Approved</option>
+                <option value="Declined">Declined</option>
+              </select>
+            </div>
+          </div>
+          
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-300 mb-2">Review Notes</label>
+            <textarea
+              value={reviewNotes}
+              onChange={(e) => setReviewNotes(e.target.value)}
+              rows={3}
               className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="Pending">Pending</option>
-              <option value="In Review">In Review</option>
-              <option value="Approved">Approved</option>
-              <option value="Declined">Declined</option>
-            </select>
+              placeholder="Add notes about this application review..."
+            />
+          </div>
+          
+          <button
+            onClick={handleStatusUpdate}
+            disabled={saving}
+            className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
+          >
+            <CheckIcon className="w-4 h-4 mr-2" />
+            {saving ? 'Saving...' : 'Update Status'}
+          </button>
+        </div>
+      ) : (
+        <div className="bg-gray-800 rounded-xl p-6 border border-gray-700">
+          <h3 className="text-lg font-semibold text-white mb-4">Review & Status</h3>
+          <div className="bg-yellow-900/30 border border-yellow-700 rounded-lg p-4">
+            <div className="flex items-center">
+              <ExclamationTriangleIcon className="w-5 h-5 text-yellow-400 mr-2" />
+              <p className="text-yellow-400">
+                Only Admin users can modify application status. Your current role: {staffUser?.role || 'Unknown'}
+              </p>
+            </div>
           </div>
         </div>
-        
-        <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-300 mb-2">Review Notes</label>
-          <textarea
-            value={reviewNotes}
-            onChange={(e) => setReviewNotes(e.target.value)}
-            rows={3}
-            className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="Add notes about this application review..."
-          />
-        </div>
-        
-        <button
-          onClick={handleStatusUpdate}
-          disabled={saving}
-          className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
-        >
-          <CheckIcon className="w-4 h-4 mr-2" />
-          {saving ? 'Saving...' : 'Update Status'}
-        </button>
-      </div>
+      )}
 
       {/* Application Details */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
