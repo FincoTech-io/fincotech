@@ -255,7 +255,7 @@ export default function DriverApplicationDetailPage() {
         <h3 className="text-red-300 font-semibold mb-2">Error</h3>
         <p className="text-red-400 text-sm mb-4">{error || 'Application not found'}</p>
         <Link
-          href="/staff/dashboard/applications/drivers"
+          href="/management/dashboard/applications/drivers"
           className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
         >
           <ArrowLeftIcon className="w-4 h-4 mr-2" />
@@ -271,7 +271,7 @@ export default function DriverApplicationDetailPage() {
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
           <Link
-            href="/staff/dashboard/applications/drivers"
+            href="/management/dashboard/applications/drivers"
             className="p-2 text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg transition-colors"
           >
             <ArrowLeftIcon className="w-5 h-5" />

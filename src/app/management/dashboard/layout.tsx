@@ -46,7 +46,7 @@ export default function StaffDashboardLayout({
     const token = localStorage.getItem('staff-token');
 
     if (!staffData || !token) {
-      router.push('/staff');
+      router.push('/management');
       return;
     }
 
@@ -54,14 +54,14 @@ export default function StaffDashboardLayout({
       setStaffUser(JSON.parse(staffData));
     } catch (error) {
       console.error('Error parsing staff data:', error);
-      router.push('/staff');
+      router.push('/management');
     }
   }, [router]);
 
   const handleLogout = async () => {
     try {
       // Call logout API
-      await fetch('/api/staff/auth', {
+      await fetch('/api/management/auth', {
         method: 'DELETE',
       });
 
@@ -70,13 +70,13 @@ export default function StaffDashboardLayout({
       localStorage.removeItem('staff-token');
 
       // Redirect to login
-      router.push('/staff');
+      router.push('/management');
     } catch (error) {
       console.error('Logout error:', error);
       // Force logout even if API call fails
       localStorage.removeItem('staff');
       localStorage.removeItem('staff-token');
-      router.push('/staff');
+      router.push('/management');
     }
   };
 
@@ -92,19 +92,19 @@ export default function StaffDashboardLayout({
   }
 
   const navigation = [
-    { name: 'Dashboard', href: '/staff/dashboard', icon: HomeIcon },
+    { name: 'Dashboard', href: '/management/dashboard', icon: HomeIcon },
     { 
       name: 'Applications', 
       icon: DocumentTextIcon,
       children: [
-        { name: 'Drivers', href: '/staff/dashboard/applications/drivers' },
-        { name: 'Businesses', href: '/staff/dashboard/applications/businesses' }
+        { name: 'Drivers', href: '/management/dashboard/applications/drivers' },
+        { name: 'Businesses', href: '/management/dashboard/applications/businesses' }
       ]
     },
-    { name: 'Active Merchants', href: '/staff/dashboard/merchants', icon: BuildingOfficeIcon },
-    { name: 'Active Drivers', href: '/staff/dashboard/drivers', icon: TruckIcon },
-    { name: 'Staff Management', href: '/staff/dashboard/staff', icon: UserGroupIcon },
-    { name: 'Settings', href: '/staff/dashboard/settings', icon: CogIcon },
+    { name: 'Active Merchants', href: '/management/dashboard/merchants', icon: BuildingOfficeIcon },
+    { name: 'Active Drivers', href: '/management/dashboard/drivers', icon: TruckIcon },
+    { name: 'Staff Management', href: '/management/dashboard/staff', icon: UserGroupIcon },
+    { name: 'Settings', href: '/management/dashboard/settings', icon: CogIcon },
   ];
 
   return (

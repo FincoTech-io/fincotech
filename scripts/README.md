@@ -111,7 +111,7 @@ Country: Zimbabwe
    Employee ID: ZWE-0000001
    Password: [Hidden - use the password you entered]
 
-🌐 Login URL: http://localhost:3000/staff
+🌐 Login URL: http://localhost:3000/management
 ```
 
 ## Features
@@ -172,6 +172,6 @@ chmod +x scripts/create-staff.js
 ## Next Steps
 
 After creating a staff member:
-1. The employee can log in at `/staff/` using their Employee ID and password
+1. The employee can log in at `/management/` using their Employee ID and password
 2. They'll have access to the staff dashboard based on their role
 3. Admin users can create additional staff members through the web interface 

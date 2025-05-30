@@ -245,7 +245,7 @@ async function createStaff() {
     console.log('\n🔐 Login Credentials:');
     console.log(`   Employee ID: ${savedStaff.employeeNumber}`);
     console.log(`   Password: [Hidden]`);
-    console.log('\n🌐 Login URL: http://localhost:3000/staff');
+    console.log('\n🌐 Login URL: http://localhost:3000/management');
 
   } catch (error) {
     if (error.code === 11000) {
@@ -289,7 +289,7 @@ async function quickCreate() {
     const savedStaff = await newStaff.save();
 
     console.log(`\n✅ Staff created! Employee ID: ${savedStaff.employeeNumber}`);
-    console.log(`🌐 Login at: http://localhost:3000/staff`);
+    console.log(`🌐 Login at: http://localhost:3000/management`);
   } catch (error) {
     console.log('❌ Error:', error.message);
   }

@@ -27,7 +27,7 @@ export default function StaffLoginPage() {
     setError('');
 
     try {
-      const response = await fetch('/api/staff/auth', {
+      const response = await fetch('/api/management/auth', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData)
@@ -41,7 +41,7 @@ export default function StaffLoginPage() {
         localStorage.setItem('staff-token', data.data.token);
         
         // Redirect to dashboard
-        router.push('/staff/dashboard');
+        router.push('/management/dashboard');
       } else {
         setError(data.message || 'Login failed');
       }

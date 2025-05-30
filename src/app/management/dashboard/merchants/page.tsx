@@ -70,9 +70,10 @@ export default function MerchantsManagementPage() {
       setLoading(true);
       const token = localStorage.getItem('staff-token');
       
-      const response = await fetch('/api/staff/merchants', {
+      const response = await fetch('/api/management/merchants', {
         headers: {
           'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
         },
       });
       
@@ -191,7 +192,7 @@ export default function MerchantsManagementPage() {
             {filteredMerchants.length} of {merchants.length} merchants
           </span>
           <Link
-            href="/staff/dashboard/merchants/create"
+            href="/management/dashboard/merchants/create"
             className="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
           >
             <PlusIcon className="w-4 h-4 mr-2" />
@@ -374,7 +375,7 @@ export default function MerchantsManagementPage() {
                   <td className="p-4">
                     <div className="flex items-center justify-end space-x-2">
                       <Link
-                        href={`/staff/dashboard/merchants/${merchant._id}`}
+                        href={`/management/dashboard/merchants/${merchant._id}`}
                         className="p-2 text-gray-400 hover:text-green-400 hover:bg-gray-700 rounded-lg transition-colors"
                         title="View Details"
                       >

@@ -316,8 +316,8 @@ export default function DriverApplicationsPage() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <Link
-                        href={`/staff/dashboard/applications/drivers/${application.applicationRef}`}
-                        className="inline-flex items-center px-3 py-1.5 text-sm font-medium text-blue-400 bg-blue-900/30 border border-blue-700 rounded-lg hover:bg-blue-900/50 hover:border-blue-600 transition-all duration-200"
+                        href={`/management/dashboard/applications/drivers/${application.applicationRef}`}
+                        className="inline-flex items-center px-3 py-1.5 text-sm font-medium text-green-400 bg-green-900/30 border border-green-700 rounded-lg hover:bg-green-900/50 hover:border-green-600 transition-all duration-200"
                       >
                         Review
                       </Link>

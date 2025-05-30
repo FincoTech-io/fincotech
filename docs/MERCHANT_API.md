@@ -582,10 +582,10 @@ interface IWallet {
 
 ## Endpoints
 
-### Staff Endpoints
+### Management Endpoints
 
 #### Fix Missing Merchant Wallets
-**POST** `/api/staff/merchants/fix-wallets`
+**POST** `/api/management/merchants/fix-wallets`
 
 Utility endpoint for admins to create missing wallets for existing merchants.
 
