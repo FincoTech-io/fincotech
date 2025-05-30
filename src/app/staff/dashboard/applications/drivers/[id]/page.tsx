@@ -110,8 +110,8 @@ export default function DriverApplicationDetailPage() {
       }
 
       const data = await response.json();
-      if (data.success && data.data.applications.length > 0) {
-        const app = data.data.applications[0];
+      if (data.success && data.data) {
+        const app = data.data;
         setApplication(app);
         setEditedData(app.driverApplication);
         setStatusUpdate(app.status);
