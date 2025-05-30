@@ -69,11 +69,41 @@ interface BusinessApplication {
       sunday: { open: string; close: string; closed: boolean };
     };
     documents?: {
-      businessLicense?: { url: string; originalName: string };
-      taxDocument?: { url: string; originalName: string };
-      ownerID?: { url: string; originalName: string };
-      bankStatement?: { url: string; originalName: string };
-      businessInsurance?: { url: string; originalName: string };
+      businessLicense?: { 
+        url: string; 
+        originalName: string; 
+        publicId?: string;
+        uploadedAt?: string;
+        _id?: string;
+      };
+      taxDocument?: { 
+        url: string; 
+        originalName: string; 
+        publicId?: string;
+        uploadedAt?: string;
+        _id?: string;
+      };
+      ownerID?: { 
+        url: string; 
+        originalName: string; 
+        publicId?: string;
+        uploadedAt?: string;
+        _id?: string;
+      };
+      bankStatement?: { 
+        url: string; 
+        originalName: string; 
+        publicId?: string;
+        uploadedAt?: string;
+        _id?: string;
+      };
+      businessInsurance?: { 
+        url: string; 
+        originalName: string; 
+        publicId?: string;
+        uploadedAt?: string;
+        _id?: string;
+      };
     };
   };
   applicantUserId: string;
@@ -452,15 +482,39 @@ export default function BusinessApplicationDetailPage() {
       )}
 
       {/* Documents */}
-      {application.businessApplication.documents && Object.keys(application.businessApplication.documents).length > 0 ? (
-        <div className="bg-gray-800 rounded-xl p-6 border border-gray-700">
-          <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
-            <PhotoIcon className="w-5 h-5 mr-2" />
-            Uploaded Documents ({Object.entries(application.businessApplication.documents).filter(([key, doc]) => doc?.url).length})
-          </h3>
+      <div className="bg-gray-800 rounded-xl p-6 border border-gray-700">
+        <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
+          <PhotoIcon className="w-5 h-5 mr-2" />
+          Uploaded Documents
+          {/* Debug info */}
+          <span className="ml-2 text-xs text-gray-400">
+            {application.businessApplication.documents ? 
+              `(${Object.keys(application.businessApplication.documents).length} total, ${Object.entries(application.businessApplication.documents).filter(([key, doc]) => doc?.url).length} with URLs)` 
+              : '(No documents object)'}
+          </span>
+        </h3>
+        
+        {/* Debug section - remove this after fixing */}
+        {application.businessApplication.documents && (
+          <div className="mb-4 p-3 bg-gray-700 rounded text-xs text-gray-300">
+            <strong>Debug Info:</strong>
+            <pre className="mt-1 overflow-x-auto">
+              {JSON.stringify(application.businessApplication.documents, null, 2)}
+            </pre>
+          </div>
+        )}
+        
+        {application.businessApplication.documents && Object.keys(application.businessApplication.documents).length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {Object.entries(application.businessApplication.documents).map(([docType, doc]) => (
-              doc && doc.url ? (
+            {Object.entries(application.businessApplication.documents).map(([docType, doc]) => {
+              console.log('Processing business document:', docType, doc); // Debug log
+              
+              if (!doc || !doc.url) {
+                console.log('Skipping business document - no doc or no URL:', docType); // Debug log
+                return null;
+              }
+              
+              return (
                 <div key={docType} className="bg-gray-700 rounded-lg p-4 border border-gray-600 hover:border-gray-500 transition-colors">
                   <div className="flex items-center justify-between mb-3">
                     <h4 className="text-sm font-medium text-white capitalize">
@@ -481,10 +535,14 @@ export default function BusinessApplicationDetailPage() {
                       alt={doc.originalName || docType}
                       className="w-full h-32 object-cover rounded-lg mb-2 cursor-pointer hover:opacity-80 transition-opacity"
                       onError={(e) => {
+                        console.error('Business image failed to load:', doc.url); // Debug log
                         const target = e.target as HTMLImageElement;
                         target.style.display = 'none';
                         const fallback = target.nextElementSibling as HTMLElement;
                         if (fallback) fallback.style.display = 'flex';
+                      }}
+                      onLoad={() => {
+                        console.log('Business image loaded successfully:', doc.url); // Debug log
                       }}
                       onClick={() => window.open(doc.url, '_blank')}
                     />
@@ -506,6 +564,11 @@ export default function BusinessApplicationDetailPage() {
                     <p className="text-xs text-gray-400 truncate" title={doc.originalName}>
                       📎 {doc.originalName || 'Document'}
                     </p>
+                    {doc.uploadedAt && (
+                      <p className="text-xs text-gray-500">
+                        📅 {new Date(doc.uploadedAt).toLocaleDateString()}
+                      </p>
+                    )}
                     <div className="flex space-x-2">
                       <a 
                         href={doc.url} 
@@ -525,16 +588,10 @@ export default function BusinessApplicationDetailPage() {
                     </div>
                   </div>
                 </div>
-              ) : null
-            ))}
+              );
+            })}
           </div>
-        </div>
-      ) : (
-        <div className="bg-gray-800 rounded-xl p-6 border border-gray-700">
-          <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
-            <PhotoIcon className="w-5 h-5 mr-2" />
-            Uploaded Documents
-          </h3>
+        ) : (
           <div className="text-center py-8">
             <div className="w-16 h-16 bg-gray-700 rounded-full mx-auto mb-4 flex items-center justify-center">
               <PhotoIcon className="w-8 h-8 text-gray-400" />
@@ -544,8 +601,8 @@ export default function BusinessApplicationDetailPage() {
               The business has not uploaded any documents yet.
             </p>
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* Application Timeline */}
       <div className="bg-gray-800 rounded-xl p-6 border border-gray-700">
