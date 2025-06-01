@@ -14,6 +14,7 @@ export async function GET(
     
     // Authenticate user
     const user = await getUserFromSession(request);
+    
     if (!user) {
       return NextResponse.json(
         { success: false, error: 'Authentication required' },

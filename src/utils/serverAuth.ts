@@ -92,6 +92,7 @@ export const getUserFromSession = async (req: NextRequest): Promise<IUser | null
   try {
     // Get access token
     const token = getAccessToken(req);
+    
     if (!token) {
       console.error(AuthError.NO_TOKEN);
       return null;
@@ -100,11 +101,16 @@ export const getUserFromSession = async (req: NextRequest): Promise<IUser | null
     // Verify token
     const payload = await verifyAccessToken(token);
 
+    if (!payload) {
+      console.error('Token verification failed');
+      return null;
+    }
+
     // Connect to database if not already connected
     await ensureDbConnection();
 
-    // Get user from database with caching
-    const user = await getUserById(payload?.sub as string);
+    // Get user from database with caching - use userId instead of sub
+    const user = await getUserById(payload?.userId as string);
     
     if (!user) {
       console.error(AuthError.USER_NOT_FOUND);
