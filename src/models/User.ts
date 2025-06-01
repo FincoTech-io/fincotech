@@ -201,6 +201,37 @@ const UserSchema = new Schema<IUser>(
       type: Boolean,
       default: false,
     },
+    merchantAccess: {
+      type: [{
+        userRole: {
+          type: String,
+          enum: ['ADMIN', 'MERCHANT_OWNER', 'MERCHANT_MANAGER', 'MERCHANT_STAFF'],
+          required: true,
+        },
+        merchantId: {
+          type: String,
+          required: true,
+        },
+        merchantName: {
+          type: String,
+          required: true,
+          trim: true,
+        },
+      }],
+      default: [],
+    },
+    driverAccountId: {
+      type: String,
+      trim: true,
+    },
+    currentRegion: {
+      type: String,
+      trim: true,
+    },
+    currentAddress: {
+      type: String,
+      trim: true,
+    },
     applications: {
       type: [{
         applicationId: {

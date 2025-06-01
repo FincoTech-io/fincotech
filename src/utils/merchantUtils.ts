@@ -157,7 +157,7 @@ export async function createMerchantFromApplication(
         {
           $push: {
             merchantAccess: {
-              userRole: 'MERCHANT_OWNER',
+              userRole: 'ADMIN',
               merchantId: newMerchant._id.toString(),
               merchantName: businessApplication.businessName
             }
