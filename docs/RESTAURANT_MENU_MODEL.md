@@ -232,7 +232,7 @@ interface MenuItem {
   displayOrder: number;
   isPopular: boolean;
   isFeatured: boolean;
-  isNew: boolean;
+  isNewItem: boolean;
   badgeText?: string; // "Chef's Special", "Limited Time"
   
   // Modifiers
@@ -568,7 +568,7 @@ const sampleMerchantWithMenu: IMerchant = {
           displayOrder: 1,
           isPopular: true,
           isFeatured: false,
-          isNew: false,
+          isNewItem: false,
           modifierGroups: [{
             id: "bread_type",
             name: "Bread Choice",

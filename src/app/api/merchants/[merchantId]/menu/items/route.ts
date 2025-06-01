@@ -185,7 +185,7 @@ export async function POST(
       displayOrder: item.displayOrder || category.items.length + 1,
       isPopular: item.isPopular || false,
       isFeatured: item.isFeatured || false,
-      isNew: item.isNew || false,
+      isNewItem: item.isNewItem || false,
       badgeText: item.badgeText,
       modifierGroups: item.modifierGroups || [],
       recommendedWith: item.recommendedWith || [],

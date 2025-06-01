@@ -220,7 +220,7 @@ export interface IMenuItem {
   displayOrder: number;
   isPopular: boolean;
   isFeatured: boolean;
-  isNew: boolean;
+  isNewItem: boolean;
   badgeText?: string;
   modifierGroups: IModifierGroup[];
   recommendedWith?: string[];
@@ -678,7 +678,7 @@ const MerchantSchema = new Schema<IMerchant>(
               displayOrder: Number,
               isPopular: Boolean,
               isFeatured: Boolean,
-              isNew: Boolean,
+              isNewItem: Boolean,
               badgeText: String,
               modifierGroups: [{
                 id: String,

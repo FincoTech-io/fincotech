@@ -330,7 +330,7 @@ interface IMenuItem {
   displayOrder: number;
   isPopular: boolean;
   isFeatured: boolean;
-  isNew: boolean;
+  isNewItem: boolean;
   badgeText?: string;
   modifierGroups: IModifierGroup[];
   recommendedWith?: string[];
