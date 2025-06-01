@@ -50,6 +50,274 @@ export interface IAdvertisement {
   targetKeywords?: string[];
 }
 
+// Restaurant Menu Types for Embedded Menu
+export interface IImageObject {
+  url: string;
+  publicId: string;
+  alt: string;
+  width?: number;
+  height?: number;
+}
+
+export interface ICoordinate {
+  latitude: number;
+  longitude: number;
+}
+
+export interface ITimePeriod {
+  openTime: string; // "09:00"
+  closeTime: string; // "22:00"
+  serviceTypes: ServiceType[];
+}
+
+export interface IDaySchedule {
+  isOpen: boolean;
+  periods: ITimePeriod[];
+  breaks?: ITimePeriod[];
+}
+
+export interface ISpecialHours {
+  date: string; // "2025-12-25"
+  name: string; // "Christmas Day"
+  schedule: IDaySchedule | null;
+  isRecurring: boolean;
+}
+
+export interface ITemporaryClosure {
+  startDate: Date;
+  endDate: Date;
+  reason: string;
+  message?: string;
+}
+
+export interface IOperatingHours {
+  timezone: string;
+  schedule: {
+    [key in DayOfWeek]: IDaySchedule;
+  };
+  specialHours: ISpecialHours[];
+  temporaryClosures: ITemporaryClosure[];
+}
+
+export interface IDeliveryZone {
+  name: string;
+  polygon: ICoordinate[];
+  deliveryFee: number;
+  estimatedTime: number;
+  minimumOrder?: number;
+}
+
+export interface IServiceOptions {
+  dineIn: {
+    available: boolean;
+    tableReservations: boolean;
+    walkInsAccepted: boolean;
+  };
+  takeout: {
+    available: boolean;
+    estimatedWaitTime: number;
+    orderAheadTime: number;
+  };
+  delivery: {
+    available: boolean;
+    radius: number;
+    minimumOrder: number;
+    deliveryFee: number;
+    freeDeliveryThreshold?: number;
+    estimatedDeliveryTime: number;
+    deliveryZones: IDeliveryZone[];
+  };
+  curbside: {
+    available: boolean;
+    instructions: string;
+  };
+}
+
+export interface IBusinessStatus {
+  isOpen: boolean;
+  currentStatus: RestaurantStatus;
+  statusMessage?: string;
+  estimatedReopenTime?: Date;
+  pausedServices: ServiceType[];
+  busyLevel: BusyLevel;
+}
+
+export interface IMenuAvailability {
+  timeRestrictions: {
+    [key in DayOfWeek]: ITimePeriod[];
+  };
+  dateRestrictions?: {
+    startDate?: Date;
+    endDate?: Date;
+  };
+}
+
+export interface IDietaryInfo {
+  isVegetarian: boolean;
+  isVegan: boolean;
+  isGlutenFree: boolean;
+  isKeto: boolean;
+  isDairyFree: boolean;
+  isNutFree: boolean;
+  isHalal: boolean;
+  isKosher: boolean;
+}
+
+export interface IInventoryTracking {
+  trackInventory: boolean;
+  currentStock?: number;
+  lowStockThreshold?: number;
+}
+
+export interface IModifier {
+  id: string;
+  name: string;
+  description?: string;
+  priceModifier: number;
+  priceType: PriceType;
+  isAvailable: boolean;
+  isDefault: boolean;
+  inventoryTracking?: IInventoryTracking;
+  allergenInfo?: Allergen[];
+  calorieImpact?: number;
+  displayOrder: number;
+  image?: IImageObject;
+}
+
+export interface IModifierGroup {
+  id: string;
+  name: string;
+  description?: string;
+  type: ModifierType;
+  minSelections: number;
+  maxSelections: number;
+  isRequired: boolean;
+  displayOrder: number;
+  isCollapsible: boolean;
+  modifiers: IModifier[];
+}
+
+export interface IMenuItem {
+  id: string;
+  name: string;
+  description: string;
+  shortDescription?: string;
+  images: IImageObject[];
+  basePrice: number;
+  compareAtPrice?: number;
+  isOnSale: boolean;
+  saleEndDate?: Date;
+  preparationTime: number;
+  servingSize?: string;
+  calories?: number;
+  isAvailable: boolean;
+  availabilitySchedule?: IMenuAvailability;
+  inventoryTracking?: IInventoryTracking;
+  tags: ItemTag[];
+  dietaryInfo: IDietaryInfo;
+  allergens: Allergen[];
+  spiceLevel?: SpiceLevel;
+  displayOrder: number;
+  isPopular: boolean;
+  isFeatured: boolean;
+  isNew: boolean;
+  badgeText?: string;
+  modifierGroups: IModifierGroup[];
+  recommendedWith?: string[];
+  substitutes?: string[];
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface IMenuCategory {
+  id: string;
+  name: string;
+  description?: string;
+  image?: IImageObject;
+  displayOrder: number;
+  isActive: boolean;
+  isPopular?: boolean;
+  items: IMenuItem[];
+  maxItemsPerOrder?: number;
+  requiredWithOtherCategory?: string;
+}
+
+export interface IMenu {
+  id: string;
+  name: string;
+  description?: string;
+  availability: IMenuAvailability;
+  displayOrder: number;
+  isActive: boolean;
+  categories: IMenuCategory[];
+}
+
+export interface IOrderingRules {
+  minimumOrder: {
+    amount: number;
+    serviceTypes: ServiceType[];
+  };
+  maximumOrder?: {
+    amount?: number;
+    itemCount?: number;
+  };
+  advanceOrderTime: {
+    minimum: number;
+    maximum: number;
+  };
+  paymentMethods: PaymentMethod[];
+  tips: {
+    allowTips: boolean;
+    suggestedPercentages: number[];
+    minimumTip?: number;
+    maximumTip?: number;
+  };
+  cancellationPolicy: {
+    allowCancellation: boolean;
+    timeLimit: number;
+    refundPolicy: string;
+  };
+}
+
+export interface IRestaurantInfo {
+  cuisineTypes: CuisineType[];
+  priceRange: '$' | '$$' | '$$$' | '$$$$';
+  averagePreparationTime: number;
+  images: {
+    logo?: IImageObject;
+    cover?: IImageObject;
+    gallery: IImageObject[];
+  };
+  rating: {
+    average: number;
+    totalReviews: number;
+  };
+}
+
+export interface IRestaurantMenu {
+  restaurantInfo: IRestaurantInfo;
+  operatingHours: IOperatingHours;
+  serviceOptions: IServiceOptions;
+  businessStatus: IBusinessStatus;
+  menus: IMenu[];
+  orderingRules: IOrderingRules;
+  version: number;
+  isActive: boolean;
+}
+
+// Type definitions
+export type DayOfWeek = 'MONDAY' | 'TUESDAY' | 'WEDNESDAY' | 'THURSDAY' | 'FRIDAY' | 'SATURDAY' | 'SUNDAY';
+export type ServiceType = 'DINE_IN' | 'TAKEOUT' | 'DELIVERY' | 'CURBSIDE';
+export type RestaurantStatus = 'OPEN' | 'CLOSED' | 'BUSY' | 'TEMPORARILY_CLOSED' | 'PERMANENTLY_CLOSED';
+export type BusyLevel = 'LOW' | 'MODERATE' | 'HIGH' | 'VERY_HIGH';
+export type ModifierType = 'SINGLE_CHOICE' | 'MULTIPLE_CHOICE' | 'QUANTITY' | 'TEXT_INPUT';
+export type PriceType = 'FIXED' | 'PERCENTAGE' | 'REPLACEMENT';
+export type ItemTag = 'VEGETARIAN' | 'VEGAN' | 'GLUTEN_FREE' | 'KETO' | 'LOW_CARB' | 'PROTEIN_RICH' | 'SPICY' | 'COLD' | 'HOT' | 'SIGNATURE' | 'HEALTHY';
+export type Allergen = 'NUTS' | 'DAIRY' | 'EGGS' | 'SOY' | 'WHEAT' | 'FISH' | 'SHELLFISH' | 'SESAME';
+export type SpiceLevel = 'MILD' | 'MEDIUM' | 'HOT' | 'EXTRA_HOT';
+export type PaymentMethod = 'CREDIT_CARD' | 'DEBIT_CARD' | 'CASH' | 'DIGITAL_WALLET' | 'LOYALTY_POINTS';
+export type CuisineType = 'ITALIAN' | 'CHINESE' | 'MEXICAN' | 'INDIAN' | 'AMERICAN' | 'JAPANESE' | 'THAI' | 'FRENCH' | 'MEDITERRANEAN' | 'FAST_FOOD' | 'COFFEE' | 'DESSERTS' | 'HEALTHY' | 'BBQ' | 'SEAFOOD' | 'VEGETARIAN' | 'PIZZA' | 'BURGERS' | 'SUSHI';
+
 // Interface for Merchant document
 export interface IMerchant extends Document {
   _id: string;
@@ -73,6 +341,10 @@ export interface IMerchant extends Document {
   hasUnreadNotifications: boolean;
   notifications: IEmbeddedNotification[];
   advertisements?: IAdvertisement[];
+  
+  // Optional restaurant menu - only for RESTAURANT type merchants
+  restaurantMenu?: IRestaurantMenu;
+  
   notificationPreferences: {
     paymentReceived: {
       roles: 'ADMIN' | 'MERCHANT_OWNER' | 'MERCHANT_MANAGER' | 'MERCHANT_STAFF';
@@ -237,6 +509,259 @@ const MerchantSchema = new Schema<IMerchant>(
         targetKeywords: [String],
       }]
     },
+    
+    // Optional restaurant menu - only for RESTAURANT type merchants
+    restaurantMenu: {
+      type: {
+        restaurantInfo: {
+          cuisineTypes: [String],
+          priceRange: String,
+          averagePreparationTime: Number,
+          images: {
+            logo: {
+              url: String,
+              publicId: String,
+              alt: String,
+              width: Number,
+              height: Number,
+            },
+            cover: {
+              url: String,
+              publicId: String,
+              alt: String,
+              width: Number,
+              height: Number,
+            },
+            gallery: [{
+              url: String,
+              publicId: String,
+              alt: String,
+              width: Number,
+              height: Number,
+            }],
+          },
+          rating: {
+            average: Number,
+            totalReviews: Number,
+          },
+        },
+        operatingHours: {
+          timezone: String,
+          schedule: Schema.Types.Mixed, // Dynamic keys for days of week
+          specialHours: [{
+            date: String,
+            name: String,
+            schedule: Schema.Types.Mixed,
+            isRecurring: Boolean,
+          }],
+          temporaryClosures: [{
+            startDate: Date,
+            endDate: Date,
+            reason: String,
+            message: String,
+          }],
+        },
+        serviceOptions: {
+          dineIn: {
+            available: Boolean,
+            tableReservations: Boolean,
+            walkInsAccepted: Boolean,
+          },
+          takeout: {
+            available: Boolean,
+            estimatedWaitTime: Number,
+            orderAheadTime: Number,
+          },
+          delivery: {
+            available: Boolean,
+            radius: Number,
+            minimumOrder: Number,
+            deliveryFee: Number,
+            freeDeliveryThreshold: Number,
+            estimatedDeliveryTime: Number,
+            deliveryZones: [{
+              name: String,
+              polygon: [{
+                latitude: Number,
+                longitude: Number,
+              }],
+              deliveryFee: Number,
+              estimatedTime: Number,
+              minimumOrder: Number,
+            }],
+          },
+          curbside: {
+            available: Boolean,
+            instructions: String,
+          },
+        },
+        businessStatus: {
+          isOpen: Boolean,
+          currentStatus: String,
+          statusMessage: String,
+          estimatedReopenTime: Date,
+          pausedServices: [String],
+          busyLevel: String,
+        },
+        menus: [{
+          id: String,
+          name: String,
+          description: String,
+          availability: {
+            timeRestrictions: Schema.Types.Mixed,
+            dateRestrictions: {
+              startDate: Date,
+              endDate: Date,
+            },
+          },
+          displayOrder: Number,
+          isActive: Boolean,
+          categories: [{
+            id: String,
+            name: String,
+            description: String,
+            image: {
+              url: String,
+              publicId: String,
+              alt: String,
+              width: Number,
+              height: Number,
+            },
+            displayOrder: Number,
+            isActive: Boolean,
+            isPopular: Boolean,
+            items: [{
+              id: String,
+              name: String,
+              description: String,
+              shortDescription: String,
+              images: [{
+                url: String,
+                publicId: String,
+                alt: String,
+                width: Number,
+                height: Number,
+              }],
+              basePrice: Number,
+              compareAtPrice: Number,
+              isOnSale: Boolean,
+              saleEndDate: Date,
+              preparationTime: Number,
+              servingSize: String,
+              calories: Number,
+              isAvailable: Boolean,
+              availabilitySchedule: {
+                timeRestrictions: Schema.Types.Mixed,
+                dateRestrictions: {
+                  startDate: Date,
+                  endDate: Date,
+                },
+              },
+              inventoryTracking: {
+                trackInventory: Boolean,
+                currentStock: Number,
+                lowStockThreshold: Number,
+              },
+              tags: [String],
+              dietaryInfo: {
+                isVegetarian: Boolean,
+                isVegan: Boolean,
+                isGlutenFree: Boolean,
+                isKeto: Boolean,
+                isDairyFree: Boolean,
+                isNutFree: Boolean,
+                isHalal: Boolean,
+                isKosher: Boolean,
+              },
+              allergens: [String],
+              spiceLevel: String,
+              displayOrder: Number,
+              isPopular: Boolean,
+              isFeatured: Boolean,
+              isNew: Boolean,
+              badgeText: String,
+              modifierGroups: [{
+                id: String,
+                name: String,
+                description: String,
+                type: String,
+                minSelections: Number,
+                maxSelections: Number,
+                isRequired: Boolean,
+                displayOrder: Number,
+                isCollapsible: Boolean,
+                modifiers: [{
+                  id: String,
+                  name: String,
+                  description: String,
+                  priceModifier: Number,
+                  priceType: String,
+                  isAvailable: Boolean,
+                  isDefault: Boolean,
+                  inventoryTracking: {
+                    trackInventory: Boolean,
+                    currentStock: Number,
+                    lowStockThreshold: Number,
+                  },
+                  allergenInfo: [String],
+                  calorieImpact: Number,
+                  displayOrder: Number,
+                  image: {
+                    url: String,
+                    publicId: String,
+                    alt: String,
+                    width: Number,
+                    height: Number,
+                  },
+                }],
+              }],
+              recommendedWith: [String],
+              substitutes: [String],
+              createdAt: Date,
+              updatedAt: Date,
+            }],
+            maxItemsPerOrder: Number,
+            requiredWithOtherCategory: String,
+          }],
+        }],
+        orderingRules: {
+          minimumOrder: {
+            amount: Number,
+            serviceTypes: [String],
+          },
+          maximumOrder: {
+            amount: Number,
+            itemCount: Number,
+          },
+          advanceOrderTime: {
+            minimum: Number,
+            maximum: Number,
+          },
+          paymentMethods: [String],
+          tips: {
+            allowTips: Boolean,
+            suggestedPercentages: [Number],
+            minimumTip: Number,
+            maximumTip: Number,
+          },
+          cancellationPolicy: {
+            allowCancellation: Boolean,
+            timeLimit: Number,
+            refundPolicy: String,
+          },
+        },
+        version: {
+          type: Number,
+          default: 1,
+        },
+        isActive: {
+          type: Boolean,
+          default: true,
+        },
+      },
+      required: false,
+    },
+    
     notificationPreferences: {
       paymentReceived: {
         roles: [String],
