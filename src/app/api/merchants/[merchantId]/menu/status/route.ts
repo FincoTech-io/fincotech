@@ -6,12 +6,12 @@ import { getUserFromSession } from '@/utils/serverAuth';
 // GET /api/merchants/[merchantId]/menu/status - Get restaurant business status
 export async function GET(
   request: NextRequest,
-  { params }: { params: { merchantId: string } }
+  { params }: { params: Promise<{ merchantId: string }> }
 ) {
   try {
     await connectToDatabase();
     
-    const { merchantId } = params;
+    const { merchantId } = await params;
     
     if (!merchantId) {
       return NextResponse.json(
@@ -50,7 +50,7 @@ export async function GET(
 // PUT /api/merchants/[merchantId]/menu/status - Update restaurant business status
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { merchantId: string } }
+  { params }: { params: Promise<{ merchantId: string }> }
 ) {
   try {
     await connectToDatabase();
@@ -64,7 +64,7 @@ export async function PUT(
       );
     }
     
-    const { merchantId } = params;
+    const { merchantId } = await params;
     
     // Check user access
     const hasAccess = user.merchantAccess?.some(
@@ -141,7 +141,7 @@ export async function PUT(
 // POST /api/merchants/[merchantId]/menu/status/toggle - Quick toggle open/close
 export async function POST(
   request: NextRequest,
-  { params }: { params: { merchantId: string } }
+  { params }: { params: Promise<{ merchantId: string }> }
 ) {
   try {
     await connectToDatabase();
@@ -155,7 +155,7 @@ export async function POST(
       );
     }
     
-    const { merchantId } = params;
+    const { merchantId } = await params;
     
     // Check user access
     const hasAccess = user.merchantAccess?.some(

@@ -6,12 +6,12 @@ import { getUserFromSession } from '@/utils/serverAuth';
 // GET /api/merchants/[merchantId]/menu - Get restaurant menu
 export async function GET(
   request: NextRequest,
-  { params }: { params: { merchantId: string } }
+  { params }: { params: Promise<{ merchantId: string }> }
 ) {
   try {
     await connectToDatabase();
     
-    const { merchantId } = params;
+    const { merchantId } = await params;
     
     if (!merchantId) {
       return NextResponse.json(
@@ -63,7 +63,7 @@ export async function GET(
 // POST /api/merchants/[merchantId]/menu - Create restaurant menu
 export async function POST(
   request: NextRequest,
-  { params }: { params: { merchantId: string } }
+  { params }: { params: Promise<{ merchantId: string }> }
 ) {
   try {
     await connectToDatabase();
@@ -77,7 +77,7 @@ export async function POST(
       );
     }
     
-    const { merchantId } = params;
+    const { merchantId } = await params;
     
     if (!merchantId) {
       return NextResponse.json(
@@ -185,7 +185,7 @@ export async function POST(
 // PUT /api/merchants/[merchantId]/menu - Update restaurant menu
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { merchantId: string } }
+  { params }: { params: Promise<{ merchantId: string }> }
 ) {
   try {
     await connectToDatabase();
@@ -199,7 +199,7 @@ export async function PUT(
       );
     }
     
-    const { merchantId } = params;
+    const { merchantId } = await params;
     
     if (!merchantId) {
       return NextResponse.json(
@@ -278,7 +278,7 @@ export async function PUT(
 // DELETE /api/merchants/[merchantId]/menu - Delete restaurant menu
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { merchantId: string } }
+  { params }: { params: Promise<{ merchantId: string }> }
 ) {
   try {
     await connectToDatabase();
@@ -292,7 +292,7 @@ export async function DELETE(
       );
     }
     
-    const { merchantId } = params;
+    const { merchantId } = await params;
     
     if (!merchantId) {
       return NextResponse.json(

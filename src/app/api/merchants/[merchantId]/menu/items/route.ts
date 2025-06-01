@@ -7,12 +7,12 @@ import { v4 as uuidv4 } from 'uuid';
 // GET /api/merchants/[merchantId]/menu/items - Get all menu items
 export async function GET(
   request: NextRequest,
-  { params }: { params: { merchantId: string } }
+  { params }: { params: Promise<{ merchantId: string }> }
 ) {
   try {
     await connectToDatabase();
     
-    const { merchantId } = params;
+    const { merchantId } = await params;
     const { searchParams } = new URL(request.url);
     const categoryId = searchParams.get('categoryId');
     const isAvailable = searchParams.get('isAvailable');
@@ -88,7 +88,7 @@ export async function GET(
 // POST /api/merchants/[merchantId]/menu/items - Add new menu item
 export async function POST(
   request: NextRequest,
-  { params }: { params: { merchantId: string } }
+  { params }: { params: Promise<{ merchantId: string }> }
 ) {
   try {
     await connectToDatabase();
@@ -102,7 +102,7 @@ export async function POST(
       );
     }
     
-    const { merchantId } = params;
+    const { merchantId } = await params;
     
     // Check user access
     const hasAccess = user.merchantAccess?.some(

@@ -6,12 +6,12 @@ import { getUserFromSession } from '@/utils/serverAuth';
 // GET /api/merchants/[merchantId]/menu/items/[itemId] - Get specific menu item
 export async function GET(
   request: NextRequest,
-  { params }: { params: { merchantId: string; itemId: string } }
+  { params }: { params: Promise<{ merchantId: string; itemId: string }> }
 ) {
   try {
     await connectToDatabase();
     
-    const { merchantId, itemId } = params;
+    const { merchantId, itemId } = await params;
     
     if (!merchantId || !itemId) {
       return NextResponse.json(
@@ -76,7 +76,7 @@ export async function GET(
 // PUT /api/merchants/[merchantId]/menu/items/[itemId] - Update menu item
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { merchantId: string; itemId: string } }
+  { params }: { params: Promise<{ merchantId: string; itemId: string }> }
 ) {
   try {
     await connectToDatabase();
@@ -90,7 +90,7 @@ export async function PUT(
       );
     }
     
-    const { merchantId, itemId } = params;
+    const { merchantId, itemId } = await params;
     
     // Check user access
     const hasAccess = user.merchantAccess?.some(
@@ -170,7 +170,7 @@ export async function PUT(
 // DELETE /api/merchants/[merchantId]/menu/items/[itemId] - Delete menu item
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { merchantId: string; itemId: string } }
+  { params }: { params: Promise<{ merchantId: string; itemId: string }> }
 ) {
   try {
     await connectToDatabase();
@@ -184,7 +184,7 @@ export async function DELETE(
       );
     }
     
-    const { merchantId, itemId } = params;
+    const { merchantId, itemId } = await params;
     
     // Check user access (only ADMIN and MERCHANT_OWNER can delete items)
     const hasAccess = user.merchantAccess?.some(
