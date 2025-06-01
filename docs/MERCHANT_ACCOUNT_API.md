@@ -3,12 +3,45 @@
 ## Overview
 API endpoints for merchants to manage their own account data. These endpoints allow merchants to view, update, and delete their merchant account information. Each merchant account has a linked wallet for handling transactions and payments.
 
+**Important**: Wallet access is granted to users listed in the Merchant's `merchantStaff` array with `ADMIN`, `MERCHANT_OWNER`, or `MERCHANT_MANAGER` roles.
+
 ---
 
 ## Authentication
 All endpoints require JWT authentication via:
 - **Authorization Header**: `Bearer <token>`
 - **Cookie**: `auth_token=<token>`
+
+## Permission System
+
+### Merchant Staff Access
+Access to merchant accounts is determined by the `merchantStaff` array within each merchant document. Users must be listed in this array with appropriate roles:
+
+```typescript
+merchantStaff: [
+  {
+    userId: "user_123",           // User's ID
+    name: "John Doe",
+    role: "MERCHANT_OWNER",       // User's role for this merchant
+    email: "john@example.com",
+    phoneNumber: "+1234567890",
+    pushToken: []
+  }
+]
+```
+
+### Wallet Access Requirements
+Only users listed in `merchantStaff` with the following roles can access wallet data:
+- **ADMIN** - Full system administrator access
+- **MERCHANT_OWNER** - Business owner with full merchant access
+- **MERCHANT_MANAGER** - Manager with operational access
+
+**MERCHANT_STAFF** role can view merchant data but **cannot access wallet information**.
+
+### Legacy Compatibility
+The API also supports legacy `user.merchantAccess` for backward compatibility, but prioritizes `merchantStaff` when both exist.
+
+---
 
 ## Base URL
 All endpoints are prefixed with: `/api/merchants/[merchantId]`
@@ -20,9 +53,11 @@ All endpoints are prefixed with: `/api/merchants/[merchantId]`
 ### 1. Get Merchant Account Data
 **GET** `/api/merchants/[merchantId]`
 
-Retrieve complete merchant account information including linked wallet data.
+Retrieve complete merchant account information including linked wallet data (if user has wallet access permissions).
 
 **Required Access**: Any role with access to the merchant (`ADMIN`, `MERCHANT_OWNER`, `MERCHANT_MANAGER`, `MERCHANT_STAFF`)
+
+**Wallet Data Access**: Only `ADMIN`, `MERCHANT_OWNER`, `MERCHANT_MANAGER` roles
 
 **Response**:
 ```json
@@ -57,6 +92,8 @@ Retrieve complete merchant account information including linked wallet data.
         "balance": 1250.75,
         "currency": "CAD",
         "status": "ACTIVE",
+        "address": "0x1234...abcd",
+        "tier": "MERCHANT",
         "lastTransactionDate": "2025-01-20T14:30:00Z"
       },
       "restaurantMenu": { /* restaurant menu if merchant type is RESTAURANT */ },
@@ -67,6 +104,8 @@ Retrieve complete merchant account information including linked wallet data.
   }
 }
 ```
+
+**Note**: The `wallet` object will only be included if the authenticated user has one of the required roles for wallet access (`ADMIN`, `MERCHANT_OWNER`, `MERCHANT_MANAGER`).
 
 ### 2. Update Merchant Account Data
 **PUT** `/api/merchants/[merchantId]`
@@ -117,7 +156,7 @@ Update merchant account information. Note: Wallet data cannot be updated through
 {
   "success": true,
   "data": {
-    "merchant": { /* updated merchant object including wallet data */ }
+    "merchant": { /* updated merchant object including wallet data if user has access */ }
   },
   "message": "Merchant account updated successfully"
 }
@@ -129,6 +168,8 @@ Update merchant account information. Note: Wallet data cannot be updated through
 Permanently delete a merchant account and remove access from all users. The linked wallet will also be closed and any remaining balance must be withdrawn before deletion.
 
 **Required Access**: `ADMIN`, `MERCHANT_OWNER` only
+
+**Important**: The merchant's wallet must have a zero balance before deletion is allowed.
 
 **Response**:
 ```json
@@ -190,7 +231,7 @@ Valid merchant types:
 
 | Status | Description |
 |--------|-------------|
-| 400 | Bad Request - Invalid data or duplicate email/phone |
+| 400 | Bad Request - Invalid data, duplicate email/phone, or non-zero wallet balance |
 | 401 | Unauthorized - Authentication required |
 | 403 | Forbidden - Insufficient permissions |
 | 404 | Not Found - Merchant not found |
@@ -203,14 +244,47 @@ Valid merchant types:
 | Operation | ADMIN | MERCHANT_OWNER | MERCHANT_MANAGER | MERCHANT_STAFF |
 |-----------|-------|----------------|------------------|----------------|
 | View Account | ✅ | ✅ | ✅ | ✅ |
+| View Wallet | ✅ | ✅ | ✅ | ❌ |
 | Update Account | ✅ | ✅ | ✅ | ❌ |
 | Delete Account | ✅ | ✅ | ❌ | ❌ |
 
 ---
 
+## Access Control Implementation
+
+### Database Structure
+```typescript
+// Merchant Staff Array (controls access)
+merchantStaff: [
+  {
+    userId: string;        // Links to User._id
+    name: string;
+    role: 'ADMIN' | 'MERCHANT_OWNER' | 'MERCHANT_MANAGER' | 'MERCHANT_STAFF';
+    email: string;
+    phoneNumber: string;
+    pushToken: string[];
+  }
+]
+```
+
+### Access Validation Process
+1. **Authentication**: Verify JWT token and get user ID
+2. **Staff Lookup**: Check if user ID exists in `merchant.merchantStaff` array
+3. **Role Validation**: Verify user's role meets the endpoint requirements
+4. **Wallet Access**: Additional check for wallet data inclusion
+
+### Adding Users to Merchant Staff
+To grant a user access to a merchant account and its wallet:
+
+1. Add user to the `merchantStaff` array with appropriate role
+2. Optionally update the user's `merchantAccess` array for legacy compatibility
+3. User will immediately gain access based on their assigned role
+
+---
+
 ## Usage Examples
 
-### Get Merchant Account
+### Get Merchant Account with Wallet Data
 ```javascript
 const response = await fetch('/api/merchants/merchant_123', {
   method: 'GET',
@@ -222,7 +296,14 @@ const response = await fetch('/api/merchants/merchant_123', {
 
 const data = await response.json();
 console.log(data.data.merchant);
-console.log('Wallet Balance:', data.data.merchant.wallet.balance);
+
+// Check if wallet data is included (depends on user role)
+if (data.data.merchant.wallet) {
+  console.log('Wallet Balance:', data.data.merchant.wallet.balance);
+  console.log('Wallet Address:', data.data.merchant.wallet.address);
+} else {
+  console.log('User does not have wallet access permissions');
+}
 ```
 
 ### Update Merchant Information
@@ -267,6 +348,8 @@ const response = await fetch('/api/merchants/merchant_123', {
 
 ### Delete Merchant Account
 ```javascript
+// Note: Only ADMIN and MERCHANT_OWNER can delete accounts
+// Wallet must have zero balance
 const response = await fetch('/api/merchants/merchant_123', {
   method: 'DELETE',
   headers: {
@@ -289,6 +372,8 @@ interface MerchantWallet {
   balance: number;
   currency: 'CAD' | 'USD' | 'EUR';
   status: 'ACTIVE' | 'SUSPENDED' | 'CLOSED';
+  address: string;
+  tier: 'MERCHANT';
   lastTransactionDate?: Date;
 }
 ```
@@ -335,6 +420,12 @@ Each merchant account is automatically linked to a wallet upon account creation.
 - **Transaction History**: View detailed payment records
 - **Withdraw Funds**: Transfer money to bank accounts
 
+### Wallet Access Requirements
+To access wallet data, users must be:
+1. **Listed in merchantStaff array** with their user ID
+2. **Have one of the required roles**: `ADMIN`, `MERCHANT_OWNER`, or `MERCHANT_MANAGER`
+3. **Authenticated** with a valid JWT token
+
 ### Wallet API Integration
 For wallet-specific operations, use the dedicated wallet management endpoints:
 - `/api/wallets/[walletId]` - Wallet operations
@@ -347,6 +438,29 @@ For wallet-specific operations, use the dedicated wallet management endpoints:
 - Merchant account deletion requires zero wallet balance
 - Wallet status affects merchant's ability to process payments
 - Currency is set during initial merchant setup and cannot be changed
+- Users with `MERCHANT_STAFF` role cannot access wallet information
+
+---
+
+## Security Considerations
+
+### Role-Based Access Control
+- **ADMIN**: System-wide administrative access
+- **MERCHANT_OWNER**: Full control over merchant account and wallet
+- **MERCHANT_MANAGER**: Operational management including wallet access
+- **MERCHANT_STAFF**: Basic access without wallet permissions
+
+### Data Protection
+- Wallet information is only exposed to authorized roles
+- Sensitive financial data requires elevated permissions
+- User access is validated on every request
+- Role hierarchy ensures appropriate data visibility
+
+### Audit Trail
+- All wallet access is logged for security
+- Permission changes affect access immediately
+- Failed access attempts are monitored
+- Role assignments are tracked for compliance
 
 ---
 
@@ -357,7 +471,9 @@ For wallet-specific operations, use the dedicated wallet management endpoints:
 - Account deletion is permanent and cannot be undone
 - Deleting a merchant account removes all user access permissions and closes the linked wallet
 - For restaurant merchants, the `restaurantMenu` field contains the embedded menu data
-- All endpoints return consistent JSON response format including wallet information
+- All endpoints return consistent JSON response format including wallet information (when accessible)
 - Email and phone number uniqueness is enforced across all merchants
 - Staff management should be handled through dedicated staff management endpoints
-- Wallet operations require separate API calls to wallet endpoints 
+- Wallet operations require separate API calls to wallet endpoints
+- Users must be in the `merchantStaff` array to access any merchant data
+- Wallet access specifically requires `ADMIN`, `MERCHANT_OWNER`, or `MERCHANT_MANAGER` roles 

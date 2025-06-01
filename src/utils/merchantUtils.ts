@@ -489,4 +489,66 @@ export async function createMissingMerchantWallets(): Promise<{
     console.error('Error in createMissingMerchantWallets:', error);
     throw error;
   }
+}
+
+/**
+ * Check if a user has access to a merchant through merchantStaff array
+ */
+export async function checkMerchantStaffAccess(
+  userId: string, 
+  merchantId: string, 
+  requiredRoles?: ('ADMIN' | 'MERCHANT_OWNER' | 'MERCHANT_MANAGER' | 'MERCHANT_STAFF')[]
+): Promise<{ hasAccess: boolean; role?: string; error?: string }> {
+  try {
+    const merchant = await Merchant.findById(merchantId).select('merchantStaff').lean();
+    
+    if (!merchant) {
+      return { hasAccess: false, error: 'Merchant not found' };
+    }
+
+    const staffMember = merchant.merchantStaff.find(
+      (staff: any) => staff.userId === userId
+    );
+
+    if (!staffMember) {
+      return { hasAccess: false };
+    }
+
+    // If specific roles are required, check if user has one of them
+    if (requiredRoles && requiredRoles.length > 0) {
+      const hasRequiredRole = requiredRoles.includes(staffMember.role as any);
+      return {
+        hasAccess: hasRequiredRole,
+        role: staffMember.role
+      };
+    }
+
+    return {
+      hasAccess: true,
+      role: staffMember.role
+    };
+  } catch (error) {
+    console.error('Error checking merchant staff access:', error);
+    return {
+      hasAccess: false,
+      error: error instanceof Error ? error.message : 'Failed to check access'
+    };
+  }
+}
+
+/**
+ * Check if a user can access merchant wallet data
+ * Users in merchantStaff with ADMIN, MERCHANT_OWNER, or MERCHANT_MANAGER roles can access wallet
+ */
+export async function checkMerchantWalletAccess(
+  userId: string, 
+  merchantId: string
+): Promise<{ hasAccess: boolean; role?: string; error?: string }> {
+  const walletRoles: ('ADMIN' | 'MERCHANT_OWNER' | 'MERCHANT_MANAGER')[] = [
+    'ADMIN', 
+    'MERCHANT_OWNER', 
+    'MERCHANT_MANAGER'
+  ];
+  
+  return await checkMerchantStaffAccess(userId, merchantId, walletRoles);
 } 
