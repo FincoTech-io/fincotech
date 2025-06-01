@@ -90,7 +90,25 @@ Complete API documentation for user management, authentication, and profile oper
     fullName: string;
     phoneNumber: string;
     email: string;
+    role: 'CUSTOMER' | 'ADMIN' | 'CUSTOMER_SUPPORT' | 'MERCHANT' | 'DRIVER';
     isVerified: boolean;
+    isActive: boolean;
+    nationality: string;
+    idType: 'PASSPORT' | 'DRIVERS_LICENSE' | 'NATIONAL_ID';
+    idNumber: string;
+    profileImage: {
+      url: string;
+      publicId: string;
+    };
+    pushToken?: string;
+    currentRegion?: string;
+    currentAddress?: string;
+    hasUnreadNotifications: boolean;
+    merchantAccess: MerchantAccess[];
+    driverAccountId?: string;
+    applications: ApplicationReference[];
+    notifications: Notification[];
+    notificationPreferences: NotificationPreferences;
     wallet: {
       balance: number;
       currency: string;
@@ -130,7 +148,39 @@ Complete API documentation for user management, authentication, and profile oper
 ```typescript
 {
   success: boolean;
-  user: UpdatedUserData;
+  user: {
+    id: string;
+    fullName: string;
+    phoneNumber: string;
+    email: string;
+    role: 'CUSTOMER' | 'ADMIN' | 'CUSTOMER_SUPPORT' | 'MERCHANT' | 'DRIVER';
+    isVerified: boolean;
+    isActive: boolean;
+    nationality: string;
+    idType: 'PASSPORT' | 'DRIVERS_LICENSE' | 'NATIONAL_ID';
+    idNumber: string;
+    profileImage: {
+      url: string;
+      publicId: string;
+    };
+    pushToken?: string;
+    currentRegion?: string;
+    currentAddress?: string;
+    hasUnreadNotifications: boolean;
+    merchantAccess: MerchantAccess[];
+    driverAccountId?: string;
+    applications: ApplicationReference[];
+    notifications: Notification[];
+    notificationPreferences: NotificationPreferences;
+    wallet: {
+      balance: number;
+      currency: string;
+      tier: string;
+      address: string;
+    };
+    createdAt: Date;
+    updatedAt: Date;
+  };
 }
 ```
 
