@@ -27,30 +27,8 @@ export async function GET(
     // Connect to database
     await connectToDatabase();
 
-    // Get user from token
-    const user = await getUserFromSession(request);
-    if (!user) {
-      return NextResponse.json(
-        { success: false, error: 'Authentication required' },
-        { status: 401 }
-      );
-    }
-
-    // Check if user has access to view this merchant's menu
-    const accessResult = await checkMerchantStaffAccess(user._id.toString(), merchantId, [
-      'ADMIN', 
-      'MERCHANT_OWNER', 
-      'MERCHANT_MANAGER',
-      'MERCHANT_STAFF' // Read access for all staff roles
-    ]);
-
-    if (!accessResult.hasAccess) {
-      return NextResponse.json(
-        { success: false, error: 'Access denied. You do not have permission to view this merchant menu.' },
-        { status: 403 }
-      );
-    }
-
+    // No authentication required for viewing menu - public access
+    
     // Find merchant and get menu data
     const merchant = await Merchant.findById(merchantId).select('merchantName restaurantMenu').lean();
 

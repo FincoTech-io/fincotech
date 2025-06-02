@@ -8,11 +8,11 @@ Comprehensive API endpoints for managing restaurant menus, categories, and menu 
 ---
 
 ## Authentication & Permissions
-All endpoints require JWT authentication and appropriate merchant access:
+Authentication requirements vary by operation:
 
-- **Read Operations**: All roles with merchant access
-- **Create/Update Operations**: ADMIN, MERCHANT_OWNER, MERCHANT_MANAGER
-- **Delete Operations**: ADMIN, MERCHANT_OWNER only
+- **Read Operations (GET)**: **Public access** - No authentication required for viewing menus
+- **Create/Update Operations (POST/PUT)**: ADMIN, MERCHANT_OWNER, MERCHANT_MANAGER
+- **Delete Operations (DELETE)**: ADMIN, MERCHANT_OWNER only
 
 ---
 
@@ -108,8 +108,7 @@ GET /api/merchants/[merchantId]/menu
 
 Retrieve the complete menu data for a merchant with **flat, normalized structure**.
 
-**Permissions Required:**
-- ADMIN, MERCHANT_OWNER, MERCHANT_MANAGER, MERCHANT_STAFF (read access)
+**🌐 Public Access**: No authentication required - accessible to all users including customers.
 
 **Response:**
 ```json
@@ -829,4 +828,56 @@ Images are uploaded to: `fincotech/Merchant/[merchantId]/[itemId]`
 - ✅ **Progress tracking**: See image upload progress independently
 - ✅ **Retry capability**: Can retry just images or just menu data if needed
 
---- 
+### Public Menu Access (No Authentication)
+
+**Customer viewing restaurant menu:**
+```javascript
+// No authentication headers required
+const response = await fetch('/api/merchants/683beca56d412c1d572afdda/menu', {
+  method: 'GET',
+  headers: {
+    'Content-Type': 'application/json'
+  }
+});
+
+const menuData = await response.json();
+if (menuData.success) {
+  console.log('Restaurant:', menuData.data.merchantName);
+  console.log('Menu items:', menuData.data.menuData.menuItems);
+}
+```
+
+### Staff Menu Management (Authentication Required)
+
+**Updating menu (requires authentication):**
+```javascript
+const response = await fetch('/api/merchants/683beca56d412c1d572afdda/menu', {
+  method: 'PUT',
+  headers: {
+    'Authorization': 'Bearer YOUR_JWT_TOKEN',
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    merchantId: '683beca56d412c1d572afdda',
+    merchantName: 'Nandos',
+    businessHours: { /* ... */ },
+    menus: [ /* ... */ ],
+    categories: [ /* ... */ ],
+    menuItems: [ /* ... */ ]
+  })
+});
+```
+
+---
+
+## Summary
+
+The Restaurant Menu API provides a complete solution for managing restaurant menus with:
+
+- **🌐 Public menu viewing** for customers (no authentication)
+- **🔒 Secure menu management** for staff (authentication required)
+- **📊 Flat, normalized data structure** for better performance
+- **📷 Efficient image handling** with two-step upload process
+- **🎯 Role-based access control** for different operations
+
+This enables restaurants to showcase their menus publicly while maintaining secure administrative control over menu modifications.
