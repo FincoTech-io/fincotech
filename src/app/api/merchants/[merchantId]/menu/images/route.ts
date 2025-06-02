@@ -70,10 +70,28 @@ export async function POST(
       
       try {
         console.log(`📤 [${i + 1}/${images.length}] Uploading image: ${imageData.itemName || 'Unknown'}`);
+        console.log(`📋 Image data keys: ${Object.keys(imageData).join(', ')}`);
+        
+        // Validate required fields
+        if (!imageData.base64) {
+          throw new Error(`Missing base64 data. Available fields: ${Object.keys(imageData).join(', ')}`);
+        }
+
+        // Validate base64 format
+        if (typeof imageData.base64 !== 'string') {
+          throw new Error(`base64 must be a string, got: ${typeof imageData.base64}`);
+        }
+
+        if (imageData.base64.length < 100) {
+          throw new Error(`base64 data too short (${imageData.base64.length} chars), might be invalid`);
+        }
         
         // Generate unique item ID for folder structure
         const itemId = imageData.itemId || `item_${Date.now()}_${i}`;
         const cloudinaryFolder = `fincotech/Merchant/${merchantId}/${itemId}`;
+        
+        console.log(`🗂️ Uploading to folder: ${cloudinaryFolder}`);
+        console.log(`📏 Base64 length: ${imageData.base64.length} characters`);
         
         // Upload to Cloudinary
         const uploadResult = await uploadImageToCloudinary(
@@ -95,6 +113,7 @@ export async function POST(
         
       } catch (error) {
         console.error(`❌ [${i + 1}/${images.length}] Error uploading image:`, error);
+        console.error(`📋 Failed image data:`, JSON.stringify(imageData, null, 2));
         
         uploadedImages.push({
           itemId: imageData.itemId || `item_${Date.now()}_${i}`,

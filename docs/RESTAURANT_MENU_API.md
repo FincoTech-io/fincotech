@@ -523,6 +523,8 @@ The Menu API uses a **two-step process** to handle large images and avoid 413 (P
 
 Upload all menu item images first and get back Cloudinary URLs.
 
+**⚠️ Important:** The `base64` field is required and must contain the image data.
+
 **Request Format:**
 ```javascript
 {
@@ -530,14 +532,27 @@ Upload all menu item images first and get back Cloudinary URLs.
     {
       "itemName": "Garlic Dip",
       "itemId": "optional-custom-id", // Optional: will generate if not provided
-      "base64": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAYABgAAD..."
+      "base64": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAYABgAAD..." // REQUIRED
     },
     {
-      "itemName": "Chicken Wings",
+      "itemName": "Chicken Wings", 
       "base64": "/9j/4AAQSkZJRgABAQEAYABgAAD..." // Can be with or without data URL prefix
     }
   ]
 }
+```
+
+**Test Example:**
+```javascript
+// Test with a small sample image
+const testUpload = {
+  images: [
+    {
+      itemName: "Test Item",
+      base64: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=="
+    }
+  ]
+};
 ```
 
 **Response:**
