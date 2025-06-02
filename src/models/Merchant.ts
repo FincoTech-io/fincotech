@@ -201,59 +201,33 @@ export interface IMenuItem {
   id: string;
   name: string;
   description: string;
-  shortDescription?: string;
-  images: IImageObject[];
+  image: IImageObject | null;      // Single image object instead of array
   basePrice: number;
-  compareAtPrice?: number;
-  tax?: number;
-  isOnSale: boolean;
-  saleEndDate?: Date;
+  tax: number;
   preparationTime: number;
-  servingSize?: string;
   calories?: number;
   isAvailable: boolean;
-  availabilitySchedule?: IMenuAvailability;
-  inventoryTracking?: IInventoryTracking;
-  tags: ItemTag[];
-  dietaryInfo: IDietaryInfo;
-  allergens: Allergen[];
-  spiceLevel?: SpiceLevel;
   displayOrder: number;
-  isPopular: boolean;
-  isFeatured: boolean;
-  isNewItem: boolean;
-  badgeText?: string;
   modifierGroups: IModifierGroup[];
-  recommendedWith?: string[];
-  substitutes?: string[];
-  menuId?: string;
-  categoryId?: string;
-  isSingularItem?: boolean;
-  createdAt: Date;
-  updatedAt: Date;
+  categoryId: string;              // Reference to category ID
 }
 
 export interface IMenuCategory {
   id: string;
   name: string;
   description?: string;
-  image?: IImageObject;
   displayOrder: number;
   isActive: boolean;
-  isPopular?: boolean;
-  items: IMenuItem[];
-  maxItemsPerOrder?: number;
-  requiredWithOtherCategory?: string;
 }
 
 export interface IMenu {
   id: string;
   name: string;
   description?: string;
-  availability: IMenuAvailability;
+  timeSlots: any[];                // Changed from availability to timeSlots
   displayOrder: number;
   isActive: boolean;
-  categories: IMenuCategory[];
+  itemIds: string[];               // NEW: Array of item IDs instead of nested categories
 }
 
 export interface IOrderingRules {
@@ -304,6 +278,8 @@ export interface IRestaurantMenu {
   serviceOptions: IServiceOptions;
   businessStatus: IBusinessStatus;
   menus: IMenu[];
+  categories: IMenuCategory[];
+  items: IMenuItem[];
   orderingRules: IOrderingRules;
   version: number;
   isActive: boolean;
@@ -611,122 +587,71 @@ const MerchantSchema = new Schema<IMerchant>(
           id: String,
           name: String,
           description: String,
-          availability: {
-            timeRestrictions: Schema.Types.Mixed,
-            dateRestrictions: {
-              startDate: Date,
-              endDate: Date,
-            },
-          },
+          timeSlots: [Schema.Types.Mixed],  // Array of time slot objects
           displayOrder: Number,
           isActive: Boolean,
-          categories: [{
+          itemIds: [String],  // Array of item IDs instead of nested categories
+        }],
+        categories: [{
+          id: String,
+          name: String,
+          description: String,
+          displayOrder: Number,
+          isActive: Boolean,
+        }],
+        items: [{
+          id: String,
+          name: String,
+          description: String,
+          image: {
+            url: String,
+            publicId: String,
+            alt: String,
+            width: Number,
+            height: Number,
+          },
+          basePrice: Number,
+          tax: Number,
+          preparationTime: Number,
+          calories: Number,
+          isAvailable: Boolean,
+          displayOrder: Number,
+          modifierGroups: [{
             id: String,
             name: String,
             description: String,
-            image: {
-              url: String,
-              publicId: String,
-              alt: String,
-              width: Number,
-              height: Number,
-            },
+            type: String,
+            minSelections: Number,
+            maxSelections: Number,
+            isRequired: Boolean,
             displayOrder: Number,
-            isActive: Boolean,
-            isPopular: Boolean,
-            items: [{
+            isCollapsible: Boolean,
+            modifiers: [{
               id: String,
               name: String,
               description: String,
-              shortDescription: String,
-              images: [{
-                url: String,
-                publicId: String,
-                alt: String,
-                width: Number,
-                height: Number,
-              }],
-              basePrice: Number,
-              compareAtPrice: Number,
-              isOnSale: Boolean,
-              saleEndDate: Date,
-              preparationTime: Number,
-              servingSize: String,
-              calories: Number,
+              priceModifier: Number,
+              priceType: String,
               isAvailable: Boolean,
-              availabilitySchedule: {
-                timeRestrictions: Schema.Types.Mixed,
-                dateRestrictions: {
-                  startDate: Date,
-                  endDate: Date,
-                },
-              },
+              isDefault: Boolean,
               inventoryTracking: {
                 trackInventory: Boolean,
                 currentStock: Number,
                 lowStockThreshold: Number,
               },
-              tags: [String],
-              dietaryInfo: {
-                isVegetarian: Boolean,
-                isVegan: Boolean,
-                isGlutenFree: Boolean,
-                isKeto: Boolean,
-                isDairyFree: Boolean,
-                isNutFree: Boolean,
-                isHalal: Boolean,
-                isKosher: Boolean,
-              },
-              allergens: [String],
-              spiceLevel: String,
+              allergenInfo: [String],
+              calorieImpact: Number,
               displayOrder: Number,
-              isPopular: Boolean,
-              isFeatured: Boolean,
-              isNewItem: Boolean,
-              badgeText: String,
-              modifierGroups: [{
-                id: String,
-                name: String,
-                description: String,
-                type: String,
-                minSelections: Number,
-                maxSelections: Number,
-                isRequired: Boolean,
-                displayOrder: Number,
-                isCollapsible: Boolean,
-                modifiers: [{
-                  id: String,
-                  name: String,
-                  description: String,
-                  priceModifier: Number,
-                  priceType: String,
-                  isAvailable: Boolean,
-                  isDefault: Boolean,
-                  inventoryTracking: {
-                    trackInventory: Boolean,
-                    currentStock: Number,
-                    lowStockThreshold: Number,
-                  },
-                  allergenInfo: [String],
-                  calorieImpact: Number,
-                  displayOrder: Number,
-                  image: {
-                    url: String,
-                    publicId: String,
-                    alt: String,
-                    width: Number,
-                    height: Number,
-                  },
-                }],
-              }],
-              recommendedWith: [String],
-              substitutes: [String],
-              createdAt: Date,
-              updatedAt: Date,
+              image: {
+                url: String,
+                publicId: String,
+                alt: String,
+                width: Number,
+                height: Number,
+              },
             }],
-            maxItemsPerOrder: Number,
-            requiredWithOtherCategory: String,
           }],
+          categoryId: String,
         }],
         orderingRules: {
           minimumOrder: {
