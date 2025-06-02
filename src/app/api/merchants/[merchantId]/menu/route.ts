@@ -238,8 +238,7 @@ function transformMenuData(frontendData: any) {
         description: menu.description || '',
         timeSlots: menu.timeSlots || [],
         isActive: menu.isActive !== false,
-        displayOrder: menu.displayOrder || 1,
-        itemIds: [] // Will be populated later
+        displayOrder: menu.displayOrder || 1
       });
     });
   }
@@ -280,22 +279,21 @@ function transformMenuData(frontendData: any) {
         console.log(`📁 Item "${item.name}" -> Direct Category "${item.categoryId}" -> ID: ${categoryId}`);
       }
       
-      // Find menu IDs by name - handle both menu and menuId fields
-      const menuIds: string[] = [];
+      // Find menu ID by name - single menu reference
+      let menuId = null;
       let menuName = item.menu || item.menuId; // Support both field names
       
       if (menuName) {
         const foundMenu = menus.find(menu => menu.name === menuName);
         if (foundMenu) {
-          menuIds.push(foundMenu.id);
-          foundMenu.itemIds.push(itemId);
+          menuId = foundMenu.id;
           console.log(`🍽️ Item "${item.name}" -> Menu "${menuName}" -> ID: ${foundMenu.id}`);
         } else {
           console.log(`⚠️ Menu not found for item "${item.name}": ${menuName}`);
         }
       }
       
-      console.log(`✅ Creating item with ID: ${itemId}, CategoryID: ${categoryId}, MenuIDs: ${JSON.stringify(menuIds)}`);
+      console.log(`✅ Creating item with ID: ${itemId}, CategoryID: ${categoryId}, MenuID: ${menuId}`);
       
       items.push({
         id: itemId,
@@ -315,7 +313,8 @@ function transformMenuData(frontendData: any) {
         isAvailable: item.isAvailable !== false,
         displayOrder: item.displayOrder || (index + 1),
         modifierGroups: item.modifiers || item.modifierGroups || [],
-        categoryId: categoryId
+        categoryId: categoryId,
+        menuId: menuId  // Single menu reference instead of array
       });
     });
     
@@ -466,11 +465,9 @@ function transformDatabaseToFrontend(restaurantMenu: any, merchantId: string, me
     const category = categories.find((cat: any) => cat.id === item.categoryId);
     const categoryName = category ? category.name : 'Uncategorized';
     
-    // Find menu names by IDs
-    const itemMenus = menus.filter((menu: any) => 
-      item.menuIds && item.menuIds.includes(menu.id)
-    );
-    const menuName = itemMenus.length > 0 ? itemMenus[0].name : '';
+    // Find menu name by ID
+    const menu = menus.find((menu: any) => menu.id === item.menuId);
+    const menuName = menu ? menu.name : '';
     
     return {
       name: item.name,
@@ -491,10 +488,8 @@ function transformDatabaseToFrontend(restaurantMenu: any, merchantId: string, me
     merchantName,
     businessHours,
     menus: menus.map((menu: any) => {
-      // Count items in this menu
-      const menuItemCount = items.filter((item: any) => 
-        item.menuIds && item.menuIds.includes(menu.id)
-      ).length;
+      // Count items in this menu by filtering items that reference this menu
+      const menuItemCount = items.filter((item: any) => item.menuId === menu.id).length;
       
       return {
         id: menu.id,

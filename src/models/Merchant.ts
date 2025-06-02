@@ -210,6 +210,7 @@ export interface IMenuItem {
   displayOrder: number;
   modifierGroups: IModifierGroup[];
   categoryId: string;              // Reference to category ID
+  menuId: string;                  // Reference to menu ID (unidirectional)
 }
 
 export interface IMenuCategory {
@@ -224,10 +225,10 @@ export interface IMenu {
   id: string;
   name: string;
   description?: string;
-  timeSlots: any[];                // Changed from availability to timeSlots
+  timeSlots: any[];                // Time-based availability
   displayOrder: number;
   isActive: boolean;
-  itemIds: string[];               // NEW: Array of item IDs instead of nested categories
+  // Removed itemIds - items will reference menus instead
 }
 
 export interface IOrderingRules {
@@ -590,7 +591,7 @@ const MerchantSchema = new Schema<IMerchant>(
           timeSlots: [Schema.Types.Mixed],  // Array of time slot objects
           displayOrder: Number,
           isActive: Boolean,
-          itemIds: [String],  // Array of item IDs instead of nested categories
+          // Items reference menus via menuId - no itemIds array needed
         }],
         categories: [{
           id: String,
@@ -652,6 +653,7 @@ const MerchantSchema = new Schema<IMerchant>(
             }],
           }],
           categoryId: String,
+          menuId: String,
         }],
         orderingRules: {
           minimumOrder: {
