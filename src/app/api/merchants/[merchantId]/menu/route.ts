@@ -162,6 +162,16 @@ export async function PUT(
     console.log('🏗️ Transforming menu data for database...');
     const restaurantMenu = transformMenuData(menuData);
 
+    console.log('💾 Updating merchant in database...');
+    console.log('Database structure preview:', JSON.stringify({
+      menusCount: restaurantMenu.menus?.length || 0,
+      categoriesCount: restaurantMenu.categories?.length || 0,
+      itemsCount: restaurantMenu.items?.length || 0,
+      firstMenu: restaurantMenu.menus?.[0] || null,
+      firstCategory: restaurantMenu.categories?.[0] || null,
+      firstItem: restaurantMenu.items?.[0] || null
+    }, null, 2));
+
     // Update merchant with new restaurant menu data
     const updatedMerchant = await Merchant.findByIdAndUpdate(
       merchantId,
@@ -173,11 +183,19 @@ export async function PUT(
     );
 
     if (!updatedMerchant) {
+      console.error('❌ Failed to update merchant - merchant not found after update');
       return NextResponse.json(
         { success: false, error: 'Failed to update merchant menu' },
         { status: 500 }
       );
     }
+
+    console.log('✅ Merchant updated successfully');
+    console.log('Updated menu structure:', {
+      menusCount: updatedMerchant.restaurantMenu?.menus?.length || 0,
+      categoriesCount: (updatedMerchant.restaurantMenu as any)?.categories?.length || 0,
+      itemsCount: (updatedMerchant.restaurantMenu as any)?.items?.length || 0
+    });
 
     return NextResponse.json({
       success: true,
@@ -241,23 +259,43 @@ function transformMenuData(frontendData: any) {
   
   // Process frontend menu items
   if (frontendData.menuItems && Array.isArray(frontendData.menuItems)) {
+    console.log(`📦 Processing ${frontendData.menuItems.length} menu items...`);
+    
     frontendData.menuItems.forEach((item: any, index: number) => {
       const itemId = `item_${Date.now()}_${index}`;
       
-      // Find category ID by name
-      const categoryId = categories.find(cat => 
-        item.categories && item.categories.includes(cat.name)
-      )?.id;
+      console.log(`🔍 Processing item: ${item.name}`);
       
-      // Find menu IDs by name
+      // Find category ID by name
+      let categoryId = null;
+      if (item.categories && Array.isArray(item.categories) && item.categories.length > 0) {
+        const categoryName = item.categories[0]; // Take first category
+        const category = categories.find(cat => cat.name === categoryName);
+        categoryId = category?.id;
+        console.log(`📁 Item "${item.name}" -> Category "${categoryName}" -> ID: ${categoryId}`);
+      } else if (item.categoryId) {
+        // Handle case where categoryId is passed directly as a name
+        const category = categories.find(cat => cat.name === item.categoryId);
+        categoryId = category?.id;
+        console.log(`📁 Item "${item.name}" -> Direct Category "${item.categoryId}" -> ID: ${categoryId}`);
+      }
+      
+      // Find menu IDs by name - handle both menu and menuId fields
       const menuIds: string[] = [];
-      if (item.menu) {
-        const foundMenu = menus.find(menu => menu.name === item.menu);
+      let menuName = item.menu || item.menuId; // Support both field names
+      
+      if (menuName) {
+        const foundMenu = menus.find(menu => menu.name === menuName);
         if (foundMenu) {
           menuIds.push(foundMenu.id);
           foundMenu.itemIds.push(itemId);
+          console.log(`🍽️ Item "${item.name}" -> Menu "${menuName}" -> ID: ${foundMenu.id}`);
+        } else {
+          console.log(`⚠️ Menu not found for item "${item.name}": ${menuName}`);
         }
       }
+      
+      console.log(`✅ Creating item with ID: ${itemId}, CategoryID: ${categoryId}, MenuIDs: ${JSON.stringify(menuIds)}`);
       
       items.push({
         id: itemId,
@@ -270,17 +308,21 @@ function transformMenuData(frontendData: any) {
           width: 800,
           height: 600
         } : null,
-        basePrice: parseFloat(item.price) || 0,
+        basePrice: parseFloat(item.price || item.basePrice) || 0,
         tax: parseFloat(item.tax) || 0,
-        preparationTime: 15,
-        calories: undefined,
-        isAvailable: true,
-        displayOrder: index + 1,
-        modifierGroups: item.modifiers || [],
+        preparationTime: item.preparationTime || 15,
+        calories: item.calories || undefined,
+        isAvailable: item.isAvailable !== false,
+        displayOrder: item.displayOrder || (index + 1),
+        modifierGroups: item.modifiers || item.modifierGroups || [],
         categoryId: categoryId
       });
     });
+    
+    console.log(`✅ Created ${items.length} items`);
   }
+
+  console.log(`📊 Final counts: ${menus.length} menus, ${categories.length} categories, ${items.length} items`);
 
   // Create restaurant menu structure with flat arrays
   return {
