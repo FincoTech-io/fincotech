@@ -1,147 +1,133 @@
-# Restaurant Menu API Documentation
+# Restaurant Menu Management API Documentation
 
 ## Overview
-API endpoints for managing restaurant menus embedded in the Merchant model. These endpoints are specifically for merchants with `merchantType: 'RESTAURANT'`.
+Comprehensive API endpoints for managing restaurant menus, categories, and menu items. This includes full CRUD operations for menus, categories, items, and image management.
+
+**Base URL**: `/api/merchants/[merchantId]/menu`
 
 ---
 
-## Authentication
-All endpoints (except GET requests) require JWT authentication via:
-- **Authorization Header**: `Bearer <token>`
-- **Cookie**: `auth_token=<token>`
+## Authentication & Permissions
+All endpoints require JWT authentication and appropriate merchant access:
 
-## Base URL
-All endpoints are prefixed with: `/api/merchants/[merchantId]/menu`
+- **Read Operations**: All roles with merchant access
+- **Create/Update Operations**: ADMIN, MERCHANT_OWNER, MERCHANT_MANAGER
+- **Delete Operations**: ADMIN, MERCHANT_OWNER only
 
 ---
 
-## Restaurant Menu Management
+## Menu Management Endpoints
 
-### 1. Get Restaurant Menu
-**GET** `/api/merchants/[merchantId]/menu`
+### 1. Get All Menus
+```
+GET /api/merchants/[merchantId]/menu/menus
+```
 
-Get the complete restaurant menu data.
-
-**Response**:
+**Response:**
 ```json
 {
   "success": true,
   "data": {
-    "merchantId": "merchant_123",
-    "menu": {
-      "restaurantInfo": { /* restaurant info */ },
-      "operatingHours": { /* hours */ },
-      "serviceOptions": { /* service options */ },
-      "businessStatus": { /* current status */ },
-      "menus": [ /* menu array */ ],
-      "orderingRules": { /* ordering rules */ },
-      "version": 1,
-      "isActive": true
-    }
-  }
-}
-```
-
-### 2. Create Restaurant Menu
-**POST** `/api/merchants/[merchantId]/menu`
-
-Create a new restaurant menu (only if none exists).
-
-**Required Access**: `ADMIN`, `MERCHANT_OWNER`, `MERCHANT_MANAGER`
-
-**Request Body**:
-```json
-{
-  "restaurantInfo": {
-    "cuisineTypes": ["ITALIAN"],
-    "priceRange": "$$",
-    "averagePreparationTime": 25,
-    "images": {
-      "logo": { "url": "...", "publicId": "...", "alt": "Logo" },
-      "gallery": []
-    },
-    "rating": { "average": 4.5, "totalReviews": 100 }
-  },
-  "operatingHours": {
-    "timezone": "America/Vancouver",
-    "schedule": {
-      "MONDAY": {
-        "isOpen": true,
-        "periods": [{
-          "openTime": "11:00",
-          "closeTime": "22:00",
-          "serviceTypes": ["DINE_IN", "TAKEOUT", "DELIVERY"]
-        }]
-      }
-      // ... other days
-    },
-    "specialHours": [],
-    "temporaryClosures": []
-  },
-  "serviceOptions": {
-    "dineIn": { "available": true, "tableReservations": true, "walkInsAccepted": true },
-    "takeout": { "available": true, "estimatedWaitTime": 15, "orderAheadTime": 120 },
-    "delivery": {
-      "available": true,
-      "radius": 5,
-      "minimumOrder": 25,
-      "deliveryFee": 3.99,
-      "estimatedDeliveryTime": 35,
-      "deliveryZones": []
-    },
-    "curbside": { "available": false, "instructions": "" }
-  }
-}
-```
-
-### 3. Update Restaurant Menu
-**PUT** `/api/merchants/[merchantId]/menu`
-
-Update existing restaurant menu data.
-
-**Required Access**: `ADMIN`, `MERCHANT_OWNER`, `MERCHANT_MANAGER`
-
-**Request Body**: Partial menu data to update
-
-### 4. Delete Restaurant Menu
-**DELETE** `/api/merchants/[merchantId]/menu`
-
-Delete the entire restaurant menu.
-
-**Required Access**: `ADMIN`, `MERCHANT_OWNER` only
-
----
-
-## Menu Items Management
-
-### 1. Get All Menu Items
-**GET** `/api/merchants/[merchantId]/menu/items`
-
-Get all menu items with optional filtering.
-
-**Query Parameters**:
-- `categoryId`: Filter by category ID
-- `isAvailable`: Filter by availability (`true`/`false`)
-- `tags`: Comma-separated tags (e.g., `VEGETARIAN,GLUTEN_FREE`)
-
-**Response**:
-```json
-{
-  "success": true,
-  "data": {
-    "merchantId": "merchant_123",
-    "items": [
+    "merchantId": "merchant123",
+    "menus": [
       {
-        "id": "item_123",
-        "name": "Classic Bruschetta",
-        "description": "Toasted bread with tomatoes",
-        "basePrice": 12.99,
-        "isAvailable": true,
-        "tags": ["VEGETARIAN"],
-        "categoryId": "appetizers",
-        "categoryName": "Appetizers",
-        "menuId": "dinner_menu",
-        "menuName": "Dinner Menu"
+        "id": "menu-id-1",
+        "name": "Breakfast",
+        "description": "Morning menu items",
+        "timeSlots": [
+          {
+            "startTime": "06:00",
+            "endTime": "11:00",
+            "daysOfWeek": ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY"]
+          }
+        ],
+        "categories": [
+          {
+            "id": "cat-1",
+            "name": "Appetizers",
+            "description": "Starter dishes",
+            "displayOrder": 1
+          }
+        ],
+        "isActive": true,
+        "displayOrder": 1
+      }
+    ]
+  }
+}
+```
+
+### 2. Create New Menu
+```
+POST /api/merchants/[merchantId]/menu/menus
+```
+
+**Request Body:**
+```json
+{
+  "name": "Breakfast",
+  "description": "Morning menu items",
+  "timeSlots": [
+    {
+      "startTime": "06:00",
+      "endTime": "11:00",
+      "daysOfWeek": ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY"]
+    }
+  ],
+  "isActive": true,
+  "displayOrder": 1
+}
+```
+
+### 3. Update Menu
+```
+PUT /api/merchants/[merchantId]/menu/menus/[menuId]
+```
+
+**Request Body:** (All fields optional)
+```json
+{
+  "name": "Updated Breakfast Menu",
+  "description": "Updated description",
+  "timeSlots": [...],
+  "isActive": false,
+  "displayOrder": 2
+}
+```
+
+### 4. Delete Menu
+```
+DELETE /api/merchants/[merchantId]/menu/menus/[menuId]
+```
+**Note:** Only ADMIN and MERCHANT_OWNER can delete menus.
+
+---
+
+## Category Management Endpoints
+
+### 1. Get Categories
+```
+GET /api/merchants/[merchantId]/menu/categories
+GET /api/merchants/[merchantId]/menu/categories?menuId=menu-id
+```
+
+**Query Parameters:**
+- `menuId` (optional): Filter categories by specific menu
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "merchantId": "merchant123",
+    "categories": [
+      {
+        "id": "cat-1",
+        "name": "Appetizers",
+        "description": "Starter dishes",
+        "displayOrder": 1,
+        "menuId": "menu-id-1",
+        "menuName": "Breakfast"
       }
     ],
     "total": 1
@@ -149,182 +135,280 @@ Get all menu items with optional filtering.
 }
 ```
 
-### 2. Add Menu Item
-**POST** `/api/merchants/[merchantId]/menu/items`
+### 2. Create Category
+```
+POST /api/merchants/[merchantId]/menu/categories
+```
 
-Add a new menu item to a specific category.
-
-**Required Access**: `ADMIN`, `MERCHANT_OWNER`, `MERCHANT_MANAGER`
-
-**Request Body**:
+**Request Body:**
 ```json
 {
-  "menuId": "dinner_menu",
-  "categoryId": "appetizers",
-  "item": {
-    "name": "Classic Bruschetta",
-    "description": "Toasted bread topped with fresh tomatoes, basil, and garlic",
-    "basePrice": 12.99,
-    "preparationTime": 10,
-    "tags": ["VEGETARIAN"],
-    "dietaryInfo": {
-      "isVegetarian": true,
-      "isVegan": false,
-      "isGlutenFree": false
-    },
-    "allergens": ["WHEAT"],
-    "modifierGroups": [
-      {
-        "id": "bread_type",
-        "name": "Bread Choice",
-        "type": "SINGLE_CHOICE",
-        "minSelections": 1,
-        "maxSelections": 1,
-        "isRequired": true,
-        "modifiers": [
-          {
-            "id": "regular_bread",
-            "name": "Regular Bread",
-            "priceModifier": 0,
-            "priceType": "FIXED",
-            "isDefault": true
-          }
-        ]
-      }
-    ]
-  }
+  "menuId": "menu-id-here",
+  "name": "Appetizers",
+  "description": "Starter dishes",
+  "displayOrder": 1
 }
 ```
 
-### 3. Get Specific Menu Item
-**GET** `/api/merchants/[merchantId]/menu/items/[itemId]`
+### 3. Update Category
+```
+PUT /api/merchants/[merchantId]/menu/categories/[categoryId]
+```
 
-Get details of a specific menu item.
+### 4. Delete Category
+```
+DELETE /api/merchants/[merchantId]/menu/categories/[categoryId]
+```
+**Note:** Cannot delete categories that contain menu items.
 
-**Response**:
+---
+
+## Menu Items Management
+
+### 1. Get Menu Items
+```
+GET /api/merchants/[merchantId]/menu/items
+```
+
+**Enhanced Query Parameters:**
+- `menuId`: Filter by specific menu
+- `categoryId`: Filter by specific category  
+- `isAvailable`: Filter by availability (true/false)
+- `tags`: Comma-separated tags to filter by
+- `includeSingular`: Include singular items (true/false)
+
+**Example:**
+```
+GET /api/merchants/[merchantId]/menu/items?menuId=breakfast&categoryId=appetizers&isAvailable=true
+```
+
+**Response:**
 ```json
 {
   "success": true,
   "data": {
-    "merchantId": "merchant_123",
-    "item": { /* full item data */ },
-    "context": {
-      "menuId": "dinner_menu",
-      "menuName": "Dinner Menu",
-      "categoryId": "appetizers",
-      "categoryName": "Appetizers"
+    "merchantId": "merchant123",
+    "items": [
+      {
+        "id": "item-1",
+        "name": "Grilled Salmon",
+        "description": "Fresh Atlantic salmon grilled to perfection",
+        "shortDescription": "Fresh grilled salmon",
+        "images": [
+          {
+            "url": "https://example.com/salmon.jpg",
+            "publicId": "salmon_123",
+            "alt": "Grilled salmon dish",
+            "width": 800,
+            "height": 600
+          }
+        ],
+        "basePrice": 24.99,
+        "compareAtPrice": 29.99,
+        "tax": 2.50,
+        "isOnSale": true,
+        "preparationTime": 20,
+        "servingSize": "1 fillet",
+        "calories": 350,
+        "isAvailable": true,
+        "tags": ["PROTEIN_RICH", "HEALTHY"],
+        "dietaryInfo": {
+          "isVegetarian": false,
+          "isVegan": false,
+          "isGlutenFree": true,
+          "isKeto": true,
+          "isDairyFree": true,
+          "isNutFree": true,
+          "isHalal": false,
+          "isKosher": false
+        },
+        "allergens": ["FISH"],
+        "spiceLevel": "MILD",
+        "displayOrder": 1,
+        "isPopular": true,
+        "isFeatured": false,
+        "isNewItem": false,
+        "modifierGroups": [],
+        "menuId": "menu-id-1",
+        "categoryId": "cat-1", 
+        "isSingularItem": false,
+        "menuName": "Dinner",
+        "categoryName": "Main Courses",
+        "createdAt": "2024-01-01T00:00:00Z",
+        "updatedAt": "2024-01-01T00:00:00Z"
+      }
+    ],
+    "total": 1,
+    "filters": {
+      "menuId": "breakfast",
+      "categoryId": "appetizers", 
+      "isAvailable": "true",
+      "tags": null,
+      "includeSingular": false
     }
   }
 }
 ```
 
-### 4. Update Menu Item
-**PUT** `/api/merchants/[merchantId]/menu/items/[itemId]`
-
-Update a specific menu item.
-
-**Required Access**: `ADMIN`, `MERCHANT_OWNER`, `MERCHANT_MANAGER`
-
-**Request Body**: Partial item data to update
-
-### 5. Delete Menu Item
-**DELETE** `/api/merchants/[merchantId]/menu/items/[itemId]`
-
-Delete a specific menu item.
-
-**Required Access**: `ADMIN`, `MERCHANT_OWNER` only
-
----
-
-## Business Status Management
-
-### 1. Get Restaurant Status
-**GET** `/api/merchants/[merchantId]/menu/status`
-
-Get current business status and operating hours.
-
-**Response**:
-```json
-{
-  "success": true,
-  "data": {
-    "merchantId": "merchant_123",
-    "businessStatus": {
-      "isOpen": true,
-      "currentStatus": "OPEN",
-      "statusMessage": null,
-      "estimatedReopenTime": null,
-      "pausedServices": [],
-      "busyLevel": "MODERATE"
-    },
-    "operatingHours": { /* operating hours data */ }
-  }
-}
+### 2. Create Menu Item
+```
+POST /api/merchants/[merchantId]/menu/items
 ```
 
-### 2. Update Restaurant Status
-**PUT** `/api/merchants/[merchantId]/menu/status`
-
-Update restaurant business status.
-
-**Required Access**: `ADMIN`, `MERCHANT_OWNER`, `MERCHANT_MANAGER`
-
-**Request Body**:
+**Enhanced Request Body:**
 ```json
 {
-  "isOpen": false,
-  "currentStatus": "TEMPORARILY_CLOSED",
-  "statusMessage": "Busy - longer wait times",
-  "estimatedReopenTime": "2025-01-20T15:00:00Z",
-  "pausedServices": ["DELIVERY"],
-  "busyLevel": "HIGH"
-}
-```
-
-### 3. Toggle Restaurant Open/Close
-**POST** `/api/merchants/[merchantId]/menu/status/toggle`
-
-Quick toggle between open and closed status.
-
-**Required Access**: `ADMIN`, `MERCHANT_OWNER`, `MERCHANT_MANAGER`
-
-**Response**:
-```json
-{
-  "success": true,
-  "data": {
-    "merchantId": "merchant_123",
-    "businessStatus": { /* updated status */ },
-    "action": "closed"
+  "menuId": "menu-id-here",
+  "categoryId": "category-id-here",
+  "name": "Grilled Salmon",
+  "description": "Fresh Atlantic salmon",
+  "shortDescription": "Grilled salmon",
+  "basePrice": 24.99,
+  "compareAtPrice": 29.99,
+  "tax": 2.50,
+  "images": [
+    {
+      "url": "https://example.com/salmon.jpg",
+      "publicId": "salmon_123",
+      "alt": "Grilled salmon dish"
+    }
+  ],
+  "preparationTime": 20,
+  "servingSize": "1 fillet",
+  "calories": 350,
+  "tags": ["PROTEIN_RICH", "HEALTHY"],
+  "allergens": ["FISH"],
+  "spiceLevel": "MILD",
+  "dietaryInfo": {
+    "isGlutenFree": true,
+    "isKeto": true
   },
-  "message": "Restaurant closed successfully"
+  "modifierGroups": [],
+  "isSingularItem": false
+}
+```
+
+**New Fields:**
+- `tax`: Tax amount for the item
+- `menuId`: Associates item with specific menu
+- `categoryId`: Associates item with specific category
+- `isSingularItem`: Boolean for items not tied to specific menus
+
+---
+
+## Image Management Endpoints
+
+### 1. Add Image to Menu Item
+```
+POST /api/merchants/[merchantId]/menu/items/[itemId]/images
+```
+
+**Request Body:**
+```json
+{
+  "url": "https://cloudinary.com/image.jpg",
+  "publicId": "cloudinary_public_id", 
+  "alt": "Food image description",
+  "width": 800,
+  "height": 600
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "merchantId": "merchant123",
+    "itemId": "item-id",
+    "image": {
+      "url": "https://cloudinary.com/image.jpg",
+      "publicId": "cloudinary_public_id",
+      "alt": "Food image description",
+      "width": 800,
+      "height": 600
+    },
+    "totalImages": 3
+  },
+  "message": "Image added to menu item successfully"
+}
+```
+
+### 2. Delete Image from Menu Item
+```
+DELETE /api/merchants/[merchantId]/menu/items/[itemId]/images/[imageId]
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "merchantId": "merchant123",
+    "itemId": "item-id",
+    "deletedImage": {
+      "publicId": "cloudinary_public_id",
+      "url": "https://cloudinary.com/image.jpg",
+      "alt": "Food image description"
+    },
+    "remainingImages": 2
+  },
+  "message": "Image deleted from menu item successfully"
 }
 ```
 
 ---
 
-## Data Models
+## Menu Data Structure
 
-### Menu Item Structure
+### Menu Interface
 ```typescript
-interface IMenuItem {
+interface Menu {
+  id: string;
+  name: string;
+  description?: string;
+  timeSlots: {
+    startTime: string;
+    endTime: string;
+    daysOfWeek: string[];
+  }[];
+  categories: Category[];
+  isActive: boolean;
+  displayOrder: number;
+}
+```
+
+### Category Interface
+```typescript
+interface Category {
+  id: string;
+  name: string;
+  description?: string;
+  displayOrder: number;
+  menuId: string;
+  menuName: string;
+}
+```
+
+### Enhanced MenuItem Interface
+```typescript
+interface MenuItem {
   id: string;
   name: string;
   description: string;
   shortDescription?: string;
-  images: IImageObject[];
+  images: ImageObject[];
   basePrice: number;
   compareAtPrice?: number;
+  tax?: number; // New field
   isOnSale: boolean;
   saleEndDate?: Date;
   preparationTime: number;
   servingSize?: string;
   calories?: number;
   isAvailable: boolean;
-  availabilitySchedule?: IMenuAvailability;
-  inventoryTracking?: IInventoryTracking;
   tags: ItemTag[];
-  dietaryInfo: IDietaryInfo;
+  dietaryInfo: DietaryInfo;
   allergens: Allergen[];
   spiceLevel?: SpiceLevel;
   displayOrder: number;
@@ -332,120 +416,100 @@ interface IMenuItem {
   isFeatured: boolean;
   isNewItem: boolean;
   badgeText?: string;
-  modifierGroups: IModifierGroup[];
+  modifierGroups: ModifierGroup[];
   recommendedWith?: string[];
   substitutes?: string[];
+  menuId?: string; // New field
+  categoryId?: string; // New field
+  isSingularItem?: boolean; // New field
+  menuName: string;
+  categoryName: string;
   createdAt: Date;
   updatedAt: Date;
 }
 ```
 
-### Business Status Structure
-```typescript
-interface IBusinessStatus {
-  isOpen: boolean;
-  currentStatus: 'OPEN' | 'CLOSED' | 'BUSY' | 'TEMPORARILY_CLOSED' | 'PERMANENTLY_CLOSED';
-  statusMessage?: string;
-  estimatedReopenTime?: Date;
-  pausedServices: ServiceType[];
-  busyLevel: 'LOW' | 'MODERATE' | 'HIGH' | 'VERY_HIGH';
+---
+
+## Error Handling
+
+All endpoints return consistent error responses:
+
+```json
+{
+  "success": false,
+  "error": "Error message description"
 }
 ```
 
----
-
-## Error Codes
-
-| Status | Description |
-|--------|-------------|
-| 400 | Bad Request - Missing required parameters |
-| 401 | Unauthorized - Authentication required |
-| 403 | Forbidden - Insufficient permissions |
-| 404 | Not Found - Restaurant/menu/item not found |
-| 500 | Internal Server Error |
-
----
-
-## Permission Matrix
-
-| Operation | ADMIN | MERCHANT_OWNER | MERCHANT_MANAGER | MERCHANT_STAFF |
-|-----------|-------|----------------|------------------|----------------|
-| View Menu | ✅ | ✅ | ✅ | ✅ |
-| Create Menu | ✅ | ✅ | ✅ | ❌ |
-| Update Menu | ✅ | ✅ | ✅ | ❌ |
-| Delete Menu | ✅ | ✅ | ❌ | ❌ |
-| Add Items | ✅ | ✅ | ✅ | ❌ |
-| Update Items | ✅ | ✅ | ✅ | ❌ |
-| Delete Items | ✅ | ✅ | ❌ | ❌ |
-| Update Status | ✅ | ✅ | ✅ | ❌ |
+**Common HTTP Status Codes:**
+- `200`: Success
+- `400`: Bad Request (validation errors)
+- `401`: Authentication required
+- `403`: Access denied
+- `404`: Resource not found
+- `500`: Internal server error
 
 ---
 
 ## Usage Examples
 
-### Creating a Complete Menu
+### Complete Menu Setup Workflow
+
+1. **Create Menu:**
 ```javascript
-// 1. First create the restaurant menu
-const menuResponse = await fetch('/api/merchants/merchant_123/menu', {
+const menu = await fetch('/api/merchants/merchant123/menu/menus', {
   method: 'POST',
-  headers: {
-    'Authorization': 'Bearer <token>',
-    'Content-Type': 'application/json'
-  },
+  headers: { 'Authorization': 'Bearer token' },
   body: JSON.stringify({
-    restaurantInfo: { /* restaurant info */ },
-    operatingHours: { /* hours */ },
-    serviceOptions: { /* services */ }
-  })
-});
-
-// 2. Add menu items
-const itemResponse = await fetch('/api/merchants/merchant_123/menu/items', {
-  method: 'POST',
-  headers: {
-    'Authorization': 'Bearer <token>',
-    'Content-Type': 'application/json'
-  },
-  body: JSON.stringify({
-    menuId: "dinner_menu",
-    categoryId: "appetizers", 
-    item: { /* item data */ }
-  })
-});
-
-// 3. Update restaurant status
-const statusResponse = await fetch('/api/merchants/merchant_123/menu/status', {
-  method: 'PUT',
-  headers: {
-    'Authorization': 'Bearer <token>',
-    'Content-Type': 'application/json'
-  },
-  body: JSON.stringify({
-    isOpen: true,
-    currentStatus: "OPEN"
+    name: 'Breakfast',
+    description: 'Morning specialties',
+    timeSlots: [{ startTime: '06:00', endTime: '11:00', daysOfWeek: ['MONDAY', 'TUESDAY'] }]
   })
 });
 ```
 
-### Quick Status Toggle
+2. **Create Category:**
 ```javascript
-// Toggle restaurant open/close
-const toggleResponse = await fetch('/api/merchants/merchant_123/menu/status/toggle', {
-  method: 'POST',
-  headers: {
-    'Authorization': 'Bearer <token>'
-  }
+const category = await fetch('/api/merchants/merchant123/menu/categories', {
+  method: 'POST', 
+  headers: { 'Authorization': 'Bearer token' },
+  body: JSON.stringify({
+    menuId: 'menu-id',
+    name: 'Pancakes',
+    description: 'Fluffy pancakes'
+  })
 });
 ```
 
----
+3. **Add Menu Item:**
+```javascript
+const item = await fetch('/api/merchants/merchant123/menu/items', {
+  method: 'POST',
+  headers: { 'Authorization': 'Bearer token' },
+  body: JSON.stringify({
+    menuId: 'menu-id',
+    categoryId: 'category-id',
+    name: 'Blueberry Pancakes',
+    description: 'Stack of fluffy pancakes with fresh blueberries',
+    basePrice: 12.99,
+    tax: 1.30,
+    preparationTime: 15
+  })
+});
+```
 
-## Notes
+4. **Add Image:**
+```javascript
+const image = await fetch('/api/merchants/merchant123/menu/items/item-id/images', {
+  method: 'POST',
+  headers: { 'Authorization': 'Bearer token' },
+  body: JSON.stringify({
+    url: 'https://cloudinary.com/pancakes.jpg',
+    publicId: 'pancakes_123',
+    alt: 'Blueberry pancakes'
+  })
+});
+```
 
-- Menu versioning is automatically handled - version increments on any update
-- All timestamps are in ISO 8601 format
-- Images should be uploaded separately and referenced by URL/publicId
-- Menu items support complex modifier groups with pricing rules
-- Business status changes are reflected immediately
-- Operating hours support timezone-aware scheduling
-- All endpoints return consistent JSON response format 
+This comprehensive API allows full management of restaurant menu hierarchies with proper authentication, validation, and error handling. 

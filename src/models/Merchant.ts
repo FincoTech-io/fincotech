@@ -205,6 +205,7 @@ export interface IMenuItem {
   images: IImageObject[];
   basePrice: number;
   compareAtPrice?: number;
+  tax?: number;
   isOnSale: boolean;
   saleEndDate?: Date;
   preparationTime: number;
@@ -225,6 +226,9 @@ export interface IMenuItem {
   modifierGroups: IModifierGroup[];
   recommendedWith?: string[];
   substitutes?: string[];
+  menuId?: string;
+  categoryId?: string;
+  isSingularItem?: boolean;
   createdAt: Date;
   updatedAt: Date;
 }

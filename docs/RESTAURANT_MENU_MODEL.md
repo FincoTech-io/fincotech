@@ -1,263 +1,162 @@
-# Restaurant Menu Data Model
+# Restaurant Menu Model Documentation
 
 ## Overview
-Comprehensive data structure for restaurant menus supporting categories, items, modifiers, and business operations similar to Uber Eats. **This is embedded as an optional field (`restaurantMenu`) in the Merchant model for merchants with `merchantType: 'RESTAURANT'`.**
+Complete data model for restaurant menu management system embedded within the Merchant model. This includes hierarchical menu structure, categories, items, and management features.
 
 ---
 
-## Integration with Merchant Model
+## Core Model Structure
 
-The restaurant menu is embedded as an optional field in the existing Merchant model:
+### Restaurant Menu (IRestaurantMenu)
+The main container for all restaurant-related data:
 
-```typescript
-interface IMerchant extends Document {
-  // ... existing merchant fields ...
-  merchantType: 'RESTAURANT' | 'RETAIL' | 'MARKET' | 'SERVICE' | 'EDUCATIONAL' | 'ENTERTAINMENT' | 'HOTEL' | 'RENTAL' | 'TRANSPORTATION' | 'OTHER';
-  
-  // Optional restaurant menu - only for RESTAURANT type merchants
-  restaurantMenu?: IRestaurantMenu;
-  
-  // ... other merchant fields ...
-}
-```
-
-This approach ensures:
-- **Efficiency**: No additional database joins required
-- **Scalability**: Only restaurant merchants have menu data
-- **Consistency**: All merchant data stays together
-- **Performance**: Faster queries for restaurant-specific operations
-
----
-
-## Core Data Structure
-
-### Embedded Restaurant Menu Configuration
 ```typescript
 interface IRestaurantMenu {
   restaurantInfo: IRestaurantInfo;
   operatingHours: IOperatingHours;
   serviceOptions: IServiceOptions;
   businessStatus: IBusinessStatus;
-  menus: IMenu[];
+  menus: IMenu[];                    // Multiple menus (breakfast, lunch, dinner, etc.)
   orderingRules: IOrderingRules;
-  version: number;
+  version: number;                   // Auto-incremented on changes
   isActive: boolean;
 }
 ```
 
-**Note**: The `restaurantId` field is not needed since this is embedded within the Merchant document. The merchant's basic information (name, address, contact details) comes from the parent Merchant model.
+### Menu Structure (IMenu)
+Individual menus with time-based availability:
 
-### Restaurant Info (Embedded)
 ```typescript
-interface IRestaurantInfo {
-  cuisineTypes: CuisineType[];
-  priceRange: '$' | '$$' | '$$$' | '$$$$';
-  averagePreparationTime: number; // minutes
-  
-  // Restaurant-specific images (merchant basic info in parent model)
-  images: {
-    logo?: IImageObject;
-    cover?: IImageObject;
-    gallery: IImageObject[];
-  };
-  rating: {
-    average: number;
-    totalReviews: number;
-  };
+interface IMenu {
+  id: string;                       // Unique menu identifier
+  name: string;                     // "Breakfast", "Lunch", "Dinner", etc.
+  description?: string;             // Optional menu description
+  availability: IMenuAvailability;  // Time/date restrictions
+  displayOrder: number;            // Sort order for display
+  isActive: boolean;               // Enable/disable menu
+  categories: IMenuCategory[];     // Menu categories
 }
 ```
 
-**Note**: Basic merchant information like `name`, `address`, `phoneNumber`, `email` comes from the parent Merchant model and doesn't need to be duplicated here.
+### Menu Category (IMenuCategory)
+Categories within each menu:
 
-### Operating Hours
 ```typescript
-interface OperatingHours {
-  timezone: string; // e.g., "America/Vancouver"
-  schedule: {
-    [key in DayOfWeek]: DaySchedule;
-  };
-  specialHours: SpecialHours[]; // holidays, special events
-  temporaryClosures: TemporaryClosure[];
-}
-
-interface DaySchedule {
-  isOpen: boolean;
-  periods: TimePeriod[];
-  breaks?: TimePeriod[]; // lunch breaks, etc.
-}
-
-interface TimePeriod {
-  openTime: string; // "09:00"
-  closeTime: string; // "22:00"
-  serviceTypes: ServiceType[]; // ['DINE_IN', 'TAKEOUT', 'DELIVERY']
-}
-
-interface SpecialHours {
-  date: string; // "2025-12-25"
-  name: string; // "Christmas Day"
-  schedule: DaySchedule | null; // null if closed
-  isRecurring: boolean;
-}
-
-interface TemporaryClosure {
-  startDate: Date;
-  endDate: Date;
-  reason: string;
-  message?: string; // customer-facing message
-}
-
-type DayOfWeek = 'MONDAY' | 'TUESDAY' | 'WEDNESDAY' | 'THURSDAY' | 'FRIDAY' | 'SATURDAY' | 'SUNDAY';
-type ServiceType = 'DINE_IN' | 'TAKEOUT' | 'DELIVERY' | 'CURBSIDE';
-```
-
-### Service Options
-```typescript
-interface ServiceOptions {
-  dineIn: {
-    available: boolean;
-    tableReservations: boolean;
-    walkInsAccepted: boolean;
-  };
-  takeout: {
-    available: boolean;
-    estimatedWaitTime: number; // minutes
-    orderAheadTime: number; // how far in advance can orders be placed
-  };
-  delivery: {
-    available: boolean;
-    radius: number; // delivery radius in km
-    minimumOrder: number;
-    deliveryFee: number;
-    freeDeliveryThreshold?: number;
-    estimatedDeliveryTime: number; // minutes
-    deliveryZones: DeliveryZone[];
-  };
-  curbside: {
-    available: boolean;
-    instructions: string;
-  };
-}
-
-interface DeliveryZone {
-  name: string;
-  polygon: Coordinate[]; // geographical boundaries
-  deliveryFee: number;
-  estimatedTime: number;
-  minimumOrder?: number;
-}
-
-interface Coordinate {
-  latitude: number;
-  longitude: number;
+interface IMenuCategory {
+  id: string;                      // Unique category identifier
+  name: string;                    // "Appetizers", "Main Courses", etc.
+  description?: string;            // Optional category description
+  image?: IImageObject;            // Optional category image
+  displayOrder: number;           // Sort order within menu
+  isActive: boolean;              // Enable/disable category
+  isPopular?: boolean;            // Mark as popular category
+  items: IMenuItem[];             // Menu items in this category
+  maxItemsPerOrder?: number;      // Optional ordering limit
+  requiredWithOtherCategory?: string; // Dependency rules
 }
 ```
 
-### Menu Structure
+### Enhanced Menu Item (IMenuItem)
+Individual menu items with comprehensive details:
+
 ```typescript
-interface Menu {
+interface IMenuItem {
+  // Basic Information
   id: string;
-  name: string; // "Breakfast", "Lunch", "Dinner", "Drinks"
-  description?: string;
-  availability: MenuAvailability;
-  displayOrder: number;
-  isActive: boolean;
-  categories: MenuCategory[];
-}
+  name: string;
+  description: string;
+  shortDescription?: string;
+  images: IImageObject[];
 
-interface MenuAvailability {
+  // Pricing & Sales
+  basePrice: number;
+  compareAtPrice?: number;          // Original price for sales
+  tax?: number;                     // NEW: Tax amount for the item
+  isOnSale: boolean;
+  saleEndDate?: Date;
+
+  // Preparation & Serving
+  preparationTime: number;          // Minutes
+  servingSize?: string;            // "1 fillet", "2 pieces", etc.
+  calories?: number;
+
+  // Availability & Inventory
+  isAvailable: boolean;
+  availabilitySchedule?: IMenuAvailability;
+  inventoryTracking?: IInventoryTracking;
+
+  // Classification & Filtering
+  tags: ItemTag[];                 // VEGETARIAN, GLUTEN_FREE, etc.
+  dietaryInfo: IDietaryInfo;
+  allergens: Allergen[];
+  spiceLevel?: SpiceLevel;
+
+  // Display & Marketing
+  displayOrder: number;
+  isPopular: boolean;
+  isFeatured: boolean;
+  isNewItem: boolean;              // Renamed from isNew
+  badgeText?: string;              // Custom badge text
+
+  // Customization
+  modifierGroups: IModifierGroup[];
+  recommendedWith?: string[];      // Item IDs
+  substitutes?: string[];          // Item IDs
+
+  // NEW: Menu Association Fields
+  menuId?: string;                 // Associates item with specific menu
+  categoryId?: string;             // Associates item with specific category
+  isSingularItem?: boolean;        // Items not tied to specific menus
+
+  // Timestamps
+  createdAt: Date;
+  updatedAt: Date;
+}
+```
+
+---
+
+## Supporting Data Models
+
+### Image Object (IImageObject)
+Standardized image structure:
+
+```typescript
+interface IImageObject {
+  url: string;                     // Full image URL
+  publicId: string;               // Cloudinary/storage ID
+  alt: string;                    // Alt text for accessibility
+  width?: number;                 // Image width in pixels
+  height?: number;                // Image height in pixels
+}
+```
+
+### Menu Availability (IMenuAvailability)
+Time-based availability restrictions:
+
+```typescript
+interface IMenuAvailability {
   timeRestrictions: {
-    [key in DayOfWeek]: TimePeriod[];
+    [key in DayOfWeek]: ITimePeriod[];
   };
   dateRestrictions?: {
     startDate?: Date;
     endDate?: Date;
   };
 }
-```
 
-### Categories
-```typescript
-interface MenuCategory {
-  id: string;
-  name: string; // "Appetizers", "Main Courses", "Desserts"
-  description?: string;
-  image?: ImageObject;
-  displayOrder: number;
-  isActive: boolean;
-  isPopular?: boolean;
-  items: MenuItem[];
-  
-  // Category-specific settings
-  maxItemsPerOrder?: number;
-  requiredWithOtherCategory?: string; // category ID
+interface ITimePeriod {
+  openTime: string;               // "09:00"
+  closeTime: string;              // "22:00"
+  serviceTypes: ServiceType[];    // DINE_IN, TAKEOUT, DELIVERY
 }
 ```
 
-### Menu Items
+### Dietary Information (IDietaryInfo)
+Comprehensive dietary classification:
+
 ```typescript
-interface MenuItem {
-  id: string;
-  name: string;
-  description: string;
-  shortDescription?: string; // for mobile displays
-  images: ImageObject[];
-  
-  // Pricing
-  basePrice: number;
-  compareAtPrice?: number; // original price if on sale
-  isOnSale: boolean;
-  saleEndDate?: Date;
-  
-  // Item Properties
-  preparationTime: number; // minutes
-  servingSize?: string; // "Serves 2-3"
-  calories?: number;
-  
-  // Availability
-  isAvailable: boolean;
-  availabilitySchedule?: MenuAvailability;
-  inventoryTracking?: {
-    trackInventory: boolean;
-    currentStock?: number;
-    lowStockThreshold?: number;
-  };
-  
-  // Classification
-  tags: ItemTag[];
-  dietaryInfo: DietaryInfo;
-  allergens: Allergen[];
-  spiceLevel?: SpiceLevel;
-  
-  // Display & Marketing
-  displayOrder: number;
-  isPopular: boolean;
-  isFeatured: boolean;
-  isNewItem: boolean;
-  badgeText?: string; // "Chef's Special", "Limited Time"
-  
-  // Modifiers
-  modifierGroups: ModifierGroup[];
-  
-  // Related Items
-  recommendedWith?: string[]; // item IDs
-  substitutes?: string[]; // item IDs for out-of-stock alternatives
-  
-  // Metadata
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-interface ImageObject {
-  url: string;
-  publicId: string;
-  alt: string;
-  width?: number;
-  height?: number;
-}
-
-type ItemTag = 'VEGETARIAN' | 'VEGAN' | 'GLUTEN_FREE' | 'KETO' | 'LOW_CARB' | 'PROTEIN_RICH' | 'SPICY' | 'COLD' | 'HOT' | 'SIGNATURE' | 'HEALTHY';
-
-interface DietaryInfo {
+interface IDietaryInfo {
   isVegetarian: boolean;
   isVegan: boolean;
   isGlutenFree: boolean;
@@ -267,466 +166,365 @@ interface DietaryInfo {
   isHalal: boolean;
   isKosher: boolean;
 }
-
-type Allergen = 'NUTS' | 'DAIRY' | 'EGGS' | 'SOY' | 'WHEAT' | 'FISH' | 'SHELLFISH' | 'SESAME';
-type SpiceLevel = 'MILD' | 'MEDIUM' | 'HOT' | 'EXTRA_HOT';
 ```
 
-### Modifiers System
+### Modifier System
+Complex customization options:
+
 ```typescript
-interface ModifierGroup {
+interface IModifierGroup {
   id: string;
-  name: string; // "Size", "Add-ons", "Sauce Choice"
+  name: string;                   // "Size", "Toppings", "Cooking Style"
   description?: string;
-  type: ModifierType;
-  
-  // Selection Rules
-  minSelections: number; // 0 for optional, 1+ for required
-  maxSelections: number; // 1 for single choice, unlimited for multiple
+  type: ModifierType;            // SINGLE_CHOICE, MULTIPLE_CHOICE, etc.
+  minSelections: number;
+  maxSelections: number;
   isRequired: boolean;
-  
-  // Display
   displayOrder: number;
-  isCollapsible: boolean; // can be collapsed in UI
-  
-  // Options
-  modifiers: Modifier[];
+  isCollapsible: boolean;
+  modifiers: IModifier[];
 }
 
-interface Modifier {
+interface IModifier {
   id: string;
-  name: string;
+  name: string;                  // "Large", "Extra Cheese", "Well Done"
   description?: string;
-  
-  // Pricing
-  priceModifier: number; // positive for add-on cost, negative for discount
-  priceType: PriceType;
-  
-  // Availability
+  priceModifier: number;         // Price change (+2.50, -1.00)
+  priceType: PriceType;         // FIXED, PERCENTAGE, REPLACEMENT
   isAvailable: boolean;
-  isDefault: boolean; // pre-selected option
-  
-  // Inventory (for physical add-ons)
-  inventoryTracking?: {
-    trackInventory: boolean;
-    currentStock?: number;
-    lowStockThreshold?: number;
-  };
-  
-  // Dietary Impact
+  isDefault: boolean;
+  inventoryTracking?: IInventoryTracking;
   allergenInfo?: Allergen[];
-  calorieImpact?: number; // additional calories
-  
-  // Display
+  calorieImpact?: number;
   displayOrder: number;
-  image?: ImageObject;
+  image?: IImageObject;
 }
-
-type ModifierType = 'SINGLE_CHOICE' | 'MULTIPLE_CHOICE' | 'QUANTITY' | 'TEXT_INPUT';
-type PriceType = 'FIXED' | 'PERCENTAGE' | 'REPLACEMENT';
 ```
 
-### Business Rules
+### Restaurant Information (IRestaurantInfo)
+Basic restaurant metadata:
+
 ```typescript
-interface OrderingRules {
-  minimumOrder: {
-    amount: number;
-    serviceTypes: ServiceType[];
+interface IRestaurantInfo {
+  cuisineTypes: CuisineType[];     // ITALIAN, CHINESE, MEXICAN, etc.
+  priceRange: '$' | '$$' | '$$$' | '$$$$';
+  averagePreparationTime: number;  // Overall average in minutes
+  images: {
+    logo?: IImageObject;
+    cover?: IImageObject;
+    gallery: IImageObject[];
   };
-  maximumOrder?: {
-    amount?: number;
-    itemCount?: number;
-  };
-  advanceOrderTime: {
-    minimum: number; // minutes
-    maximum: number; // days converted to minutes
-  };
-  paymentMethods: PaymentMethod[];
-  tips: {
-    allowTips: boolean;
-    suggestedPercentages: number[];
-    minimumTip?: number;
-    maximumTip?: number;
-  };
-  cancellationPolicy: {
-    allowCancellation: boolean;
-    timeLimit: number; // minutes before pickup/delivery
-    refundPolicy: string;
+  rating: {
+    average: number;               // 0.0 - 5.0
+    totalReviews: number;
   };
 }
-
-type PaymentMethod = 'CREDIT_CARD' | 'DEBIT_CARD' | 'CASH' | 'DIGITAL_WALLET' | 'LOYALTY_POINTS';
 ```
 
-### Business Status
+### Business Status (IBusinessStatus)
+Real-time operational status:
+
 ```typescript
-interface BusinessStatus {
+interface IBusinessStatus {
   isOpen: boolean;
-  currentStatus: RestaurantStatus;
-  statusMessage?: string; // "Busy - longer wait times"
+  currentStatus: RestaurantStatus;  // OPEN, CLOSED, BUSY, etc.
+  statusMessage?: string;           // Custom status message
   estimatedReopenTime?: Date;
-  pausedServices: ServiceType[];
-  busyLevel: BusyLevel;
+  pausedServices: ServiceType[];    // Temporarily disabled services
+  busyLevel: BusyLevel;            // LOW, MODERATE, HIGH, VERY_HIGH
 }
-
-type RestaurantStatus = 'OPEN' | 'CLOSED' | 'BUSY' | 'TEMPORARILY_CLOSED' | 'PERMANENTLY_CLOSED';
-type BusyLevel = 'LOW' | 'MODERATE' | 'HIGH' | 'VERY_HIGH';
 ```
 
-### Additional Types
+### Operating Hours (IOperatingHours)
+Comprehensive scheduling system:
+
 ```typescript
+interface IOperatingHours {
+  timezone: string;                // "America/Vancouver"
+  schedule: {
+    [key in DayOfWeek]: IDaySchedule;
+  };
+  specialHours: ISpecialHours[];   // Holidays, special events
+  temporaryClosures: ITemporaryClosure[];
+}
+
+interface IDaySchedule {
+  isOpen: boolean;
+  periods: ITimePeriod[];          // Multiple periods per day
+  breaks?: ITimePeriod[];          // Break periods
+}
+```
+
+### Service Options (IServiceOptions)
+Available service types and configurations:
+
+```typescript
+interface IServiceOptions {
+  dineIn: {
+    available: boolean;
+    tableReservations: boolean;
+    walkInsAccepted: boolean;
+  };
+  takeout: {
+    available: boolean;
+    estimatedWaitTime: number;      // Minutes
+    orderAheadTime: number;         // Minutes advance notice
+  };
+  delivery: {
+    available: boolean;
+    radius: number;                 // Delivery radius in km/miles
+    minimumOrder: number;           // Minimum order amount
+    deliveryFee: number;
+    freeDeliveryThreshold?: number;
+    estimatedDeliveryTime: number;  // Minutes
+    deliveryZones: IDeliveryZone[];
+  };
+  curbside: {
+    available: boolean;
+    instructions: string;
+  };
+}
+```
+
+---
+
+## Type Definitions
+
+### Enums and Union Types
+```typescript
+// Days of the week
+type DayOfWeek = 'MONDAY' | 'TUESDAY' | 'WEDNESDAY' | 'THURSDAY' | 'FRIDAY' | 'SATURDAY' | 'SUNDAY';
+
+// Service types
+type ServiceType = 'DINE_IN' | 'TAKEOUT' | 'DELIVERY' | 'CURBSIDE';
+
+// Restaurant status
+type RestaurantStatus = 'OPEN' | 'CLOSED' | 'BUSY' | 'TEMPORARILY_CLOSED' | 'PERMANENTLY_CLOSED';
+
+// Busy levels
+type BusyLevel = 'LOW' | 'MODERATE' | 'HIGH' | 'VERY_HIGH';
+
+// Modifier types
+type ModifierType = 'SINGLE_CHOICE' | 'MULTIPLE_CHOICE' | 'QUANTITY' | 'TEXT_INPUT';
+
+// Price modification types
+type PriceType = 'FIXED' | 'PERCENTAGE' | 'REPLACEMENT';
+
+// Item tags
+type ItemTag = 'VEGETARIAN' | 'VEGAN' | 'GLUTEN_FREE' | 'KETO' | 'LOW_CARB' | 'PROTEIN_RICH' | 'SPICY' | 'COLD' | 'HOT' | 'SIGNATURE' | 'HEALTHY';
+
+// Allergens
+type Allergen = 'NUTS' | 'DAIRY' | 'EGGS' | 'SOY' | 'WHEAT' | 'FISH' | 'SHELLFISH' | 'SESAME';
+
+// Spice levels
+type SpiceLevel = 'MILD' | 'MEDIUM' | 'HOT' | 'EXTRA_HOT';
+
+// Payment methods
+type PaymentMethod = 'CREDIT_CARD' | 'DEBIT_CARD' | 'CASH' | 'DIGITAL_WALLET' | 'LOYALTY_POINTS';
+
+// Cuisine types
 type CuisineType = 'ITALIAN' | 'CHINESE' | 'MEXICAN' | 'INDIAN' | 'AMERICAN' | 'JAPANESE' | 'THAI' | 'FRENCH' | 'MEDITERRANEAN' | 'FAST_FOOD' | 'COFFEE' | 'DESSERTS' | 'HEALTHY' | 'BBQ' | 'SEAFOOD' | 'VEGETARIAN' | 'PIZZA' | 'BURGERS' | 'SUSHI';
 ```
 
 ---
 
-## Example Implementation
+## Data Relationships
 
-### Sample Merchant with Restaurant Menu
-```typescript
-const sampleMerchantWithMenu: IMerchant = {
-  // Standard merchant fields
-  _id: "merchant_123",
-  phoneNumber: "+1234567890",
-  email: "orders@marios.com",
-  merchantName: "Mario's Italian Kitchen",
-  merchantType: 'RESTAURANT',
-  merchantAddress: "123 Main St, Vancouver, BC V6B 1A1",
-  merchantLicense: "LICENSE_12345",
-  merchantStaff: [{
-    name: "Mario Rossi",
-    role: 'ADMIN',
-    email: "mario@marios.com",
-    phoneNumber: "+1234567890",
-    userId: "user_123",
-    pushToken: []
-  }],
-  verificationStatus: 'VERIFIED',
-  currentRegion: "Vancouver",
-  currentAddress: "123 Main St, Vancouver, BC V6B 1A1",
-  hasUnreadNotifications: false,
-  notifications: [],
-  
-  // Embedded restaurant menu
-  restaurantMenu: {
-    restaurantInfo: {
-      cuisineTypes: ['ITALIAN'],
-      priceRange: '$$',
-      averagePreparationTime: 25,
-      images: {
-        logo: { url: "...", publicId: "...", alt: "Mario's Logo" },
-        cover: { url: "...", publicId: "...", alt: "Restaurant Interior" },
-        gallery: []
-      },
-      rating: {
-        average: 4.5,
-        totalReviews: 324
-      }
-    },
-    
-    operatingHours: {
-      timezone: "America/Vancouver",
-      schedule: {
-        MONDAY: {
-          isOpen: true,
-          periods: [{
-            openTime: "11:00",
-            closeTime: "22:00", 
-            serviceTypes: ['DINE_IN', 'TAKEOUT', 'DELIVERY']
-          }]
-        },
-        TUESDAY: {
-          isOpen: true,
-          periods: [{
-            openTime: "11:00",
-            closeTime: "22:00", 
-            serviceTypes: ['DINE_IN', 'TAKEOUT', 'DELIVERY']
-          }]
-        },
-        WEDNESDAY: {
-          isOpen: true,
-          periods: [{
-            openTime: "11:00",
-            closeTime: "22:00", 
-            serviceTypes: ['DINE_IN', 'TAKEOUT', 'DELIVERY']
-          }]
-        },
-        THURSDAY: {
-          isOpen: true,
-          periods: [{
-            openTime: "11:00",
-            closeTime: "22:00", 
-            serviceTypes: ['DINE_IN', 'TAKEOUT', 'DELIVERY']
-          }]
-        },
-        FRIDAY: {
-          isOpen: true,
-          periods: [{
-            openTime: "11:00",
-            closeTime: "23:00", 
-            serviceTypes: ['DINE_IN', 'TAKEOUT', 'DELIVERY']
-          }]
-        },
-        SATURDAY: {
-          isOpen: true,
-          periods: [{
-            openTime: "11:00",
-            closeTime: "23:00", 
-            serviceTypes: ['DINE_IN', 'TAKEOUT', 'DELIVERY']
-          }]
-        },
-        SUNDAY: {
-          isOpen: true,
-          periods: [{
-            openTime: "12:00",
-            closeTime: "21:00", 
-            serviceTypes: ['DINE_IN', 'TAKEOUT', 'DELIVERY']
-          }]
-        }
-      },
-      specialHours: [],
-      temporaryClosures: []
-    },
-    
-    serviceOptions: {
-      dineIn: {
-        available: true,
-        tableReservations: true,
-        walkInsAccepted: true
-      },
-      takeout: {
-        available: true,
-        estimatedWaitTime: 15,
-        orderAheadTime: 120
-      },
-      delivery: {
-        available: true,
-        radius: 5,
-        minimumOrder: 25,
-        deliveryFee: 3.99,
-        freeDeliveryThreshold: 50,
-        estimatedDeliveryTime: 35,
-        deliveryZones: []
-      },
-      curbside: {
-        available: false,
-        instructions: ""
-      }
-    },
-    
-    businessStatus: {
-      isOpen: true,
-      currentStatus: 'OPEN',
-      pausedServices: [],
-      busyLevel: 'MODERATE'
-    },
-    
-    menus: [{
-      id: "dinner_menu",
-      name: "Dinner Menu",
-      description: "Available all day",
-      availability: {
-        timeRestrictions: {
-          MONDAY: [{ openTime: "11:00", closeTime: "22:00", serviceTypes: ['DINE_IN', 'TAKEOUT', 'DELIVERY'] }],
-          TUESDAY: [{ openTime: "11:00", closeTime: "22:00", serviceTypes: ['DINE_IN', 'TAKEOUT', 'DELIVERY'] }],
-          WEDNESDAY: [{ openTime: "11:00", closeTime: "22:00", serviceTypes: ['DINE_IN', 'TAKEOUT', 'DELIVERY'] }],
-          THURSDAY: [{ openTime: "11:00", closeTime: "22:00", serviceTypes: ['DINE_IN', 'TAKEOUT', 'DELIVERY'] }],
-          FRIDAY: [{ openTime: "11:00", closeTime: "23:00", serviceTypes: ['DINE_IN', 'TAKEOUT', 'DELIVERY'] }],
-          SATURDAY: [{ openTime: "11:00", closeTime: "23:00", serviceTypes: ['DINE_IN', 'TAKEOUT', 'DELIVERY'] }],
-          SUNDAY: [{ openTime: "12:00", closeTime: "21:00", serviceTypes: ['DINE_IN', 'TAKEOUT', 'DELIVERY'] }]
-        }
-      },
-      displayOrder: 1,
-      isActive: true,
-      categories: [{
-        id: "appetizers",
-        name: "Appetizers", 
-        description: "Start your meal right",
-        displayOrder: 1,
-        isActive: true,
-        items: [{
-          id: "bruschetta",
-          name: "Classic Bruschetta",
-          description: "Toasted bread topped with fresh tomatoes, basil, and garlic",
-          images: [{ url: "...", publicId: "...", alt: "Bruschetta" }],
-          basePrice: 12.99,
-          isOnSale: false,
-          preparationTime: 10,
-          isAvailable: true,
-          tags: ['VEGETARIAN'],
-          dietaryInfo: {
-            isVegetarian: true,
-            isVegan: false,
-            isGlutenFree: false,
-            isKeto: false,
-            isDairyFree: false,
-            isNutFree: true,
-            isHalal: true,
-            isKosher: false
-          },
-          allergens: ['WHEAT'],
-          displayOrder: 1,
-          isPopular: true,
-          isFeatured: false,
-          isNewItem: false,
-          modifierGroups: [{
-            id: "bread_type",
-            name: "Bread Choice",
-            type: 'SINGLE_CHOICE',
-            minSelections: 1,
-            maxSelections: 1,
-            isRequired: true,
-            displayOrder: 1,
-            isCollapsible: false,
-            modifiers: [
-              {
-                id: "regular_bread",
-                name: "Regular Bread",
-                priceModifier: 0,
-                priceType: 'FIXED',
-                isAvailable: true,
-                isDefault: true,
-                displayOrder: 1
-              },
-              {
-                id: "gluten_free_bread", 
-                name: "Gluten-Free Bread",
-                priceModifier: 2.00,
-                priceType: 'FIXED',
-                isAvailable: true,
-                isDefault: false,
-                displayOrder: 2
-              }
-            ]
-          }],
-          createdAt: new Date(),
-          updatedAt: new Date()
-        }]
-      }]
-    }],
-    
-    orderingRules: {
-      minimumOrder: {
-        amount: 15,
-        serviceTypes: ['TAKEOUT', 'DELIVERY']
-      },
-      advanceOrderTime: {
-        minimum: 30,
-        maximum: 10080 // 7 days in minutes
-      },
-      paymentMethods: ['CREDIT_CARD', 'DEBIT_CARD', 'DIGITAL_WALLET'],
-      tips: {
-        allowTips: true,
-        suggestedPercentages: [15, 18, 20, 25]
-      },
-      cancellationPolicy: {
-        allowCancellation: true,
-        timeLimit: 30,
-        refundPolicy: "Full refund if cancelled 30+ minutes before pickup/delivery"
-      }
-    },
-    
-    version: 1,
-    isActive: true
-  },
-  
-  // Standard merchant fields continued
-  notificationPreferences: {
-    paymentReceived: { roles: 'ADMIN', sms: true, push: true, email: true },
-    paymentSent: { roles: 'ADMIN', sms: true, push: true, email: true },
-    systemUpdates: { roles: 'ADMIN', sms: true, push: true, email: true },
-    security: { roles: 'ADMIN', sms: true, push: true, email: true },
-    promotions: { roles: 'ADMIN', sms: false, push: true, email: false }
-  },
-  createdAt: new Date(),
-  updatedAt: new Date()
-};
+### Hierarchical Structure
+```
+Restaurant Menu
+├── Restaurant Info
+├── Operating Hours
+├── Service Options
+├── Business Status
+├── Ordering Rules
+└── Menus []
+    └── Categories []
+        └── Items []
+            └── Modifier Groups []
+                └── Modifiers []
 ```
 
----
+### NEW: Menu Association Fields
+The enhanced model now supports better item organization:
 
-## Database Schema Considerations
+1. **Traditional Hierarchy**: Items belong to Categories, Categories belong to Menus
+2. **Direct Association**: Items can reference `menuId` and `categoryId` directly
+3. **Singular Items**: Items with `isSingularItem: true` can exist independently
 
-### MongoDB Schema (Embedded in Merchant)
-The restaurant menu is embedded as an optional field in the existing Merchant model:
-
-```typescript
-const MerchantSchema = new Schema<IMerchant>({
-  // ... existing merchant fields ...
-  
-  // Optional restaurant menu - only for RESTAURANT type merchants
-  restaurantMenu: {
-    type: {
-      restaurantInfo: { /* detailed schema */ },
-      operatingHours: { /* detailed schema */ },
-      serviceOptions: { /* detailed schema */ },
-      businessStatus: { /* detailed schema */ },
-      menus: [{ /* detailed menu schema */ }],
-      orderingRules: { /* detailed rules schema */ },
-      version: { type: Number, default: 1 },
-      isActive: { type: Boolean, default: true }
-    },
-    required: false
-  },
-  
-  // ... other merchant fields ...
-});
-
-// Indexes for performance
-MerchantSchema.index({ merchantType: 1 });
-MerchantSchema.index({ 'restaurantMenu.businessStatus.isOpen': 1 });
-MerchantSchema.index({ 'restaurantMenu.menus.categories.items.isAvailable': 1 });
-MerchantSchema.index({ 'restaurantMenu.menus.categories.items.tags': 1 });
-MerchantSchema.index({ 'restaurantMenu.isActive': 1 });
-```
-
-### Query Examples
-
-**Get all restaurant merchants with active menus:**
-```typescript
-const restaurants = await Merchant.find({
-  merchantType: 'RESTAURANT',
-  'restaurantMenu.isActive': true
-});
-```
-
-**Get available menu items for a restaurant:**
-```typescript
-const restaurant = await Merchant.findById(merchantId, {
-  'restaurantMenu.menus.categories.items': {
-    $elemMatch: { isAvailable: true }
-  }
-});
-```
-
-**Update menu item availability:**
-```typescript
-await Merchant.updateOne(
-  { _id: merchantId, 'restaurantMenu.menus.categories.items.$.isAvailable': false }
-);
-```
-
----
-
-## Benefits of Embedded Approach
-
-✅ **Performance**: No joins required, faster queries
-✅ **Consistency**: All merchant data in one document
-✅ **Efficiency**: Only restaurants have menu data
-✅ **Scalability**: Document-based approach scales well
-✅ **Atomic Updates**: Menu changes are atomic with merchant updates
-✅ **Simplified Queries**: Single collection queries for restaurant operations
+### Cross-References
+- Items can reference other items via `recommendedWith` and `substitutes`
+- Categories can require other categories via `requiredWithOtherCategory`
+- Modifier groups can be shared across multiple items
+- Images are embedded objects with external storage references
 
 ---
 
 ## Key Features
 
-✅ **Hierarchical Structure**: Restaurant → Menu → Category → Item → Modifiers
-✅ **Flexible Operating Hours**: Daily schedules, special hours, temporary closures  
-✅ **Multiple Service Types**: Dine-in, takeout, delivery, curbside
-✅ **Rich Item Information**: Dietary info, allergens, nutrition, preparation time
-✅ **Advanced Modifiers**: Single/multiple choice, quantity, pricing options
-✅ **Business Intelligence**: Popularity tracking, featured items, sales data
-✅ **Inventory Management**: Stock tracking for items and modifiers
-✅ **Scheduling**: Time-based availability for menus and items
-✅ **Multi-location Ready**: Designed to scale for restaurant chains 
+### NEW Features Added
+1. **Enhanced Menu Management**: Full CRUD operations on menus and categories
+2. **Tax Field**: Direct tax amount storage on menu items
+3. **Menu Association**: Items can be directly associated with menus/categories
+4. **Singular Items**: Support for items not tied to specific menu structure
+5. **Image Management**: Dedicated endpoints for adding/removing item images
+6. **Improved Filtering**: Enhanced query capabilities with multiple filter options
+
+### Version Control
+- `version` field auto-increments on any menu changes
+- Enables cache invalidation and synchronization
+- Tracks menu evolution over time
+
+### Performance Optimizations
+- Lean queries for list operations
+- Embedded structure reduces database joins
+- Indexed fields for common queries
+- Image URLs for CDN optimization
+
+### Validation Rules
+- Required fields marked in interfaces
+- Enum validation for categorical data
+- Price validation (positive numbers)
+- Time format validation (HH:MM)
+- Image URL validation
+
+### Extensibility
+- Metadata fields for custom data
+- Flexible modifier system
+- Expandable enum types
+- Optional fields for gradual adoption
+
+---
+
+## Database Storage
+
+### MongoDB Schema Considerations
+```javascript
+// Embedded in Merchant model
+{
+  _id: ObjectId,
+  merchantType: "RESTAURANT",
+  restaurantMenu: {
+    // Full IRestaurantMenu structure
+    menus: [
+      {
+        id: "uuid",
+        name: "Breakfast",
+        categories: [
+          {
+            id: "uuid",
+            name: "Pancakes",
+            items: [
+              {
+                id: "uuid",
+                name: "Blueberry Pancakes",
+                basePrice: 12.99,
+                tax: 1.30,              // NEW
+                menuId: "menu-uuid",    // NEW
+                categoryId: "cat-uuid", // NEW
+                isSingularItem: false,  // NEW
+                // ... other fields
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    version: 3
+  }
+}
+```
+
+### Indexing Strategy
+```javascript
+// Recommended indexes for performance
+db.merchants.createIndex({ "merchantType": 1 });
+db.merchants.createIndex({ "restaurantMenu.isActive": 1 });
+db.merchants.createIndex({ "restaurantMenu.menus.id": 1 });
+db.merchants.createIndex({ "restaurantMenu.menus.categories.id": 1 });
+db.merchants.createIndex({ "restaurantMenu.menus.categories.items.id": 1 });
+```
+
+---
+
+## Usage Examples
+
+### Creating Menu Hierarchy
+```javascript
+// 1. Create menu
+const menu = {
+  id: "breakfast-menu",
+  name: "Breakfast",
+  description: "Morning favorites",
+  availability: {
+    timeRestrictions: {
+      MONDAY: [{ openTime: "06:00", closeTime: "11:00", serviceTypes: ["DINE_IN", "TAKEOUT"] }],
+      TUESDAY: [{ openTime: "06:00", closeTime: "11:00", serviceTypes: ["DINE_IN", "TAKEOUT"] }]
+    }
+  },
+  displayOrder: 1,
+  isActive: true,
+  categories: []
+};
+
+// 2. Add category
+const category = {
+  id: "pancakes-category",
+  name: "Pancakes & Waffles",
+  description: "Fluffy goodness",
+  displayOrder: 1,
+  isActive: true,
+  items: []
+};
+
+// 3. Add menu item with new fields
+const item = {
+  id: "blueberry-pancakes",
+  name: "Blueberry Pancakes",
+  description: "Stack of fluffy pancakes with fresh Maine blueberries",
+  basePrice: 12.99,
+  tax: 1.30,                    // NEW: Direct tax amount
+  menuId: "breakfast-menu",     // NEW: Direct menu reference
+  categoryId: "pancakes-category", // NEW: Direct category reference
+  isSingularItem: false,        // NEW: Part of menu hierarchy
+  preparationTime: 15,
+  tags: ["VEGETARIAN"],
+  dietaryInfo: {
+    isVegetarian: true,
+    isVegan: false,
+    isGlutenFree: false
+  },
+  images: [
+    {
+      url: "https://cdn.example.com/blueberry-pancakes.jpg",
+      publicId: "pancakes_blueberry_001",
+      alt: "Stack of blueberry pancakes with butter and syrup",
+      width: 800,
+      height: 600
+    }
+  ],
+  modifierGroups: [
+    {
+      id: "syrup-choice",
+      name: "Syrup Selection",
+      type: "SINGLE_CHOICE",
+      minSelections: 1,
+      maxSelections: 1,
+      isRequired: false,
+      modifiers: [
+        {
+          id: "maple-syrup",
+          name: "Pure Maple Syrup",
+          priceModifier: 2.00,
+          priceType: "FIXED",
+          isDefault: true
+        }
+      ]
+    }
+  ],
+  createdAt: new Date(),
+  updatedAt: new Date()
+};
+```
+
+This comprehensive model supports complex restaurant operations while maintaining flexibility for different business needs and menu structures. 
