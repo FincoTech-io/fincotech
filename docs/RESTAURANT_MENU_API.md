@@ -516,84 +516,177 @@ This comprehensive API allows full management of restaurant menu hierarchies wit
 
 ## Image Upload Integration
 
-The Menu API automatically handles image uploads to Cloudinary with the following features:
+The Menu API uses a **two-step process** to handle large images and avoid 413 (Payload Too Large) errors:
 
-### **Folder Structure**
-Images are uploaded to: `fincotech/Merchant/[merchantId]/[itemId]`
+### **Step 1: Upload Images Separately**
+**Endpoint:** `POST /api/merchants/[merchantId]/menu/images`
 
-### **Supported Image Formats**
-- **Base64 Data URLs**: `data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAYABgAAD...`
-- **Raw Base64**: Long base64 strings (detected if > 1000 characters)
-- **Existing URLs**: HTTP/HTTPS URLs are preserved as-is
-- **File URLs**: `file://` URLs should be converted to base64 by frontend
+Upload all menu item images first and get back Cloudinary URLs.
+
+**Request Format:**
+```javascript
+{
+  "images": [
+    {
+      "itemName": "Garlic Dip",
+      "itemId": "optional-custom-id", // Optional: will generate if not provided
+      "base64": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAYABgAAD..."
+    },
+    {
+      "itemName": "Chicken Wings",
+      "base64": "/9j/4AAQSkZJRgABAQEAYABgAAD..." // Can be with or without data URL prefix
+    }
+  ]
+}
+```
+
+**Response:**
+```javascript
+{
+  "success": true,
+  "data": {
+    "merchantId": "683beca56d412c1d572afdda",
+    "uploadedImages": [
+      {
+        "itemId": "item_1748891586702_0",
+        "itemName": "Garlic Dip",
+        "originalIndex": 0,
+        "url": "https://res.cloudinary.com/yourcloud/image/upload/.../fincotech/Merchant/683beca56d412c1d572afdda/item_1748891586702_0/Garlic_Dip_image.jpg",
+        "publicId": "fincotech/Merchant/683beca56d412c1d572afdda/item_1748891586702_0/Garlic_Dip_image",
+        "uploadedAt": "2024-01-01T00:00:00.000Z"
+      }
+    ],
+    "summary": {
+      "total": 1,
+      "successful": 1,
+      "failed": 0
+    }
+  },
+  "message": "Successfully uploaded 1 of 1 images"
+}
+```
+
+### **Step 2: Save Menu with Image URLs**
+**Endpoint:** `PUT /api/merchants/[merchantId]/menu`
+
+Send your menu data with the Cloudinary URLs from Step 1.
+
+**Request Format:**
+```javascript
+{
+  "merchantId": "683beca56d412c1d572afdda",
+  "merchantName": "Nandos",
+  "businessHours": { /* ... */ },
+  "menus": [ /* ... */ ],
+  "categories": ["Appetizers", "Dips"],
+  "menuItems": [
+    {
+      "name": "Garlic Dip",
+      "price": "1.25",
+      "tax": "0.00",
+      "image": "https://res.cloudinary.com/yourcloud/image/upload/.../Garlic_Dip_image.jpg", // URL from Step 1
+      "imagePublicId": "fincotech/Merchant/683beca56d412c1d572afdda/item_1748891586702_0/Garlic_Dip_image", // From Step 1
+      "categories": ["Dips"],
+      "isSingularItem": true
+    }
+  ]
+}
+```
 
 ### **Frontend Integration Example**
 ```javascript
-// Convert file to base64 for upload
-const convertImageToBase64 = (imageUri) => {
-  return new Promise((resolve, reject) => {
-    if (imageUri.startsWith('file://')) {
-      // For React Native, use expo-file-system or similar
-      FileSystem.readAsStringAsync(imageUri, {
-        encoding: FileSystem.EncodingType.Base64,
-      }).then(base64 => {
-        resolve(`data:image/jpeg;base64,${base64}`);
-      }).catch(reject);
-    } else {
-      resolve(imageUri); // Already in correct format
-    }
+// Step 1: Upload images first
+const uploadImages = async (menuItems, merchantId) => {
+  const itemsWithImages = menuItems.filter(item => 
+    item.image && (item.image.startsWith('file://') || item.image.startsWith('data:'))
+  );
+  
+  if (itemsWithImages.length === 0) {
+    return []; // No images to upload
+  }
+
+  const imagesToUpload = itemsWithImages.map((item, index) => ({
+    itemName: item.name,
+    itemId: `item_${Date.now()}_${index}`,
+    base64: item.image // Should be base64 or data URL
+  }));
+
+  const response = await fetch(`/api/merchants/${merchantId}/menu/images`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${yourJWTToken}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ images: imagesToUpload }),
+    timeout: 60000 // 60 seconds for image uploads
   });
+
+  const result = await response.json();
+  if (!result.success) {
+    throw new Error(result.error);
+  }
+
+  return result.data.uploadedImages;
 };
 
-// Save menu with extended timeout for image uploads
-const saveMenuData = async (completeMenuData) => {
+// Step 2: Save menu with uploaded image URLs
+const saveCompleteMenu = async (menuData, merchantId) => {
   try {
+    // 1. Upload images first
+    console.log('📤 Uploading images...');
+    const uploadedImages = await uploadImages(menuData.menuItems, merchantId);
+    
+    // 2. Update menu items with Cloudinary URLs
+    const updatedMenuItems = menuData.menuItems.map(item => {
+      const uploadedImage = uploadedImages.find(img => img.itemName === item.name);
+      if (uploadedImage && !uploadedImage.error) {
+        return {
+          ...item,
+          image: uploadedImage.url,
+          imagePublicId: uploadedImage.publicId,
+          imageUploadedAt: uploadedImage.uploadedAt
+        };
+      }
+      return item;
+    });
+
+    // 3. Save menu data with image URLs
+    console.log('💾 Saving menu data...');
     const response = await fetch(`/api/merchants/${merchantId}/menu`, {
       method: 'PUT',
       headers: {
         'Authorization': `Bearer ${yourJWTToken}`,
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify(completeMenuData),
-      // Extended timeout for image uploads (60 seconds)
-      timeout: 60000
+      body: JSON.stringify({
+        ...menuData,
+        menuItems: updatedMenuItems
+      }),
+      timeout: 30000 // Reduced timeout since no image processing
     });
 
     const result = await response.json();
-    
     if (result.success) {
-      console.log('✅ Menu saved successfully!', result.data);
+      console.log('✅ Menu saved successfully!');
       return result.data;
     } else {
-      console.error('❌ Error saving menu:', result.error);
       throw new Error(result.error);
     }
   } catch (error) {
-    console.error('❌ Network error:', error);
+    console.error('❌ Error saving menu:', error);
     throw error;
   }
 };
-
-// Example menu item with image
-const menuItem = {
-  name: "Garlic Dip",
-  price: "1.25",
-  tax: "0.00",
-  image: await convertImageToBase64(selectedImageUri), // Convert to base64
-  categories: ["Dips"]
-};
 ```
 
-### **Timeout Optimization**
-- **API Timeout**: 60 seconds (for image uploads)
-- **Frontend Timeout**: Set to 60+ seconds to match API
-- **Sequential Processing**: Images are uploaded one by one to avoid overwhelming the connection
-- **Progress Logging**: Server logs upload progress for debugging
+### **Folder Structure**
+Images are uploaded to: `fincotech/Merchant/[merchantId]/[itemId]`
 
-### **Performance Tips**
-- **Compress images** on frontend before sending (you're already doing this ✅)
-- **Limit image size** to reasonable dimensions (800x600 recommended)
-- **Use JPG format** for better compression
-- **Consider batch sizes** - if you have many items with images, consider saving in smaller batches
+### **Benefits of Two-Step Process**
+- ✅ **No 413 errors**: Small JSON payload for menu data
+- ✅ **Better error handling**: Images and menu data processed separately  
+- ✅ **Faster saves**: Menu data saves quickly once images are uploaded
+- ✅ **Progress tracking**: See image upload progress independently
+- ✅ **Retry capability**: Can retry just images or just menu data if needed
 
 --- 

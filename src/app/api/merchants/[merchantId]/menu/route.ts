@@ -3,7 +3,6 @@ import { connectToDatabase } from '@/utils/db';
 import { getUserFromSession } from '@/utils/serverAuth';
 import { checkMerchantStaffAccess } from '@/utils/merchantUtils';
 import { Merchant } from '@/models/Merchant';
-import { uploadImageToCloudinary } from '@/utils/applicationUtils';
 import { ObjectId } from 'mongodb';
 
 // Extend the timeout for this API route to handle image uploads
@@ -81,13 +80,9 @@ export async function PUT(
       );
     }
 
-    // Process menu items with image uploads
-    console.log('🖼️ Processing menu items with image uploads...');
-    const processedMenuItems = await processMenuItemImages(menuData.menuItems || [], merchantId);
-    const updatedMenuData = { ...menuData, menuItems: processedMenuItems };
-
-    // Transform frontend data to database format
-    const restaurantMenu = transformMenuData(updatedMenuData);
+    // Transform frontend data to database format (images should already be URLs from upload endpoint)
+    console.log('🏗️ Transforming menu data for database...');
+    const restaurantMenu = transformMenuData(menuData);
 
     // Update merchant with new restaurant menu data
     const updatedMerchant = await Merchant.findByIdAndUpdate(
@@ -127,140 +122,6 @@ export async function PUT(
       { status: 500 }
     );
   }
-}
-
-/**
- * Process menu item images and upload to Cloudinary
- * 
- * Supported image formats:
- * - Base64 data URLs (data:image/jpeg;base64,...)
- * - Raw base64 strings (long strings > 1000 chars)
- * - Existing HTTP/HTTPS URLs (will be preserved)
- * - File URLs (file://) - should be converted to base64 by frontend
- * 
- * Folder structure: fincotech/Merchant/[merchantId]/[itemId]
- */
-async function processMenuItemImages(menuItems: any[], merchantId: string): Promise<any[]> {
-  const processedItems = [];
-  const totalItems = menuItems.length;
-  const itemsWithImages = menuItems.filter(item => item.image && typeof item.image === 'string').length;
-  
-  console.log(`🖼️ Processing ${totalItems} menu items, ${itemsWithImages} have images`);
-  
-  // Process items sequentially to avoid timeout issues
-  for (let i = 0; i < menuItems.length; i++) {
-    const item = menuItems[i];
-    let processedItem = { ...item };
-    
-    if (item.image && typeof item.image === 'string') {
-      try {
-        // Generate unique item ID for folder structure
-        const itemId = `item_${Date.now()}_${i}`;
-        const cloudinaryFolder = `fincotech/Merchant/${merchantId}/${itemId}`;
-        
-        // Check if it's a local file path (from mobile app) or base64 data
-        if (item.image.startsWith('file://') || item.image.startsWith('data:image/') || item.image.length > 1000) {
-          console.log(`📤 [${i + 1}/${totalItems}] Uploading image for: ${item.name}`);
-          
-          let imageToUpload = item.image;
-          
-          // If it's a file:// URL, we'll need to handle it as base64 (should be handled by frontend)
-          if (item.image.startsWith('file://')) {
-            console.log('⚠️ File URL detected - this should be converted to base64 by frontend');
-            // For now, skip the upload and remove the image
-            processedItem.image = null;
-            processedItems.push(processedItem);
-            continue;
-          }
-          
-          // Upload to Cloudinary with extended timeout
-          const uploadResult = await uploadImageToCloudinaryWithTimeout(
-            imageToUpload,
-            cloudinaryFolder,
-            `${item.name.replace(/[^a-zA-Z0-9]/g, '_')}_image`,
-            60000 // 60 second timeout
-          );
-          
-          // Update item with Cloudinary URL and metadata
-          processedItem.image = uploadResult.url;
-          processedItem.imagePublicId = uploadResult.publicId;
-          processedItem.imageUploadedAt = uploadResult.uploadedAt;
-          
-          console.log(`✅ [${i + 1}/${totalItems}] Successfully uploaded: ${item.name}`);
-        } else {
-          // If it's already a URL (http/https), keep it as is
-          console.log(`🔗 [${i + 1}/${totalItems}] Using existing URL for: ${item.name}`);
-        }
-      } catch (error) {
-        console.error(`❌ [${i + 1}/${totalItems}] Error uploading image for ${item.name}:`, error);
-        // Remove image reference if upload fails
-        processedItem.image = null;
-      }
-    } else {
-      console.log(`⏭️ [${i + 1}/${totalItems}] No image for: ${item.name}`);
-    }
-    
-    processedItems.push(processedItem);
-  }
-  
-  console.log(`🎉 Completed processing all ${totalItems} menu items`);
-  return processedItems;
-}
-
-/**
- * Upload image to Cloudinary with custom timeout
- */
-async function uploadImageToCloudinaryWithTimeout(
-  base64Image: string,
-  folder: string,
-  originalName: string,
-  timeoutMs: number = 60000
-): Promise<{ url: string; publicId: string; uploadedAt: Date }> {
-  const { v2: cloudinary } = await import('cloudinary');
-  
-  // Configure Cloudinary if not already configured
-  if (!cloudinary.config().cloud_name) {
-    cloudinary.config({
-      cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-      api_key: process.env.CLOUDINARY_API_KEY,
-      api_secret: process.env.CLOUDINARY_API_SECRET,
-    });
-  }
-
-  return new Promise((resolve, reject) => {
-    // Set up timeout
-    const timeoutId = setTimeout(() => {
-      reject(new Error(`Cloudinary upload timeout after ${timeoutMs}ms`));
-    }, timeoutMs);
-
-    // Remove the data:image/xxx;base64, prefix if present
-    const base64Data = base64Image.replace(/^data:image\/[a-z]+;base64,/, '');
-    
-    cloudinary.uploader.upload(`data:image/jpeg;base64,${base64Data}`, {
-      folder: folder,
-      resource_type: 'image',
-      public_id: `${Date.now()}_${originalName}`,
-      transformation: [
-        { width: 800, height: 600, crop: 'limit' }, // Smaller size for faster upload
-        { quality: 'auto:low' },
-        { format: 'jpg' }
-      ],
-      timeout: timeoutMs
-    })
-    .then((result) => {
-      clearTimeout(timeoutId);
-      resolve({
-        url: result.secure_url,
-        publicId: result.public_id,
-        uploadedAt: new Date()
-      });
-    })
-    .catch((error) => {
-      clearTimeout(timeoutId);
-      console.error('Cloudinary upload error:', error);
-      reject(new Error(`Failed to upload image to Cloudinary: ${error.message}`));
-    });
-  });
 }
 
 function transformMenuData(frontendData: any) {
