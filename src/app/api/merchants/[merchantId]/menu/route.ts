@@ -6,6 +6,10 @@ import { Merchant } from '@/models/Merchant';
 import { uploadImageToCloudinary } from '@/utils/applicationUtils';
 import { ObjectId } from 'mongodb';
 
+// Extend the timeout for this API route to handle image uploads
+export const maxDuration = 60; // 60 seconds
+export const dynamic = 'force-dynamic';
+
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ merchantId: string }> }
@@ -138,7 +142,12 @@ export async function PUT(
  */
 async function processMenuItemImages(menuItems: any[], merchantId: string): Promise<any[]> {
   const processedItems = [];
+  const totalItems = menuItems.length;
+  const itemsWithImages = menuItems.filter(item => item.image && typeof item.image === 'string').length;
   
+  console.log(`🖼️ Processing ${totalItems} menu items, ${itemsWithImages} have images`);
+  
+  // Process items sequentially to avoid timeout issues
   for (let i = 0; i < menuItems.length; i++) {
     const item = menuItems[i];
     let processedItem = { ...item };
@@ -151,7 +160,7 @@ async function processMenuItemImages(menuItems: any[], merchantId: string): Prom
         
         // Check if it's a local file path (from mobile app) or base64 data
         if (item.image.startsWith('file://') || item.image.startsWith('data:image/') || item.image.length > 1000) {
-          console.log(`📤 Uploading image for item: ${item.name}`);
+          console.log(`📤 [${i + 1}/${totalItems}] Uploading image for: ${item.name}`);
           
           let imageToUpload = item.image;
           
@@ -160,14 +169,16 @@ async function processMenuItemImages(menuItems: any[], merchantId: string): Prom
             console.log('⚠️ File URL detected - this should be converted to base64 by frontend');
             // For now, skip the upload and remove the image
             processedItem.image = null;
+            processedItems.push(processedItem);
             continue;
           }
           
-          // Upload to Cloudinary
-          const uploadResult = await uploadImageToCloudinary(
+          // Upload to Cloudinary with extended timeout
+          const uploadResult = await uploadImageToCloudinaryWithTimeout(
             imageToUpload,
             cloudinaryFolder,
-            `${item.name.replace(/[^a-zA-Z0-9]/g, '_')}_image`
+            `${item.name.replace(/[^a-zA-Z0-9]/g, '_')}_image`,
+            60000 // 60 second timeout
           );
           
           // Update item with Cloudinary URL and metadata
@@ -175,22 +186,81 @@ async function processMenuItemImages(menuItems: any[], merchantId: string): Prom
           processedItem.imagePublicId = uploadResult.publicId;
           processedItem.imageUploadedAt = uploadResult.uploadedAt;
           
-          console.log(`✅ Successfully uploaded image for ${item.name}: ${uploadResult.url}`);
+          console.log(`✅ [${i + 1}/${totalItems}] Successfully uploaded: ${item.name}`);
         } else {
           // If it's already a URL (http/https), keep it as is
-          console.log(`🔗 Using existing URL for ${item.name}: ${item.image}`);
+          console.log(`🔗 [${i + 1}/${totalItems}] Using existing URL for: ${item.name}`);
         }
       } catch (error) {
-        console.error(`❌ Error uploading image for item ${item.name}:`, error);
+        console.error(`❌ [${i + 1}/${totalItems}] Error uploading image for ${item.name}:`, error);
         // Remove image reference if upload fails
         processedItem.image = null;
       }
+    } else {
+      console.log(`⏭️ [${i + 1}/${totalItems}] No image for: ${item.name}`);
     }
     
     processedItems.push(processedItem);
   }
   
+  console.log(`🎉 Completed processing all ${totalItems} menu items`);
   return processedItems;
+}
+
+/**
+ * Upload image to Cloudinary with custom timeout
+ */
+async function uploadImageToCloudinaryWithTimeout(
+  base64Image: string,
+  folder: string,
+  originalName: string,
+  timeoutMs: number = 60000
+): Promise<{ url: string; publicId: string; uploadedAt: Date }> {
+  const { v2: cloudinary } = await import('cloudinary');
+  
+  // Configure Cloudinary if not already configured
+  if (!cloudinary.config().cloud_name) {
+    cloudinary.config({
+      cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+      api_key: process.env.CLOUDINARY_API_KEY,
+      api_secret: process.env.CLOUDINARY_API_SECRET,
+    });
+  }
+
+  return new Promise((resolve, reject) => {
+    // Set up timeout
+    const timeoutId = setTimeout(() => {
+      reject(new Error(`Cloudinary upload timeout after ${timeoutMs}ms`));
+    }, timeoutMs);
+
+    // Remove the data:image/xxx;base64, prefix if present
+    const base64Data = base64Image.replace(/^data:image\/[a-z]+;base64,/, '');
+    
+    cloudinary.uploader.upload(`data:image/jpeg;base64,${base64Data}`, {
+      folder: folder,
+      resource_type: 'image',
+      public_id: `${Date.now()}_${originalName}`,
+      transformation: [
+        { width: 800, height: 600, crop: 'limit' }, // Smaller size for faster upload
+        { quality: 'auto:low' },
+        { format: 'jpg' }
+      ],
+      timeout: timeoutMs
+    })
+    .then((result) => {
+      clearTimeout(timeoutId);
+      resolve({
+        url: result.secure_url,
+        publicId: result.public_id,
+        uploadedAt: new Date()
+      });
+    })
+    .catch((error) => {
+      clearTimeout(timeoutId);
+      console.error('Cloudinary upload error:', error);
+      reject(new Error(`Failed to upload image to Cloudinary: ${error.message}`));
+    });
+  });
 }
 
 function transformMenuData(frontendData: any) {

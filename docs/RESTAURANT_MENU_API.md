@@ -545,6 +545,35 @@ const convertImageToBase64 = (imageUri) => {
   });
 };
 
+// Save menu with extended timeout for image uploads
+const saveMenuData = async (completeMenuData) => {
+  try {
+    const response = await fetch(`/api/merchants/${merchantId}/menu`, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${yourJWTToken}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(completeMenuData),
+      // Extended timeout for image uploads (60 seconds)
+      timeout: 60000
+    });
+
+    const result = await response.json();
+    
+    if (result.success) {
+      console.log('✅ Menu saved successfully!', result.data);
+      return result.data;
+    } else {
+      console.error('❌ Error saving menu:', result.error);
+      throw new Error(result.error);
+    }
+  } catch (error) {
+    console.error('❌ Network error:', error);
+    throw error;
+  }
+};
+
 // Example menu item with image
 const menuItem = {
   name: "Garlic Dip",
@@ -555,15 +584,16 @@ const menuItem = {
 };
 ```
 
-### **Response Format**
-After successful upload, the menu item will include:
-```javascript
-{
-  name: "Garlic Dip",
-  image: "https://res.cloudinary.com/yourcloud/image/upload/v1234567890/fincotech/Merchant/683beca56d412c1d572afdda/item_1234567890_0/image.jpg",
-  imagePublicId: "fincotech/Merchant/683beca56d412c1d572afdda/item_1234567890_0/Garlic_dip_image",
-  imageUploadedAt: "2024-01-01T00:00:00.000Z"
-}
-```
+### **Timeout Optimization**
+- **API Timeout**: 60 seconds (for image uploads)
+- **Frontend Timeout**: Set to 60+ seconds to match API
+- **Sequential Processing**: Images are uploaded one by one to avoid overwhelming the connection
+- **Progress Logging**: Server logs upload progress for debugging
+
+### **Performance Tips**
+- **Compress images** on frontend before sending (you're already doing this ✅)
+- **Limit image size** to reasonable dimensions (800x600 recommended)
+- **Use JPG format** for better compression
+- **Consider batch sizes** - if you have many items with images, consider saving in smaller batches
 
 --- 
