@@ -830,7 +830,26 @@ Images are uploaded to: `fincotech/Merchant/[merchantId]/[itemId]`
 
 ### Public Menu Access (No Authentication)
 
-**Customer viewing restaurant menu:**
+**Browsing restaurants:**
+```javascript
+// Get all restaurants
+const response = await fetch('/api/merchants?type=RESTAURANT', {
+  method: 'GET',
+  headers: {
+    'Content-Type': 'application/json'
+  }
+});
+
+const restaurantsData = await response.json();
+if (restaurantsData.success) {
+  console.log('Found restaurants:', restaurantsData.data.merchants.length);
+  restaurantsData.data.merchants.forEach(restaurant => {
+    console.log(`${restaurant.name} - ${restaurant.priceRange} - ${restaurant.cuisineTypes.join(', ')}`);
+  });
+}
+```
+
+**Customer viewing specific restaurant menu:**
 ```javascript
 // No authentication headers required
 const response = await fetch('/api/merchants/683beca56d412c1d572afdda/menu', {
@@ -867,6 +886,80 @@ const response = await fetch('/api/merchants/683beca56d412c1d572afdda/menu', {
   })
 });
 ```
+
+---
+
+## Public Endpoints
+
+### Get All Merchants (Public)
+```
+GET /api/merchants
+```
+
+Retrieve a list of verified merchants with optional filtering by type.
+
+**🌐 Public Access**: No authentication required.
+
+**Query Parameters:**
+- `type` (optional): Filter by merchant type (`RESTAURANT`, `RETAIL`, `MARKET`, etc.)
+- `search` (optional): Search by merchant name or address
+- `limit` (optional): Number of results per page (default: 50)
+- `skip` (optional): Number of results to skip for pagination (default: 0)
+
+**Examples:**
+```
+GET /api/merchants?type=RESTAURANT
+GET /api/merchants?type=RESTAURANT&search=pizza
+GET /api/merchants?type=RESTAURANT&limit=10&skip=0
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "merchants": [
+      {
+        "id": "683beca56d412c1d572afdda",
+        "name": "Nandos",
+        "type": "RESTAURANT",
+        "address": "123 Main St, Vancouver, BC",
+        "currentAddress": "123 Main St, Vancouver, BC",
+        "hasMenu": true,
+        "cuisineTypes": ["CHICKEN", "FAST_FOOD"],
+        "priceRange": "$$",
+        "rating": {
+          "average": 4.5,
+          "totalReviews": 128
+        },
+        "createdAt": "2024-01-01T00:00:00.000Z"
+      }
+    ],
+    "pagination": {
+      "total": 25,
+      "limit": 50,
+      "skip": 0,
+      "hasMore": false,
+      "currentPage": 1,
+      "totalPages": 1
+    },
+    "filters": {
+      "type": "RESTAURANT",
+      "search": null
+    }
+  },
+  "message": "Found 25 restaurant merchants"
+}
+```
+
+### Get Restaurant Menu (Public)
+```
+GET /api/merchants/[merchantId]/menu
+```
+
+Retrieve the complete menu data for a specific restaurant.
+
+**🌐 Public Access**: No authentication required - accessible to all users including customers.
 
 ---
 
