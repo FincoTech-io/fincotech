@@ -7,10 +7,10 @@ import { ObjectId } from 'mongodb';
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { merchantId: string } }
+  { params }: { params: Promise<{ merchantId: string }> }
 ) {
   try {
-    const { merchantId } = params;
+    const { merchantId } = await params;
     
     // Validate merchantId format
     if (!ObjectId.isValid(merchantId)) {
