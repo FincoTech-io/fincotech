@@ -3,6 +3,7 @@ import { connectToDatabase } from '@/utils/db';
 import { getUserFromSession } from '@/utils/serverAuth';
 import { checkMerchantStaffAccess } from '@/utils/merchantUtils';
 import { Merchant } from '@/models/Merchant';
+import { uploadImageToCloudinary } from '@/utils/applicationUtils';
 import { ObjectId } from 'mongodb';
 
 export async function PUT(
@@ -76,8 +77,13 @@ export async function PUT(
       );
     }
 
+    // Process menu items with image uploads
+    console.log('🖼️ Processing menu items with image uploads...');
+    const processedMenuItems = await processMenuItemImages(menuData.menuItems || [], merchantId);
+    const updatedMenuData = { ...menuData, menuItems: processedMenuItems };
+
     // Transform frontend data to database format
-    const restaurantMenu = transformMenuData(menuData);
+    const restaurantMenu = transformMenuData(updatedMenuData);
 
     // Update merchant with new restaurant menu data
     const updatedMerchant = await Merchant.findByIdAndUpdate(
@@ -117,6 +123,74 @@ export async function PUT(
       { status: 500 }
     );
   }
+}
+
+/**
+ * Process menu item images and upload to Cloudinary
+ * 
+ * Supported image formats:
+ * - Base64 data URLs (data:image/jpeg;base64,...)
+ * - Raw base64 strings (long strings > 1000 chars)
+ * - Existing HTTP/HTTPS URLs (will be preserved)
+ * - File URLs (file://) - should be converted to base64 by frontend
+ * 
+ * Folder structure: fincotech/Merchant/[merchantId]/[itemId]
+ */
+async function processMenuItemImages(menuItems: any[], merchantId: string): Promise<any[]> {
+  const processedItems = [];
+  
+  for (let i = 0; i < menuItems.length; i++) {
+    const item = menuItems[i];
+    let processedItem = { ...item };
+    
+    if (item.image && typeof item.image === 'string') {
+      try {
+        // Generate unique item ID for folder structure
+        const itemId = `item_${Date.now()}_${i}`;
+        const cloudinaryFolder = `fincotech/Merchant/${merchantId}/${itemId}`;
+        
+        // Check if it's a local file path (from mobile app) or base64 data
+        if (item.image.startsWith('file://') || item.image.startsWith('data:image/') || item.image.length > 1000) {
+          console.log(`📤 Uploading image for item: ${item.name}`);
+          
+          let imageToUpload = item.image;
+          
+          // If it's a file:// URL, we'll need to handle it as base64 (should be handled by frontend)
+          if (item.image.startsWith('file://')) {
+            console.log('⚠️ File URL detected - this should be converted to base64 by frontend');
+            // For now, skip the upload and remove the image
+            processedItem.image = null;
+            continue;
+          }
+          
+          // Upload to Cloudinary
+          const uploadResult = await uploadImageToCloudinary(
+            imageToUpload,
+            cloudinaryFolder,
+            `${item.name.replace(/[^a-zA-Z0-9]/g, '_')}_image`
+          );
+          
+          // Update item with Cloudinary URL and metadata
+          processedItem.image = uploadResult.url;
+          processedItem.imagePublicId = uploadResult.publicId;
+          processedItem.imageUploadedAt = uploadResult.uploadedAt;
+          
+          console.log(`✅ Successfully uploaded image for ${item.name}: ${uploadResult.url}`);
+        } else {
+          // If it's already a URL (http/https), keep it as is
+          console.log(`🔗 Using existing URL for ${item.name}: ${item.image}`);
+        }
+      } catch (error) {
+        console.error(`❌ Error uploading image for item ${item.name}:`, error);
+        // Remove image reference if upload fails
+        processedItem.image = null;
+      }
+    }
+    
+    processedItems.push(processedItem);
+  }
+  
+  return processedItems;
 }
 
 function transformMenuData(frontendData: any) {
@@ -257,7 +331,7 @@ function transformMenuItems(items: any[]) {
     shortDescription: item.description || 'No description',
     images: item.image ? [{
       url: item.image,
-      publicId: `menu_items/${Date.now()}`,
+      publicId: item.imagePublicId || `menu_items/${Date.now()}`,
       alt: item.name,
       width: 800,
       height: 600

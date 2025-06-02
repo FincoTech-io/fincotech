@@ -512,4 +512,58 @@ const image = await fetch('/api/merchants/merchant123/menu/items/item-id/images'
 });
 ```
 
-This comprehensive API allows full management of restaurant menu hierarchies with proper authentication, validation, and error handling. 
+This comprehensive API allows full management of restaurant menu hierarchies with proper authentication, validation, and error handling.
+
+## Image Upload Integration
+
+The Menu API automatically handles image uploads to Cloudinary with the following features:
+
+### **Folder Structure**
+Images are uploaded to: `fincotech/Merchant/[merchantId]/[itemId]`
+
+### **Supported Image Formats**
+- **Base64 Data URLs**: `data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAYABgAAD...`
+- **Raw Base64**: Long base64 strings (detected if > 1000 characters)
+- **Existing URLs**: HTTP/HTTPS URLs are preserved as-is
+- **File URLs**: `file://` URLs should be converted to base64 by frontend
+
+### **Frontend Integration Example**
+```javascript
+// Convert file to base64 for upload
+const convertImageToBase64 = (imageUri) => {
+  return new Promise((resolve, reject) => {
+    if (imageUri.startsWith('file://')) {
+      // For React Native, use expo-file-system or similar
+      FileSystem.readAsStringAsync(imageUri, {
+        encoding: FileSystem.EncodingType.Base64,
+      }).then(base64 => {
+        resolve(`data:image/jpeg;base64,${base64}`);
+      }).catch(reject);
+    } else {
+      resolve(imageUri); // Already in correct format
+    }
+  });
+};
+
+// Example menu item with image
+const menuItem = {
+  name: "Garlic Dip",
+  price: "1.25",
+  tax: "0.00",
+  image: await convertImageToBase64(selectedImageUri), // Convert to base64
+  categories: ["Dips"]
+};
+```
+
+### **Response Format**
+After successful upload, the menu item will include:
+```javascript
+{
+  name: "Garlic Dip",
+  image: "https://res.cloudinary.com/yourcloud/image/upload/v1234567890/fincotech/Merchant/683beca56d412c1d572afdda/item_1234567890_0/image.jpg",
+  imagePublicId: "fincotech/Merchant/683beca56d412c1d572afdda/item_1234567890_0/Garlic_dip_image",
+  imageUploadedAt: "2024-01-01T00:00:00.000Z"
+}
+```
+
+--- 
