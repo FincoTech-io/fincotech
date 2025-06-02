@@ -101,6 +101,94 @@ DELETE /api/merchants/[merchantId]/menu/menus/[menuId]
 ```
 **Note:** Only ADMIN and MERCHANT_OWNER can delete menus.
 
+### 5. Get Menu Data
+```
+GET /api/merchants/[merchantId]/menu
+```
+
+Retrieve the complete menu data for a merchant.
+
+**Permissions Required:**
+- ADMIN, MERCHANT_OWNER, MERCHANT_MANAGER, MERCHANT_STAFF (read access)
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "merchantId": "683beca56d412c1d572afdda",
+    "merchantName": "Nandos",
+    "hasMenu": true,
+    "menuData": {
+      "merchantId": "683beca56d412c1d572afdda",
+      "merchantName": "Nandos",
+      "businessHours": {
+        "monday": { "isOpen": true, "startTime": "9:00 AM", "endTime": "5:00 PM" },
+        "tuesday": { "isOpen": true, "startTime": "9:00 AM", "endTime": "5:00 PM" },
+        "wednesday": { "isOpen": false, "startTime": "9:00 AM", "endTime": "5:00 PM" },
+        "thursday": { "isOpen": false, "startTime": "9:00 AM", "endTime": "5:00 PM" },
+        "friday": { "isOpen": false, "startTime": "9:00 AM", "endTime": "5:00 PM" },
+        "saturday": { "isOpen": true, "startTime": "9:00 AM", "endTime": "5:00 PM" },
+        "sunday": { "isOpen": true, "startTime": "9:00 AM", "endTime": "5:00 PM" }
+      },
+      "menus": [
+        {
+          "id": "menu_1748891586702",
+          "name": "Dinner",
+          "description": "",
+          "timeSlots": [],
+          "categories": ["Appetizers", "Dips"],
+          "isActive": true,
+          "displayOrder": 1,
+          "itemCount": 1
+        }
+      ],
+      "categories": ["Appetizers", "Dips"],
+      "menuItems": [
+        {
+          "name": "Garlic dip",
+          "description": "No description",
+          "price": "1.25",
+          "tax": "0.00",
+          "image": "https://res.cloudinary.com/yourcloud/image/upload/.../Garlic_dip_image.jpg",
+          "imagePublicId": "fincotech/Merchant/683beca56d412c1d572afdda/item_1748891586702_0/Garlic_dip_image",
+          "categories": ["Dips"],
+          "menu": "Dinner",
+          "modifiers": [],
+          "isSingularItem": true
+        }
+      ],
+      "totalMenus": 1,
+      "totalCategories": 2,
+      "totalItems": 1,
+      "timestamp": "2024-01-01T00:00:00.000Z"
+    }
+  },
+  "message": "Menu data retrieved successfully"
+}
+```
+
+**If No Menu Exists:**
+```json
+{
+  "success": true,
+  "data": {
+    "merchantId": "683beca56d412c1d572afdda",
+    "merchantName": "Nandos",
+    "hasMenu": false,
+    "menuData": null
+  },
+  "message": "No menu data found for this merchant"
+}
+```
+
+### 6. Update Complete Menu
+```
+PUT /api/merchants/[merchantId]/menu
+```
+
+Update the complete menu data for a merchant (see Image Upload Integration section for handling images).
+
 ---
 
 ## Category Management Endpoints

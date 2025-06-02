@@ -9,6 +9,84 @@ import { ObjectId } from 'mongodb';
 export const maxDuration = 60; // 60 seconds
 export const dynamic = 'force-dynamic';
 
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ merchantId: string }> }
+) {
+  try {
+    const { merchantId } = await params;
+    
+    // Validate merchantId format
+    if (!ObjectId.isValid(merchantId)) {
+      return NextResponse.json(
+        { success: false, error: 'Invalid merchant ID format' },
+        { status: 400 }
+      );
+    }
+
+    // Connect to database
+    await connectToDatabase();
+
+    // Get user from token
+    const user = await getUserFromSession(request);
+    if (!user) {
+      return NextResponse.json(
+        { success: false, error: 'Authentication required' },
+        { status: 401 }
+      );
+    }
+
+    // Check if user has access to view this merchant's menu
+    const accessResult = await checkMerchantStaffAccess(user._id.toString(), merchantId, [
+      'ADMIN', 
+      'MERCHANT_OWNER', 
+      'MERCHANT_MANAGER',
+      'MERCHANT_STAFF' // Read access for all staff roles
+    ]);
+
+    if (!accessResult.hasAccess) {
+      return NextResponse.json(
+        { success: false, error: 'Access denied. You do not have permission to view this merchant menu.' },
+        { status: 403 }
+      );
+    }
+
+    // Find merchant and get menu data
+    const merchant = await Merchant.findById(merchantId).select('merchantName restaurantMenu').lean();
+
+    if (!merchant) {
+      return NextResponse.json(
+        { success: false, error: 'Merchant not found' },
+        { status: 404 }
+      );
+    }
+
+    // Transform database format to frontend format if menu exists
+    let transformedMenuData = null;
+    if (merchant.restaurantMenu) {
+      transformedMenuData = transformDatabaseToFrontend(merchant.restaurantMenu, merchantId, merchant.merchantName);
+    }
+
+    return NextResponse.json({
+      success: true,
+      data: {
+        merchantId,
+        merchantName: merchant.merchantName,
+        hasMenu: !!merchant.restaurantMenu,
+        menuData: transformedMenuData
+      },
+      message: transformedMenuData ? 'Menu data retrieved successfully' : 'No menu data found for this merchant'
+    });
+
+  } catch (error) {
+    console.error('Error retrieving menu data:', error);
+    return NextResponse.json(
+      { success: false, error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}
+
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ merchantId: string }> }
@@ -330,4 +408,128 @@ function convertTo24Hour(timeStr: string): string {
   }
   
   return `${hour24.toString().padStart(2, '0')}:${minutes}`;
+}
+
+/**
+ * Transform database restaurant menu format back to frontend format
+ */
+function transformDatabaseToFrontend(restaurantMenu: any, merchantId: string, merchantName: string) {
+  // Extract business hours from operating hours
+  const businessHours = transformOperatingHoursToBusinessHours(restaurantMenu.operatingHours);
+  
+  // Extract menus
+  const menus = restaurantMenu.menus || [];
+  
+  // Extract all categories from all menus
+  const allCategories: string[] = [];
+  const allMenuItems: any[] = [];
+  
+  menus.forEach((menu: any) => {
+    if (menu.categories) {
+      menu.categories.forEach((category: any) => {
+        // Add category name if not already present
+        if (!allCategories.includes(category.name)) {
+          allCategories.push(category.name);
+        }
+        
+        // Add items from this category
+        if (category.items) {
+          category.items.forEach((item: any) => {
+            allMenuItems.push({
+              name: item.name,
+              description: item.description,
+              price: item.basePrice?.toString() || '0',
+              tax: item.tax?.toString() || '0',
+              image: item.images?.[0]?.url || null,
+              imagePublicId: item.images?.[0]?.publicId || null,
+              categories: [category.name],
+              menu: menu.name,
+              modifiers: item.modifierGroups || [],
+              isSingularItem: item.isSingularItem || false
+            });
+          });
+        }
+      });
+    }
+  });
+  
+  return {
+    merchantId,
+    merchantName,
+    businessHours,
+    menus: menus.map((menu: any) => ({
+      id: menu.id,
+      name: menu.name,
+      description: menu.description || '',
+      timeSlots: menu.timeSlots || [],
+      categories: menu.categories?.map((cat: any) => cat.name) || [],
+      isActive: menu.isActive,
+      displayOrder: menu.displayOrder || 1,
+      itemCount: menu.categories?.reduce((total: number, cat: any) => total + (cat.items?.length || 0), 0) || 0
+    })),
+    categories: allCategories,
+    menuItems: allMenuItems,
+    totalMenus: menus.length,
+    totalCategories: allCategories.length,
+    totalItems: allMenuItems.length,
+    timestamp: new Date().toISOString()
+  };
+}
+
+/**
+ * Transform operating hours back to business hours format
+ */
+function transformOperatingHoursToBusinessHours(operatingHours: any) {
+  const dayMapping: { [key: string]: string } = {
+    MONDAY: 'monday',
+    TUESDAY: 'tuesday',
+    WEDNESDAY: 'wednesday', 
+    THURSDAY: 'thursday',
+    FRIDAY: 'friday',
+    SATURDAY: 'saturday',
+    SUNDAY: 'sunday'
+  };
+
+  const businessHours: any = {};
+  
+  Object.keys(dayMapping).forEach(dbDay => {
+    const frontendDay = dayMapping[dbDay];
+    const daySchedule = operatingHours?.schedule?.[dbDay];
+    
+    if (daySchedule) {
+      const firstPeriod = daySchedule.periods?.[0];
+      businessHours[frontendDay] = {
+        isOpen: daySchedule.isOpen || false,
+        startTime: firstPeriod ? convertFrom24Hour(firstPeriod.openTime) : '9:00 AM',
+        endTime: firstPeriod ? convertFrom24Hour(firstPeriod.closeTime) : '5:00 PM'
+      };
+    } else {
+      businessHours[frontendDay] = {
+        isOpen: false,
+        startTime: '9:00 AM',
+        endTime: '5:00 PM'
+      };
+    }
+  });
+  
+  return businessHours;
+}
+
+/**
+ * Convert 24-hour time to 12-hour format
+ */
+function convertFrom24Hour(timeStr: string): string {
+  if (!timeStr) return '9:00 AM';
+  
+  const [hours, minutes] = timeStr.split(':');
+  let hour = parseInt(hours, 10);
+  const period = hour >= 12 ? 'PM' : 'AM';
+  
+  if (hour === 0) {
+    hour = 12;
+  } else if (hour > 12) {
+    hour -= 12;
+  }
+  
+  return `${hour}:${minutes} ${period}`;
 } 
