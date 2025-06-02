@@ -206,18 +206,83 @@ function transformMenuData(frontendData: any) {
   // Transform business hours
   const operatingHours = transformBusinessHours(frontendData.businessHours);
   
-  // Transform menus
-  const menus = frontendData.menus?.map((menu: any) => ({
-    id: menu.id,
-    name: menu.name,
-    description: menu.description || '',
-    timeSlots: menu.timeSlots || [],
-    categories: transformCategories(frontendData.categories, frontendData.menuItems, menu.id),
-    isActive: menu.isActive !== false,
-    displayOrder: menu.displayOrder || 1
-  })) || [];
+  // Create separate arrays for menus, categories, and items
+  const menus: any[] = [];
+  const categories: any[] = [];
+  const items: any[] = [];
+  
+  // Process frontend menus
+  if (frontendData.menus && Array.isArray(frontendData.menus)) {
+    frontendData.menus.forEach((menu: any) => {
+      menus.push({
+        id: menu.id,
+        name: menu.name,
+        description: menu.description || '',
+        timeSlots: menu.timeSlots || [],
+        isActive: menu.isActive !== false,
+        displayOrder: menu.displayOrder || 1,
+        itemIds: [] // Will be populated later
+      });
+    });
+  }
+  
+  // Process frontend categories
+  if (frontendData.categories && Array.isArray(frontendData.categories)) {
+    frontendData.categories.forEach((categoryName: string, index: number) => {
+      categories.push({
+        id: `category_${Date.now()}_${index}`,
+        name: categoryName,
+        description: '',
+        displayOrder: index + 1,
+        isActive: true
+      });
+    });
+  }
+  
+  // Process frontend menu items
+  if (frontendData.menuItems && Array.isArray(frontendData.menuItems)) {
+    frontendData.menuItems.forEach((item: any, index: number) => {
+      const itemId = `item_${Date.now()}_${index}`;
+      
+      // Find category ID by name
+      const categoryId = categories.find(cat => 
+        item.categories && item.categories.includes(cat.name)
+      )?.id;
+      
+      // Find menu IDs by name
+      const menuIds: string[] = [];
+      if (item.menu) {
+        const foundMenu = menus.find(menu => menu.name === item.menu);
+        if (foundMenu) {
+          menuIds.push(foundMenu.id);
+          foundMenu.itemIds.push(itemId);
+        }
+      }
+      
+      items.push({
+        id: itemId,
+        name: item.name,
+        description: item.description || 'No description',
+        image: item.image ? {
+          url: item.image,
+          publicId: item.imagePublicId || `menu_items/${Date.now()}`,
+          alt: item.name,
+          width: 800,
+          height: 600
+        } : null,
+        basePrice: parseFloat(item.price) || 0,
+        tax: parseFloat(item.tax) || 0,
+        preparationTime: 15,
+        calories: undefined,
+        isAvailable: true,
+        displayOrder: index + 1,
+        modifierGroups: item.modifiers || [],
+        categoryId: categoryId
+      });
+    });
+  }
 
-  // Create restaurant menu structure
+  // Create restaurant menu structure with flat arrays
   return {
     restaurantInfo: {
       cuisineTypes: [],
@@ -262,6 +327,8 @@ function transformMenuData(frontendData: any) {
       busyLevel: 'MODERATE'
     },
     menus,
+    categories,
+    items,
     orderingRules: {
       minimumOrderAmount: 0,
       maximumOrderAmount: 1000,
@@ -317,80 +384,6 @@ function transformBusinessHours(businessHours: any) {
   };
 }
 
-function transformCategories(categories: string[], menuItems: any[], menuId?: string) {
-  return categories.map((categoryName, index) => ({
-    id: `category_${Date.now()}_${index}`,
-    name: categoryName,
-    description: '',
-    displayOrder: index + 1,
-    isActive: true,
-    isPopular: false,
-    items: transformMenuItems(menuItems.filter(item => 
-      item.categories?.includes(categoryName) || 
-      (item.isSingularItem && !menuId)
-    ))
-  }));
-}
-
-function transformMenuItems(items: any[]) {
-  return items.map((item, index) => ({
-    id: `item_${Date.now()}_${index}`,
-    name: item.name,
-    description: item.description || 'No description',
-    shortDescription: item.description || 'No description',
-    images: item.image ? [{
-      url: item.image,
-      publicId: item.imagePublicId || `menu_items/${Date.now()}`,
-      alt: item.name,
-      width: 800,
-      height: 600
-    }] : [],
-    basePrice: parseFloat(item.price) || 0,
-    compareAtPrice: undefined,
-    tax: parseFloat(item.tax) || 0,
-    isOnSale: false,
-    preparationTime: 15,
-    servingSize: '1 serving',
-    calories: undefined,
-    isAvailable: true,
-    tags: determineTags(item),
-    dietaryInfo: {
-      isVegetarian: false,
-      isVegan: false,
-      isGlutenFree: false,
-      isKeto: false,
-      isDairyFree: false,
-      isNutFree: false,
-      isHalal: false,
-      isKosher: false
-    },
-    allergens: [],
-    spiceLevel: undefined,
-    displayOrder: index + 1,
-    isPopular: false,
-    isFeatured: false,
-    isNewItem: false,
-    badgeText: undefined,
-    modifierGroups: item.modifiers || [],
-    recommendedWith: [],
-    substitutes: [],
-    menuId: item.menu || undefined,
-    categoryId: item.categories?.[0] || undefined,
-    isSingularItem: item.isSingularItem || false,
-    createdAt: new Date(),
-    updatedAt: new Date()
-  }));
-}
-
-function determineTags(item: any): string[] {
-  const tags: string[] = [];
-  
-  // You can add logic here to determine tags based on item properties
-  // For now, return empty array
-  
-  return tags;
-}
-
 function convertTo24Hour(timeStr: string): string {
   if (!timeStr) return '00:00';
   
@@ -417,61 +410,66 @@ function transformDatabaseToFrontend(restaurantMenu: any, merchantId: string, me
   // Extract business hours from operating hours
   const businessHours = transformOperatingHoursToBusinessHours(restaurantMenu.operatingHours);
   
-  // Extract menus
+  // Extract flat arrays
   const menus = restaurantMenu.menus || [];
+  const categories = restaurantMenu.categories || [];
+  const items = restaurantMenu.items || [];
   
-  // Extract all categories from all menus
-  const allCategories: string[] = [];
-  const allMenuItems: any[] = [];
+  // Transform categories to simple array of names (for frontend compatibility)
+  const categoryNames = categories.map((cat: any) => cat.name);
   
-  menus.forEach((menu: any) => {
-    if (menu.categories) {
-      menu.categories.forEach((category: any) => {
-        // Add category name if not already present
-        if (!allCategories.includes(category.name)) {
-          allCategories.push(category.name);
-        }
-        
-        // Add items from this category
-        if (category.items) {
-          category.items.forEach((item: any) => {
-            allMenuItems.push({
-              name: item.name,
-              description: item.description,
-              price: item.basePrice?.toString() || '0',
-              tax: item.tax?.toString() || '0',
-              image: item.images?.[0]?.url || null,
-              imagePublicId: item.images?.[0]?.publicId || null,
-              categories: [category.name],
-              menu: menu.name,
-              modifiers: item.modifierGroups || [],
-              isSingularItem: item.isSingularItem || false
-            });
-          });
-        }
-      });
-    }
+  // Transform items back to frontend format
+  const menuItems = items.map((item: any) => {
+    // Find category name by ID
+    const category = categories.find((cat: any) => cat.id === item.categoryId);
+    const categoryName = category ? category.name : 'Uncategorized';
+    
+    // Find menu names by IDs
+    const itemMenus = menus.filter((menu: any) => 
+      item.menuIds && item.menuIds.includes(menu.id)
+    );
+    const menuName = itemMenus.length > 0 ? itemMenus[0].name : '';
+    
+    return {
+      name: item.name,
+      description: item.description,
+      price: item.basePrice?.toString() || '0',
+      tax: item.tax?.toString() || '0',
+      image: item.image?.url || null,
+      imagePublicId: item.image?.publicId || null,
+      categories: [categoryName],
+      menu: menuName,
+      modifiers: item.modifierGroups || [],
+      isSingularItem: item.isSingularItem || false
+    };
   });
   
   return {
     merchantId,
     merchantName,
     businessHours,
-    menus: menus.map((menu: any) => ({
-      id: menu.id,
-      name: menu.name,
-      description: menu.description || '',
-      timeSlots: menu.timeSlots || [],
-      categories: menu.categories?.map((cat: any) => cat.name) || [],
-      isActive: menu.isActive,
-      displayOrder: menu.displayOrder || 1,
-      itemCount: menu.categories?.reduce((total: number, cat: any) => total + (cat.items?.length || 0), 0) || 0
-    })),
-    categories: allCategories,
-    menuItems: allMenuItems,
+    menus: menus.map((menu: any) => {
+      // Count items in this menu
+      const menuItemCount = items.filter((item: any) => 
+        item.menuIds && item.menuIds.includes(menu.id)
+      ).length;
+      
+      return {
+        id: menu.id,
+        name: menu.name,
+        description: menu.description || '',
+        timeSlots: menu.timeSlots || [],
+        categories: categoryNames, // All categories available to all menus
+        isActive: menu.isActive,
+        displayOrder: menu.displayOrder || 1,
+        itemCount: menuItemCount
+      };
+    }),
+    categories: categoryNames,
+    menuItems: menuItems,
     totalMenus: menus.length,
-    totalCategories: allCategories.length,
-    totalItems: allMenuItems.length,
+    totalCategories: categories.length,
+    totalItems: items.length,
     timestamp: new Date().toISOString()
   };
 }

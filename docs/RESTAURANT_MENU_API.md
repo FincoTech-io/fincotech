@@ -106,7 +106,7 @@ DELETE /api/merchants/[merchantId]/menu/menus/[menuId]
 GET /api/merchants/[merchantId]/menu
 ```
 
-Retrieve the complete menu data for a merchant.
+Retrieve the complete menu data for a merchant with **flat, normalized structure**.
 
 **Permissions Required:**
 - ADMIN, MERCHANT_OWNER, MERCHANT_MANAGER, MERCHANT_STAFF (read access)
@@ -137,13 +137,13 @@ Retrieve the complete menu data for a merchant.
           "name": "Dinner",
           "description": "",
           "timeSlots": [],
-          "categories": ["Appetizers", "Dips"],
+          "categories": ["Appetizers", "Dips"], // All categories (for frontend compatibility)
           "isActive": true,
           "displayOrder": 1,
           "itemCount": 1
         }
       ],
-      "categories": ["Appetizers", "Dips"],
+      "categories": ["Appetizers", "Dips"], // Simple array for frontend
       "menuItems": [
         {
           "name": "Garlic dip",
@@ -165,6 +165,65 @@ Retrieve the complete menu data for a merchant.
     }
   },
   "message": "Menu data retrieved successfully"
+}
+```
+
+**Database Structure (Internal):**
+The data is stored internally with a flat, normalized structure:
+
+```json
+{
+  "restaurantMenu": {
+    "menus": [
+      {
+        "id": "menu_1748891586702",
+        "name": "Dinner",
+        "description": "",
+        "timeSlots": [],
+        "isActive": true,
+        "displayOrder": 1,
+        "itemIds": ["item_1748891586702_0"] // References to item IDs
+      }
+    ],
+    "categories": [
+      {
+        "id": "category_1748891586702_0",
+        "name": "Appetizers",
+        "description": "",
+        "displayOrder": 1,
+        "isActive": true
+      },
+      {
+        "id": "category_1748891586702_1", 
+        "name": "Dips",
+        "description": "",
+        "displayOrder": 2,
+        "isActive": true
+      }
+    ],
+    "items": [
+      {
+        "id": "item_1748891586702_0",
+        "name": "Garlic dip",
+        "description": "No description",
+        "image": {
+          "url": "https://res.cloudinary.com/yourcloud/image/upload/.../Garlic_dip_image.jpg",
+          "publicId": "fincotech/Merchant/683beca56d412c1d572afdda/item_1748891586702_0/Garlic_dip_image",
+          "alt": "Garlic dip",
+          "width": 800,
+          "height": 600
+        },
+        "basePrice": 1.25,
+        "tax": 0.00,
+        "preparationTime": 15,
+        "calories": null,
+        "isAvailable": true,
+        "displayOrder": 1,
+        "modifierGroups": [],
+        "categoryId": "category_1748891586702_1"
+      }
+    ]
+  }
 }
 ```
 
@@ -460,9 +519,9 @@ interface Menu {
     endTime: string;
     daysOfWeek: string[];
   }[];
-  categories: Category[];
   isActive: boolean;
   displayOrder: number;
+  itemIds: string[];                // NEW: Array of item IDs in this menu
 }
 ```
 
@@ -473,8 +532,7 @@ interface Category {
   name: string;
   description?: string;
   displayOrder: number;
-  menuId: string;
-  menuName: string;
+  isActive: boolean;                // NEW: Enable/disable category
 }
 ```
 
@@ -484,36 +542,15 @@ interface MenuItem {
   id: string;
   name: string;
   description: string;
-  shortDescription?: string;
-  images: ImageObject[];
+  image: ImageObject | null;       // Single image object
   basePrice: number;
-  compareAtPrice?: number;
-  tax?: number; // New field
-  isOnSale: boolean;
-  saleEndDate?: Date;
+  tax: number;
   preparationTime: number;
-  servingSize?: string;
   calories?: number;
   isAvailable: boolean;
-  tags: ItemTag[];
-  dietaryInfo: DietaryInfo;
-  allergens: Allergen[];
-  spiceLevel?: SpiceLevel;
   displayOrder: number;
-  isPopular: boolean;
-  isFeatured: boolean;
-  isNewItem: boolean;
-  badgeText?: string;
   modifierGroups: ModifierGroup[];
-  recommendedWith?: string[];
-  substitutes?: string[];
-  menuId?: string; // New field
-  categoryId?: string; // New field
-  isSingularItem?: boolean; // New field
-  menuName: string;
-  categoryName: string;
-  createdAt: Date;
-  updatedAt: Date;
+  categoryId: string;              // Reference to single category ID
 }
 ```
 

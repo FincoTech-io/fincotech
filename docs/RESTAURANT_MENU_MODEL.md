@@ -8,7 +8,7 @@ Complete data model for restaurant menu management system embedded within the Me
 ## Core Model Structure
 
 ### Restaurant Menu (IRestaurantMenu)
-The main container for all restaurant-related data:
+The main container for all restaurant-related data with **flat, normalized structure**:
 
 ```typescript
 interface IRestaurantMenu {
@@ -16,7 +16,9 @@ interface IRestaurantMenu {
   operatingHours: IOperatingHours;
   serviceOptions: IServiceOptions;
   businessStatus: IBusinessStatus;
-  menus: IMenu[];                    // Multiple menus (breakfast, lunch, dinner, etc.)
+  menus: IMenu[];                    // Flat array of menus
+  categories: IMenuCategory[];       // Flat array of categories  
+  items: IMenuItem[];                // Flat array of items
   orderingRules: IOrderingRules;
   version: number;                   // Auto-incremented on changes
   isActive: boolean;
@@ -24,40 +26,35 @@ interface IRestaurantMenu {
 ```
 
 ### Menu Structure (IMenu)
-Individual menus with time-based availability:
+Individual menus that reference items by ID:
 
 ```typescript
 interface IMenu {
   id: string;                       // Unique menu identifier
   name: string;                     // "Breakfast", "Lunch", "Dinner", etc.
   description?: string;             // Optional menu description
-  availability: IMenuAvailability;  // Time/date restrictions
+  timeSlots: ITimeSlot[];          // Time-based availability
   displayOrder: number;            // Sort order for display
   isActive: boolean;               // Enable/disable menu
-  categories: IMenuCategory[];     // Menu categories
+  itemIds: string[];               // Array of item IDs in this menu
 }
 ```
 
 ### Menu Category (IMenuCategory)
-Categories within each menu:
+Standalone categories that items reference:
 
 ```typescript
 interface IMenuCategory {
   id: string;                      // Unique category identifier
   name: string;                    // "Appetizers", "Main Courses", etc.
   description?: string;            // Optional category description
-  image?: IImageObject;            // Optional category image
   displayOrder: number;           // Sort order within menu
   isActive: boolean;              // Enable/disable category
-  isPopular?: boolean;            // Mark as popular category
-  items: IMenuItem[];             // Menu items in this category
-  maxItemsPerOrder?: number;      // Optional ordering limit
-  requiredWithOtherCategory?: string; // Dependency rules
 }
 ```
 
 ### Enhanced Menu Item (IMenuItem)
-Individual menu items with comprehensive details:
+Individual menu items with category and menu references:
 
 ```typescript
 interface IMenuItem {
@@ -65,52 +62,27 @@ interface IMenuItem {
   id: string;
   name: string;
   description: string;
-  shortDescription?: string;
-  images: IImageObject[];
+  image: IImageObject | null;      // Single image object
 
-  // Pricing & Sales
+  // Pricing
   basePrice: number;
-  compareAtPrice?: number;          // Original price for sales
-  tax?: number;                     // NEW: Tax amount for the item
-  isOnSale: boolean;
-  saleEndDate?: Date;
+  tax: number;
 
   // Preparation & Serving
-  preparationTime: number;          // Minutes
-  servingSize?: string;            // "1 fillet", "2 pieces", etc.
+  preparationTime: number;         // Minutes
   calories?: number;
 
-  // Availability & Inventory
+  // Availability
   isAvailable: boolean;
-  availabilitySchedule?: IMenuAvailability;
-  inventoryTracking?: IInventoryTracking;
 
-  // Classification & Filtering
-  tags: ItemTag[];                 // VEGETARIAN, GLUTEN_FREE, etc.
-  dietaryInfo: IDietaryInfo;
-  allergens: Allergen[];
-  spiceLevel?: SpiceLevel;
-
-  // Display & Marketing
+  // Display
   displayOrder: number;
-  isPopular: boolean;
-  isFeatured: boolean;
-  isNewItem: boolean;              // Renamed from isNew
-  badgeText?: string;              // Custom badge text
 
   // Customization
   modifierGroups: IModifierGroup[];
-  recommendedWith?: string[];      // Item IDs
-  substitutes?: string[];          // Item IDs
 
-  // NEW: Menu Association Fields
-  menuId?: string;                 // Associates item with specific menu
-  categoryId?: string;             // Associates item with specific category
-  isSingularItem?: boolean;        // Items not tied to specific menus
-
-  // Timestamps
-  createdAt: Date;
-  updatedAt: Date;
+  // Category Reference
+  categoryId: string;              // Reference to single category ID
 }
 ```
 
