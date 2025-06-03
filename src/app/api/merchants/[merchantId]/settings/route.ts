@@ -184,12 +184,12 @@ export async function PUT(
             crop: 'limit', 
             gravity: 'face', 
             quality: 'auto:best',
-            fetch_format: 'auto'
+            format: 'auto'
           },
           // Standard sizes for different use cases
-          { width: 400, height: 400, crop: 'fill', gravity: 'face', quality: 'auto:good' }, // Square medium
-          { width: 200, height: 200, crop: 'fill', gravity: 'face', quality: 'auto:good' }, // Square small
-          { width: 100, height: 100, crop: 'fill', gravity: 'face', quality: 'auto:good' }  // Square thumbnail
+          { width: 400, height: 400, crop: 'fill', gravity: 'face', quality: 'auto:good', format: 'auto' }, // Square medium
+          { width: 200, height: 200, crop: 'fill', gravity: 'face', quality: 'auto:good', format: 'auto' }, // Square small
+          { width: 100, height: 100, crop: 'fill', gravity: 'face', quality: 'auto:good', format: 'auto' }  // Square thumbnail
         ],
         eager_async: false, // Generate all sizes immediately
         timeout: 60000
