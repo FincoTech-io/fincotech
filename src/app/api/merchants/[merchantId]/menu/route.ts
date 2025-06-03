@@ -457,7 +457,8 @@ function transformDatabaseToFrontend(restaurantMenu: any, merchantId: string, me
       categories: [categoryName],
       menu: menuName,
       modifiers: item.modifierGroups || [],
-      isSingularItem: item.isSingularItem || false
+      isSingularItem: item.isSingularItem || false,
+      displayOrder: item.displayOrder || 1
     };
   });
   
