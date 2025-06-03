@@ -19,6 +19,10 @@ export const createRevenueRecord = async (revenueData: any) => {
       transactionRef: revenueRef
     }], { session });
 
+    // Safely get revenue amount and currency
+    const revenueAmount = revenue[0].revenueAmount?.amount || 0;
+    const currency = revenue[0].revenueAmount?.currency || 'USD';
+
     // Create a ledger entry for the revenue recognition
     await Ledger.create([{
       entryId: generateLedgerEntryId(),
@@ -26,13 +30,13 @@ export const createRevenueRecord = async (revenueData: any) => {
       entryDate: revenue[0].transactionDate,
       account: 'revenue',
       debit: 0,
-      credit: revenue[0].revenueAmount.amount,
+      credit: revenueAmount,
       balance: 0, // Balance will be updated separately
-      currency: revenue[0].revenueAmount.currency,
+      currency: currency,
       description: `Revenue: ${revenue[0].revenueType}`,
       metadata: {
         entryType: 'fee',
-        notes: revenue[0].metadata.description || 'Fee revenue'
+        notes: revenue[0].metadata?.description || 'Fee revenue'
       }
     }], { session });
 
@@ -43,10 +47,10 @@ export const createRevenueRecord = async (revenueData: any) => {
         transactionRef: revenueRef,
         entryDate: revenue[0].settlementDate || revenue[0].transactionDate,
         account: 'operating',
-        debit: revenue[0].revenueAmount.amount,
+        debit: revenueAmount,
         credit: 0,
         balance: 0, // Balance will be updated separately
-        currency: revenue[0].revenueAmount.currency,
+        currency: currency,
         description: 'Settlement of fee revenue',
         metadata: {
           entryType: 'settlement',

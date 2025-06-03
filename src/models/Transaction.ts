@@ -21,7 +21,10 @@ export interface ITransaction extends Document {
         walletTier: string;
         phoneNumber: string;
     }
-    transferAmount: number;
+    transferAmount: {
+        amount: number;
+        currency: string;
+    };
     fees: Array<{
         feeAmount: number;
         currency: string;

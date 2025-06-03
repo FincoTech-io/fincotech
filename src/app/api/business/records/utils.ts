@@ -49,8 +49,12 @@ export const createTransactionRecord = async (transactionData: any) => {
           );
           
           // Get sender and receiver information safely
-          const senderName = transaction[0].sender?.name || 'User';
-          const receiverName = transaction[0].receiver?.name || 'Recipient';
+          const senderName = transaction[0].sender?.name || transaction[0].sender?.fullName || 'User';
+          const receiverName = transaction[0].receiver?.name || transaction[0].receiver?.fullName || 'Recipient';
+          
+          // Safely get transfer amount and currency
+          const transferAmount = transaction[0].transferAmount?.amount || 0;
+          const currency = transaction[0].transferAmount?.currency || 'USD';
     
           // Create a ledger entry for the transaction
           await Ledger.create([{
@@ -58,10 +62,10 @@ export const createTransactionRecord = async (transactionData: any) => {
             transactionRef,
             entryDate: transaction[0].transactionDate,
             account: 'customer',
-            debit: transaction[0].transferAmount.amount,
+            debit: transferAmount,
             credit: 0,
             balance: 0, // Balance will be updated separately
-            currency: transaction[0].transferAmount.currency,
+            currency: currency,
             description: `Transaction: ${transaction[0].transactionType}`,
             metadata: {
               entryType: 'transfer',
@@ -78,7 +82,7 @@ export const createTransactionRecord = async (transactionData: any) => {
             debit: 0,
             credit: totalFeeAmount,
             balance: 0, // Balance will be updated separately
-            currency: transaction[0].transferAmount.currency,
+            currency: currency,
             description: `Fee collected for transaction: ${transaction[0].transactionType}`,
             metadata: {
               entryType: 'fee',
