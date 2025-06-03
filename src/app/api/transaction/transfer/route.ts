@@ -140,7 +140,8 @@ const processTransaction = async (userId: string, identifier: string, amount: nu
                     error: 'Receiver wallet not found with the provided address'
                 }, { status: 404 });
             }
-            receiverId = receiverWallet.userId.toString();
+            // Use userId if available, otherwise use entityId for non-user entities
+            receiverId = (receiverWallet.userId || receiverWallet.entityId)?.toString();
         } else {
             try {
                 // Try to use as a MongoDB ObjectId
@@ -172,7 +173,8 @@ const processTransaction = async (userId: string, identifier: string, amount: nu
                         error: 'Invalid identifier: not a valid user ID or wallet address'
                     }, { status: 400 });
                 }
-                receiverId = receiverWallet.userId.toString();
+                // Use userId if available, otherwise use entityId for non-user entities
+                receiverId = (receiverWallet.userId || receiverWallet.entityId)?.toString();
             }
         }
 
@@ -234,9 +236,32 @@ const transfer = async (userId: string, receiverId: string, amount: number, desc
         }
 
         console.log(`Looking up sender wallet for user: ${userId}`);
-        const senderWallet = await Wallet.findOne({ userId: userId }).session(connection);
+        // Try multiple strategies to find the sender wallet
+        let senderWallet = await Wallet.findOne({ userId: userId }).session(connection);
+        if (!senderWallet) {
+            // Try finding by entityType and entityId for merchants/drivers
+            senderWallet = await Wallet.findOne({ 
+                $or: [
+                    { entityType: 'MERCHANT', entityId: userId },
+                    { entityType: 'DRIVER', entityId: userId },
+                    { entityType: 'USER', entityId: userId }
+                ]
+            }).session(connection);
+        }
+        
         console.log(`Looking up receiver wallet for user: ${receiverId}`);
-        const receiverWallet = await Wallet.findOne({ userId: receiverId }).session(connection);
+        // Try multiple strategies to find the receiver wallet
+        let receiverWallet = await Wallet.findOne({ userId: receiverId }).session(connection);
+        if (!receiverWallet) {
+            // Try finding by entityType and entityId for merchants/drivers
+            receiverWallet = await Wallet.findOne({ 
+                $or: [
+                    { entityType: 'MERCHANT', entityId: receiverId },
+                    { entityType: 'DRIVER', entityId: receiverId },
+                    { entityType: 'USER', entityId: receiverId }
+                ]
+            }).session(connection);
+        }
 
         if (!senderWallet) {
             console.log(`Sender wallet not found for user: ${userId}`);
@@ -344,7 +369,7 @@ const transfer = async (userId: string, receiverId: string, amount: number, desc
         senderWallet.monthlyTransactionCount += 1;
         senderWallet.transfersSent.push({
             ...transferRecord,
-            to: receiverWallet.userId,
+            to: receiverWallet.userId || receiverWallet.entityId,
         });
 
         // Get the receiver's current balance as a number
@@ -354,7 +379,7 @@ const transfer = async (userId: string, receiverId: string, amount: number, desc
         receiverWallet.balance = numericReceiverBalance + numericTransferAmount; // Recipient gets the full amount, fee is kept by platform
         receiverWallet.transfersReceived.push({
             ...transferRecord,
-            from: senderWallet.userId,
+            from: senderWallet.userId || senderWallet.entityId,
         });
 
         console.log(`Saving updated wallets. New sender balance: ${senderWallet.balance}, new receiver balance: ${receiverWallet.balance}`);
@@ -370,12 +395,66 @@ const transfer = async (userId: string, receiverId: string, amount: number, desc
 
         // Get user details for creating transaction record
         console.log('Fetching user details for transaction record');
-        const sender = await User.findById(userId).select('fullName email phoneNumber role').session(connection);
-        const recipient = await User.findById(receiverId).select('fullName email phoneNumber role').session(connection);
+        
+        // Get sender details based on entity type
+        let sender;
+        if (senderWallet.entityType === 'USER') {
+            sender = await User.findById(senderWallet.userId || senderWallet.entityId).select('fullName email phoneNumber role').session(connection);
+        } else if (senderWallet.entityType === 'MERCHANT') {
+            const Merchant = (await import('@/models/Merchant')).default;
+            const merchantData = await Merchant.findById(senderWallet.entityId).select('merchantName phoneNumber').session(connection);
+            if (merchantData) {
+                sender = {
+                    fullName: merchantData.merchantName,
+                    phoneNumber: merchantData.phoneNumber,
+                    role: 'MERCHANT'
+                };
+            }
+        } else if (senderWallet.entityType === 'DRIVER') {
+            const Driver = (await import('@/models/Driver')).default;
+            const driverData = await Driver.findById(senderWallet.entityId).select('accountHolderName applicantUserId').session(connection);
+            if (driverData) {
+                // Get phone number from the associated user
+                const associatedUser = await User.findById(driverData.applicantUserId).select('phoneNumber').session(connection);
+                sender = {
+                    fullName: driverData.accountHolderName,
+                    phoneNumber: associatedUser?.phoneNumber || '',
+                    role: 'DRIVER'
+                };
+            }
+        }
+        
+        // Get receiver details based on entity type
+        let recipient;
+        if (receiverWallet.entityType === 'USER') {
+            recipient = await User.findById(receiverWallet.userId || receiverWallet.entityId).select('fullName email phoneNumber role').session(connection);
+        } else if (receiverWallet.entityType === 'MERCHANT') {
+            const Merchant = (await import('@/models/Merchant')).default;
+            const merchantData = await Merchant.findById(receiverWallet.entityId).select('merchantName phoneNumber').session(connection);
+            if (merchantData) {
+                recipient = {
+                    fullName: merchantData.merchantName,
+                    phoneNumber: merchantData.phoneNumber,
+                    role: 'MERCHANT'
+                };
+            }
+        } else if (receiverWallet.entityType === 'DRIVER') {
+            const Driver = (await import('@/models/Driver')).default;
+            const driverData = await Driver.findById(receiverWallet.entityId).select('accountHolderName applicantUserId').session(connection);
+            if (driverData) {
+                // Get phone number from the associated user
+                const associatedUser = await User.findById(driverData.applicantUserId).select('phoneNumber').session(connection);
+                recipient = {
+                    fullName: driverData.accountHolderName,
+                    phoneNumber: associatedUser?.phoneNumber || '',
+                    role: 'DRIVER'
+                };
+            }
+        }
 
         if (!sender || !recipient) {
-            console.error('Sender or recipient user details not found');
-            throw new Error('Failed to fetch user details for transaction record');
+            console.error('Sender or recipient details not found');
+            throw new Error('Failed to fetch entity details for transaction record');
         }
 
         // Create transaction record
@@ -385,19 +464,19 @@ const transfer = async (userId: string, receiverId: string, amount: number, desc
             transactionType: 'transfer',
             status: 'completed',
             sender: {
-                id: userId,
+                id: senderWallet.userId || senderWallet.entityId,
                 name: sender.fullName,
-                accountType: 'customer',
+                accountType: senderWallet.entityType.toLowerCase(),
                 phoneNumber: sender.phoneNumber,
-                accountRole: sender.role || 'CUSTOMER',
+                accountRole: sender.role || senderWallet.entityType,
                 walletTier: senderWallet.tier
             },
             receiver: {
-                id: receiverId,
+                id: receiverWallet.userId || receiverWallet.entityId,
                 name: recipient.fullName,
-                accountType: 'customer',
+                accountType: receiverWallet.entityType.toLowerCase(),
                 phoneNumber: recipient.phoneNumber,
-                accountRole: recipient.role || 'CUSTOMER',
+                accountRole: recipient.role || receiverWallet.entityType,
                 walletTier: receiverWallet.tier
             },
             transferAmount: {
@@ -457,24 +536,28 @@ const transfer = async (userId: string, receiverId: string, amount: number, desc
 
         // TODO: Send Notification to the sender and recipient
         
-        // Send notifications using NotificationTriggers
+        // Send notifications using NotificationTriggers (only for USER entities)
         const { NotificationTriggers } = await import('../../../../utils/notificationTriggers');
         
-        // Send notification to sender
-        await NotificationTriggers.paymentSent(
-          sender,
-          amount,
-          receiverWallet.currency,
-          recipient.fullName
-        );
+        // Send notification to sender (only if it's a USER)
+        if (senderWallet.entityType === 'USER' && sender && '_id' in sender) {
+            await NotificationTriggers.paymentSent(
+              sender as any,
+              amount,
+              receiverWallet.currency,
+              recipient.fullName
+            );
+        }
         
-        // Send notification to recipient
-        await NotificationTriggers.paymentReceived(
-          recipient,
-          amount,
-          senderWallet.currency,
-          sender.fullName
-        );
+        // Send notification to recipient (only if it's a USER)
+        if (receiverWallet.entityType === 'USER' && recipient && '_id' in recipient) {
+            await NotificationTriggers.paymentReceived(
+              recipient as any,
+              amount,
+              senderWallet.currency,
+              sender.fullName
+            );
+        }
 
         return {
             success: true,
