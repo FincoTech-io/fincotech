@@ -30,7 +30,7 @@ export async function GET(
     // No authentication required for viewing menu - public access
     
     // Find merchant and get menu data
-    const merchant = await Merchant.findById(merchantId).select('merchantName restaurantMenu').lean();
+    const merchant = await Merchant.findById(merchantId).select('merchantName merchantAddress restaurantMenu').lean();
 
     if (!merchant) {
       return NextResponse.json(
@@ -50,6 +50,7 @@ export async function GET(
       data: {
         merchantId,
         merchantName: merchant.merchantName,
+        merchantAddress: merchant.merchantAddress,
         hasMenu: !!merchant.restaurantMenu,
         menuData: transformedMenuData
       },
