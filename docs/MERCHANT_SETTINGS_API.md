@@ -36,16 +36,17 @@ Retrieve the current merchant settings including profile image.
     "merchantName": "Nandos",
     "merchantType": "RESTAURANT",
     "profileImage": {
-      "url": "https://res.cloudinary.com/yourcloud/image/upload/.../profile_1748903937183.jpg",
+      "url": "https://res.cloudinary.com/yourcloud/image/upload/w_1200,h_600,c_limit/.../profile_1748903937183.jpg",
       "publicId": "fincotech/Merchant/683beca56d412c1d572afdda/profile/profile_1748903937183",
       "alt": "Nandos profile image",
       "width": 1200,
-      "height": 1200,
+      "height": 600,
       "sizes": {
         "original": "https://res.cloudinary.com/yourcloud/image/upload/.../profile_1748903937183.jpg",
-        "large": "https://res.cloudinary.com/yourcloud/image/upload/w_800,h_800,c_fill,g_face/.../profile_1748903937183.jpg",
+        "display": "https://res.cloudinary.com/yourcloud/image/upload/w_1200,h_600,c_limit/.../profile_1748903937183.jpg",
         "medium": "https://res.cloudinary.com/yourcloud/image/upload/w_400,h_400,c_fill,g_face/.../profile_1748903937183.jpg",
-        "thumbnail": "https://res.cloudinary.com/yourcloud/image/upload/w_150,h_150,c_fill,g_face/.../profile_1748903937183.jpg"
+        "small": "https://res.cloudinary.com/yourcloud/image/upload/w_200,h_200,c_fill,g_face/.../profile_1748903937183.jpg",
+        "thumbnail": "https://res.cloudinary.com/yourcloud/image/upload/w_100,h_100,c_fill,g_face/.../profile_1748903937183.jpg"
       }
     }
   },
@@ -86,9 +87,10 @@ Upload or update the merchant's profile image.
 ```
 
 **Features:**
-- **High Quality Images**: Original images stored at 1200x1200 for maximum quality
-- **Multiple Sizes**: Automatic generation of 4 different sizes (original, large, medium, thumbnail)
-- **Smart Cropping**: Uses face gravity for better profile pictures across all sizes
+- **Highest Quality Storage**: Original images stored at full resolution with auto:best quality
+- **Optimized Display**: Main display image limited to 1200x600 with maintained aspect ratio
+- **Multiple Sizes**: Automatic generation of square sizes for different UI contexts
+- **Smart Cropping**: Uses face gravity for optimal cropping on square versions
 - **Auto Cleanup**: Deletes old profile image when uploading new one
 - **Cloudinary Storage**: Organized in `fincotech/Merchant/[merchantId]/profile/`
 - **Eager Loading**: All image sizes generated immediately upon upload
@@ -101,16 +103,17 @@ Upload or update the merchant's profile image.
     "merchantId": "683beca56d412c1d572afdda",
     "merchantName": "Nandos",
     "profileImage": {
-      "url": "https://res.cloudinary.com/yourcloud/image/upload/.../profile_1748903937183.jpg",
+      "url": "https://res.cloudinary.com/yourcloud/image/upload/w_1200,h_600,c_limit/.../profile_1748903937183.jpg",
       "publicId": "fincotech/Merchant/683beca56d412c1d572afdda/profile/profile_1748903937183",
       "alt": "Nandos profile image",
       "width": 1200,
-      "height": 1200,
+      "height": 600,
       "sizes": {
         "original": "https://res.cloudinary.com/yourcloud/image/upload/.../profile_1748903937183.jpg",
-        "large": "https://res.cloudinary.com/yourcloud/image/upload/w_800,h_800,c_fill,g_face/.../profile_1748903937183.jpg",
+        "display": "https://res.cloudinary.com/yourcloud/image/upload/w_1200,h_600,c_limit/.../profile_1748903937183.jpg",
         "medium": "https://res.cloudinary.com/yourcloud/image/upload/w_400,h_400,c_fill,g_face/.../profile_1748903937183.jpg",
-        "thumbnail": "https://res.cloudinary.com/yourcloud/image/upload/w_150,h_150,c_fill,g_face/.../profile_1748903937183.jpg"
+        "small": "https://res.cloudinary.com/yourcloud/image/upload/w_200,h_200,c_fill,g_face/.../profile_1748903937183.jpg",
+        "thumbnail": "https://res.cloudinary.com/yourcloud/image/upload/w_100,h_100,c_fill,g_face/.../profile_1748903937183.jpg"
       }
     },
     "uploadedAt": "2024-01-01T00:00:00.000Z"
@@ -245,10 +248,11 @@ const handleProfileImageUpload = async (file) => {
     const result = await response.json();
     if (result.success) {
       console.log('Profile image updated with multiple sizes:');
-      console.log('Original (1200x1200):', result.data.profileImage.sizes.original);
-      console.log('Large (800x800):', result.data.profileImage.sizes.large);
+      console.log('Original (highest quality):', result.data.profileImage.sizes.original);
+      console.log('Display (1200x600 max):', result.data.profileImage.sizes.display);
       console.log('Medium (400x400):', result.data.profileImage.sizes.medium);
-      console.log('Thumbnail (150x150):', result.data.profileImage.sizes.thumbnail);
+      console.log('Small (200x200):', result.data.profileImage.sizes.small);
+      console.log('Thumbnail (100x100):', result.data.profileImage.sizes.thumbnail);
     } else {
       console.error('Upload failed:', result.error);
     }
@@ -290,15 +294,19 @@ const getOptimalImageUrl = (profileImage, context) => {
   
   switch (context) {
     case 'avatar':
-      return profileImage.sizes.thumbnail; // 150x150 for small avatars
+      return profileImage.sizes.thumbnail; // 100x100 for small avatars
+    case 'icon':
+      return profileImage.sizes.small; // 200x200 for medium icons
     case 'card':
       return profileImage.sizes.medium; // 400x400 for merchant cards
+    case 'banner':
     case 'header':
-      return profileImage.sizes.large; // 800x800 for headers
+      return profileImage.sizes.display; // 1200x600 max for banners/headers
     case 'detail':
-      return profileImage.sizes.original; // 1200x1200 for detailed views
+    case 'original':
+      return profileImage.sizes.original; // Highest quality for detailed views
     default:
-      return profileImage.sizes.medium;
+      return profileImage.sizes.display; // Default to display size
   }
 };
 
@@ -312,6 +320,18 @@ const MerchantCard = ({ merchant }) => (
       height="400"
     />
     <h3>{merchant.name}</h3>
+  </div>
+);
+
+// Banner/Header usage
+const MerchantHeader = ({ merchant }) => (
+  <div>
+    <img 
+      src={getOptimalImageUrl(merchant.profileImage, 'banner')}
+      alt={merchant.profileImage?.alt}
+      style={{ maxWidth: '1200px', maxHeight: '600px' }}
+    />
+    <h1>{merchant.name}</h1>
   </div>
 );
 ```
@@ -331,7 +351,8 @@ data.data.merchants.forEach(merchant => {
   if (merchant.profileImage) {
     console.log(`${merchant.name}:`);
     console.log('  Thumbnail:', merchant.profileImage.sizes.thumbnail);
-    console.log('  High Quality:', merchant.profileImage.sizes.original);
+    console.log('  Display Quality:', merchant.profileImage.sizes.display);
+    console.log('  Original Quality:', merchant.profileImage.sizes.original);
   }
 });
 ```
@@ -340,19 +361,22 @@ data.data.merchants.forEach(merchant => {
 
 ## Image Specifications
 
-**Supported Formats**: JPEG, PNG, WEBP
-**Maximum Upload Size**: 10MB
-**Output Format**: Auto-optimized (WebP when supported)
-**Quality**: Auto:good (higher quality than standard auto)
+**Supported Formats**: JPEG, PNG, WEBP, GIF
+**Maximum Upload Size**: No limit (stores original at highest quality)
+**Output Format**: Auto-optimized (WebP when supported)  
+**Quality**: Auto:best (highest quality setting)
 
 **Generated Sizes:**
-- **Original**: 1200x1200 pixels (high quality for detailed views)
-- **Large**: 800x800 pixels (for headers and large displays)
-- **Medium**: 400x400 pixels (standard size for cards and listings)
-- **Thumbnail**: 150x150 pixels (for avatars and small previews)
+- **Original**: Full resolution at highest quality (unlimited size)
+- **Display**: Max 1200x600 with maintained aspect ratio (main display image)
+- **Medium**: 400x400 square (for cards and medium displays)
+- **Small**: 200x200 square (for icons and medium contexts)
+- **Thumbnail**: 100x100 square (for avatars and small previews)
 
 **Processing Features:**
-- **Smart Cropping**: Face detection and gravity for optimal cropping
+- **Highest Quality Storage**: Original images stored without quality loss
+- **Aspect Ratio Preservation**: Display size maintains original proportions up to 1200x600
+- **Smart Square Cropping**: Face detection for optimal square versions
 - **Eager Generation**: All sizes created immediately upon upload
 - **CDN Delivery**: Fast global delivery via Cloudinary CDN
 - **Auto Optimization**: Format and quality optimization per device

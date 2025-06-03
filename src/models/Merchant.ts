@@ -58,10 +58,11 @@ export interface IImageObject {
   width?: number;
   height?: number;
   sizes?: {
-    original: string;
-    large: string;      // 800x800
-    medium: string;     // 400x400
-    thumbnail: string;  // 150x150
+    original: string;    // Highest quality original
+    display: string;     // 1200x600 max (main display)
+    medium: string;      // 400x400 square
+    small: string;       // 200x200 square  
+    thumbnail: string;   // 100x100 square
   };
 }
 
@@ -407,8 +408,9 @@ const MerchantSchema = new Schema<IMerchant>(
         height: Number,
         sizes: {
           original: String,
-          large: String,
+          display: String,
           medium: String,
+          small: String,
           thumbnail: String,
         },
       },

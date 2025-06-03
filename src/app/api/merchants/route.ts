@@ -49,12 +49,13 @@ export async function GET(request: NextRequest) {
       address: merchant.merchantAddress,
       currentAddress: merchant.currentAddress,
       profileImage: merchant.profileImage ? {
-        url: merchant.profileImage.url,
+        url: merchant.profileImage.url, // Main display URL (1200x600 max)
         alt: merchant.profileImage.alt,
         sizes: merchant.profileImage.sizes || {
           original: merchant.profileImage.url,
-          large: merchant.profileImage.url,
+          display: merchant.profileImage.url,
           medium: merchant.profileImage.url,
+          small: merchant.profileImage.url,
           thumbnail: merchant.profileImage.url
         }
       } : null,

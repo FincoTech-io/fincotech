@@ -173,32 +173,41 @@ export async function PUT(
       const uploadResponse = await cloudinary.uploader.upload(profileImage.base64, {
         folder: uploadFolder,
         public_id: `profile_${Date.now()}`,
-        transformation: [
-          { width: 1200, height: 1200, crop: 'fill', gravity: 'face' }, // High quality version
-          { quality: 'auto:good', format: 'auto' } // Higher quality setting
-        ],
+        // Store original at highest quality without resizing
+        quality: 'auto:best',
+        format: 'auto',
         eager: [
-          // Generate multiple sizes for different use cases
-          { width: 400, height: 400, crop: 'fill', gravity: 'face', quality: 'auto:good' }, // Standard size
-          { width: 150, height: 150, crop: 'fill', gravity: 'face', quality: 'auto:good' }, // Thumbnail
-          { width: 800, height: 800, crop: 'fill', gravity: 'face', quality: 'auto:good' }  // Medium size
+          // Main display image - 1200x600 max with maintained aspect ratio
+          { 
+            width: 1200, 
+            height: 600, 
+            crop: 'limit', 
+            gravity: 'face', 
+            quality: 'auto:best',
+            fetch_format: 'auto'
+          },
+          // Standard sizes for different use cases
+          { width: 400, height: 400, crop: 'fill', gravity: 'face', quality: 'auto:good' }, // Square medium
+          { width: 200, height: 200, crop: 'fill', gravity: 'face', quality: 'auto:good' }, // Square small
+          { width: 100, height: 100, crop: 'fill', gravity: 'face', quality: 'auto:good' }  // Square thumbnail
         ],
         eager_async: false, // Generate all sizes immediately
         timeout: 60000
       });
 
       const newProfileImage = {
-        url: uploadResponse.secure_url,
+        url: uploadResponse.eager?.[0]?.secure_url || uploadResponse.secure_url, // Use 1200x600 as main URL
         publicId: uploadResponse.public_id,
         alt: `${merchant.merchantName} profile image`,
-        width: uploadResponse.width,
-        height: uploadResponse.height,
+        width: uploadResponse.eager?.[0]?.width || uploadResponse.width,
+        height: uploadResponse.eager?.[0]?.height || uploadResponse.height,
         // Include URLs for different sizes
         sizes: {
-          original: uploadResponse.secure_url,
-          large: uploadResponse.eager?.[2]?.secure_url || uploadResponse.secure_url, // 800x800
-          medium: uploadResponse.eager?.[0]?.secure_url || uploadResponse.secure_url, // 400x400  
-          thumbnail: uploadResponse.eager?.[1]?.secure_url || uploadResponse.secure_url // 150x150
+          original: uploadResponse.secure_url, // Highest quality original
+          display: uploadResponse.eager?.[0]?.secure_url || uploadResponse.secure_url, // 1200x600 max
+          medium: uploadResponse.eager?.[1]?.secure_url || uploadResponse.secure_url, // 400x400 square
+          small: uploadResponse.eager?.[2]?.secure_url || uploadResponse.secure_url, // 200x200 square
+          thumbnail: uploadResponse.eager?.[3]?.secure_url || uploadResponse.secure_url // 100x100 square
         }
       };
 
