@@ -41,8 +41,15 @@ export async function GET(
 
     // Transform database format to frontend format if menu exists
     let transformedMenuData = null;
+    let operatingHours = null;
+    
     if (merchant.restaurantMenu) {
       transformedMenuData = transformDatabaseToFrontend(merchant.restaurantMenu, merchantId, merchant.merchantName);
+      
+      // Extract operating hours for top-level access
+      if (merchant.restaurantMenu.operatingHours) {
+        operatingHours = transformOperatingHoursToBusinessHours(merchant.restaurantMenu.operatingHours);
+      }
     }
 
     return NextResponse.json({
@@ -51,6 +58,7 @@ export async function GET(
         merchantId,
         merchantName: merchant.merchantName,
         merchantAddress: merchant.merchantAddress,
+        operatingHours: operatingHours,
         hasMenu: !!merchant.restaurantMenu,
         menuData: transformedMenuData
       },
