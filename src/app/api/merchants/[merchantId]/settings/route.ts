@@ -174,9 +174,16 @@ export async function PUT(
         folder: uploadFolder,
         public_id: `profile_${Date.now()}`,
         transformation: [
-          { width: 400, height: 400, crop: 'fill', gravity: 'face' },
-          { quality: 'auto', format: 'auto' }
+          { width: 1200, height: 1200, crop: 'fill', gravity: 'face' }, // High quality version
+          { quality: 'auto:good', format: 'auto' } // Higher quality setting
         ],
+        eager: [
+          // Generate multiple sizes for different use cases
+          { width: 400, height: 400, crop: 'fill', gravity: 'face', quality: 'auto:good' }, // Standard size
+          { width: 150, height: 150, crop: 'fill', gravity: 'face', quality: 'auto:good' }, // Thumbnail
+          { width: 800, height: 800, crop: 'fill', gravity: 'face', quality: 'auto:good' }  // Medium size
+        ],
+        eager_async: false, // Generate all sizes immediately
         timeout: 60000
       });
 
@@ -185,7 +192,14 @@ export async function PUT(
         publicId: uploadResponse.public_id,
         alt: `${merchant.merchantName} profile image`,
         width: uploadResponse.width,
-        height: uploadResponse.height
+        height: uploadResponse.height,
+        // Include URLs for different sizes
+        sizes: {
+          original: uploadResponse.secure_url,
+          large: uploadResponse.eager?.[2]?.secure_url || uploadResponse.secure_url, // 800x800
+          medium: uploadResponse.eager?.[0]?.secure_url || uploadResponse.secure_url, // 400x400  
+          thumbnail: uploadResponse.eager?.[1]?.secure_url || uploadResponse.secure_url // 150x150
+        }
       };
 
       console.log('✅ Profile image uploaded successfully:', uploadResponse.public_id);

@@ -39,8 +39,14 @@ Retrieve the current merchant settings including profile image.
       "url": "https://res.cloudinary.com/yourcloud/image/upload/.../profile_1748903937183.jpg",
       "publicId": "fincotech/Merchant/683beca56d412c1d572afdda/profile/profile_1748903937183",
       "alt": "Nandos profile image",
-      "width": 400,
-      "height": 400
+      "width": 1200,
+      "height": 1200,
+      "sizes": {
+        "original": "https://res.cloudinary.com/yourcloud/image/upload/.../profile_1748903937183.jpg",
+        "large": "https://res.cloudinary.com/yourcloud/image/upload/w_800,h_800,c_fill,g_face/.../profile_1748903937183.jpg",
+        "medium": "https://res.cloudinary.com/yourcloud/image/upload/w_400,h_400,c_fill,g_face/.../profile_1748903937183.jpg",
+        "thumbnail": "https://res.cloudinary.com/yourcloud/image/upload/w_150,h_150,c_fill,g_face/.../profile_1748903937183.jpg"
+      }
     }
   },
   "message": "Merchant settings retrieved successfully"
@@ -80,10 +86,12 @@ Upload or update the merchant's profile image.
 ```
 
 **Features:**
-- **Image Optimization**: Automatically resized to 400x400 with face detection
-- **Smart Cropping**: Uses face gravity for better profile pictures
+- **High Quality Images**: Original images stored at 1200x1200 for maximum quality
+- **Multiple Sizes**: Automatic generation of 4 different sizes (original, large, medium, thumbnail)
+- **Smart Cropping**: Uses face gravity for better profile pictures across all sizes
 - **Auto Cleanup**: Deletes old profile image when uploading new one
 - **Cloudinary Storage**: Organized in `fincotech/Merchant/[merchantId]/profile/`
+- **Eager Loading**: All image sizes generated immediately upon upload
 
 **Response:**
 ```json
@@ -96,8 +104,14 @@ Upload or update the merchant's profile image.
       "url": "https://res.cloudinary.com/yourcloud/image/upload/.../profile_1748903937183.jpg",
       "publicId": "fincotech/Merchant/683beca56d412c1d572afdda/profile/profile_1748903937183",
       "alt": "Nandos profile image",
-      "width": 400,
-      "height": 400
+      "width": 1200,
+      "height": 1200,
+      "sizes": {
+        "original": "https://res.cloudinary.com/yourcloud/image/upload/.../profile_1748903937183.jpg",
+        "large": "https://res.cloudinary.com/yourcloud/image/upload/w_800,h_800,c_fill,g_face/.../profile_1748903937183.jpg",
+        "medium": "https://res.cloudinary.com/yourcloud/image/upload/w_400,h_400,c_fill,g_face/.../profile_1748903937183.jpg",
+        "thumbnail": "https://res.cloudinary.com/yourcloud/image/upload/w_150,h_150,c_fill,g_face/.../profile_1748903937183.jpg"
+      }
     },
     "uploadedAt": "2024-01-01T00:00:00.000Z"
   },
@@ -192,10 +206,13 @@ const response = await fetch(`/api/merchants/${merchantId}/settings`, {
 const settings = await response.json();
 if (settings.success) {
   console.log('Current profile image:', settings.data.profileImage);
+  // Access different sizes
+  console.log('Thumbnail:', settings.data.profileImage?.sizes?.thumbnail);
+  console.log('High quality:', settings.data.profileImage?.sizes?.original);
 }
 ```
 
-**Upload Profile Image:**
+**Upload High Quality Profile Image:**
 ```javascript
 // Convert file to base64
 const fileToBase64 = (file) => {
@@ -227,7 +244,11 @@ const handleProfileImageUpload = async (file) => {
 
     const result = await response.json();
     if (result.success) {
-      console.log('Profile image updated:', result.data.profileImage.url);
+      console.log('Profile image updated with multiple sizes:');
+      console.log('Original (1200x1200):', result.data.profileImage.sizes.original);
+      console.log('Large (800x800):', result.data.profileImage.sizes.large);
+      console.log('Medium (400x400):', result.data.profileImage.sizes.medium);
+      console.log('Thumbnail (150x150):', result.data.profileImage.sizes.thumbnail);
     } else {
       console.error('Upload failed:', result.error);
     }
@@ -261,19 +282,57 @@ const deleteProfileImage = async () => {
 };
 ```
 
+**Responsive Image Display:**
+```javascript
+// Use appropriate image size based on display context
+const getOptimalImageUrl = (profileImage, context) => {
+  if (!profileImage?.sizes) return profileImage?.url || null;
+  
+  switch (context) {
+    case 'avatar':
+      return profileImage.sizes.thumbnail; // 150x150 for small avatars
+    case 'card':
+      return profileImage.sizes.medium; // 400x400 for merchant cards
+    case 'header':
+      return profileImage.sizes.large; // 800x800 for headers
+    case 'detail':
+      return profileImage.sizes.original; // 1200x1200 for detailed views
+    default:
+      return profileImage.sizes.medium;
+  }
+};
+
+// Example usage in React
+const MerchantCard = ({ merchant }) => (
+  <div>
+    <img 
+      src={getOptimalImageUrl(merchant.profileImage, 'card')}
+      alt={merchant.profileImage?.alt}
+      width="400" 
+      height="400"
+    />
+    <h3>{merchant.name}</h3>
+  </div>
+);
+```
+
 ---
 
 ## Integration with Public API
 
-The profile images are automatically included in the public merchants listing:
+The profile images with multiple sizes are automatically included in the public merchants listing:
 
 ```javascript
-// Public endpoint now includes profile images
+// Public endpoint now includes profile images with all sizes
 const response = await fetch('/api/merchants?type=RESTAURANT');
 const data = await response.json();
 
 data.data.merchants.forEach(merchant => {
-  console.log(`${merchant.name}: ${merchant.profileImage?.url || 'No image'}`);
+  if (merchant.profileImage) {
+    console.log(`${merchant.name}:`);
+    console.log('  Thumbnail:', merchant.profileImage.sizes.thumbnail);
+    console.log('  High Quality:', merchant.profileImage.sizes.original);
+  }
 });
 ```
 
@@ -282,11 +341,21 @@ data.data.merchants.forEach(merchant => {
 ## Image Specifications
 
 **Supported Formats**: JPEG, PNG, WEBP
-**Maximum Size**: 10MB
+**Maximum Upload Size**: 10MB
 **Output Format**: Auto-optimized (WebP when supported)
-**Dimensions**: 400x400 pixels (square)
-**Cropping**: Smart crop with face detection
-**Quality**: Auto-optimized for web delivery
+**Quality**: Auto:good (higher quality than standard auto)
+
+**Generated Sizes:**
+- **Original**: 1200x1200 pixels (high quality for detailed views)
+- **Large**: 800x800 pixels (for headers and large displays)
+- **Medium**: 400x400 pixels (standard size for cards and listings)
+- **Thumbnail**: 150x150 pixels (for avatars and small previews)
+
+**Processing Features:**
+- **Smart Cropping**: Face detection and gravity for optimal cropping
+- **Eager Generation**: All sizes created immediately upon upload
+- **CDN Delivery**: Fast global delivery via Cloudinary CDN
+- **Auto Optimization**: Format and quality optimization per device
 
 ---
 
@@ -297,5 +366,6 @@ data.data.merchants.forEach(merchant => {
 - **Resource Cleanup**: Automatic deletion of old images to prevent storage bloat
 - **Error Handling**: Graceful handling of upload failures and network issues
 - **Timeout Protection**: 60-second timeout for large image uploads
+- **Multiple Size Generation**: Prevents client-side resizing and maintains quality
 
-This API provides a complete solution for merchant profile image management with enterprise-grade security and optimization features. 
+This API provides a complete solution for high-quality merchant profile image management with multiple sizes for optimal performance across different use cases.

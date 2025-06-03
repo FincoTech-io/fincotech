@@ -48,7 +48,16 @@ export async function GET(request: NextRequest) {
       type: merchant.merchantType,
       address: merchant.merchantAddress,
       currentAddress: merchant.currentAddress,
-      profileImage: merchant.profileImage || null,
+      profileImage: merchant.profileImage ? {
+        url: merchant.profileImage.url,
+        alt: merchant.profileImage.alt,
+        sizes: merchant.profileImage.sizes || {
+          original: merchant.profileImage.url,
+          large: merchant.profileImage.url,
+          medium: merchant.profileImage.url,
+          thumbnail: merchant.profileImage.url
+        }
+      } : null,
       hasMenu: !!merchant.restaurantMenu,
       cuisineTypes: merchant.restaurantMenu?.restaurantInfo?.cuisineTypes || [],
       priceRange: merchant.restaurantMenu?.restaurantInfo?.priceRange || null,

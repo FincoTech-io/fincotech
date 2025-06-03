@@ -57,6 +57,12 @@ export interface IImageObject {
   alt: string;
   width?: number;
   height?: number;
+  sizes?: {
+    original: string;
+    large: string;      // 800x800
+    medium: string;     // 400x400
+    thumbnail: string;  // 150x150
+  };
 }
 
 export interface ICoordinate {
@@ -399,6 +405,12 @@ const MerchantSchema = new Schema<IMerchant>(
         alt: String,
         width: Number,
         height: Number,
+        sizes: {
+          original: String,
+          large: String,
+          medium: String,
+          thumbnail: String,
+        },
       },
       required: false,
     },
