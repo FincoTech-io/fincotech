@@ -173,9 +173,8 @@ export async function PUT(
       const uploadResponse = await cloudinary.uploader.upload(profileImage.base64, {
         folder: uploadFolder,
         public_id: `profile_${Date.now()}`,
-        // Store original at highest quality without resizing
-        quality: 'auto:best',
-        format: 'auto',
+        // Store original at highest quality
+        quality: 95,
         eager: [
           // Main display image - 1200x600 max with maintained aspect ratio
           { 
@@ -183,12 +182,12 @@ export async function PUT(
             height: 600, 
             crop: 'limit', 
             gravity: 'face', 
-            quality: 'auto:best'
+            quality: 90
           },
           // Standard sizes for different use cases
-          { width: 400, height: 400, crop: 'fill', gravity: 'face', quality: 'auto:good' }, // Square medium
-          { width: 200, height: 200, crop: 'fill', gravity: 'face', quality: 'auto:good' }, // Square small
-          { width: 100, height: 100, crop: 'fill', gravity: 'face', quality: 'auto:good' }  // Square thumbnail
+          { width: 400, height: 400, crop: 'fill', gravity: 'face', quality: 85 }, // Square medium
+          { width: 200, height: 200, crop: 'fill', gravity: 'face', quality: 85 }, // Square small
+          { width: 100, height: 100, crop: 'fill', gravity: 'face', quality: 80 }  // Square thumbnail
         ],
         eager_async: false, // Generate all sizes immediately
         timeout: 60000
