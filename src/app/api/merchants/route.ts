@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)
-      .select('merchantName merchantType merchantAddress currentAddress restaurantMenu.restaurantInfo createdAt')
+      .select('merchantName merchantType merchantAddress currentAddress profileImage restaurantMenu.restaurantInfo createdAt')
       .lean();
 
     const total = await Merchant.countDocuments(query);
@@ -48,6 +48,7 @@ export async function GET(request: NextRequest) {
       type: merchant.merchantType,
       address: merchant.merchantAddress,
       currentAddress: merchant.currentAddress,
+      profileImage: merchant.profileImage || null,
       hasMenu: !!merchant.restaurantMenu,
       cuisineTypes: merchant.restaurantMenu?.restaurantInfo?.cuisineTypes || [],
       priceRange: merchant.restaurantMenu?.restaurantInfo?.priceRange || null,

@@ -308,6 +308,7 @@ export interface IMerchant extends Document {
   merchantType: 'RESTAURANT' | 'RETAIL' | 'MARKET' | 'SERVICE' | 'EDUCATIONAL' | 'ENTERTAINMENT' | 'HOTEL' | 'RENTAL' | 'TRANSPORTATION' | 'OTHER';
   merchantAddress: string;
   merchantLicense: string;
+  profileImage?: IImageObject;      // Profile image for the merchant
   merchantStaff: {
     name: string;
     role: 'ADMIN' | 'MERCHANT_OWNER' | 'MERCHANT_MANAGER' | 'MERCHANT_STAFF';
@@ -391,6 +392,16 @@ const MerchantSchema = new Schema<IMerchant>(
       type: String,
       required: true,
     },    
+    profileImage: {
+      type: {
+        url: String,
+        publicId: String,
+        alt: String,
+        width: Number,
+        height: Number,
+      },
+      required: false,
+    },
     merchantStaff: {
       type: [{
         name: String,
